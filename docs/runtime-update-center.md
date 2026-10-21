@@ -119,3 +119,17 @@ openssl rsa -in runtime-signing-private.pem -pubout -out runtime-signing-public.
   duplicates, versions.
 - `ManifestSignatureVerifierTest` — valid signature verifies, tampered fails,
   blank fails. Run: `./gradlew :app:testDebugUnitTest --tests "com.jarvis.assistant.runtime.update.*"`.
+
+
+## Stage 2 - Downloader, activation + rollback, Update Center UI
+
+Stage 2 turns the Stage 1 manifest protocol into a working pipeline:
+
+- **UpdateDiscovery** fetches the manifest from JARVIS_RUNTIME_MANIFEST_URL (HTTPS, build-configured), parses and signature-verifies it (Stage 1 verifier), then gates on app version, Android SDK and minimum runtime version. The fetch retries with bounded exponential backoff (200ms / 400ms / 1000ms). Discovery is disabled (reports up-to-date) until the URL is set.
+- **ModuleStore** (EncryptedSharedPreferences) is the registry: the active runtime version, every installed module (id/name/version/type/sha256/file/active), the retained previous version of each module for rollback, and the last-checked timestamp. Stored encrypted at rest.
+- **RuntimeUpdater** is the orchestrator. For each module: download to a staging file with live progress and cooperative cancellation, verify SHA-256, then atomically rename into runtime-modules/<id>/<version>.bin, register and mark active. If a module fails after others activated, it rolls back: re-activates each module's previous version, deletes the failed files, and restores the prior runtime version - the device never runs a half-applied runtime. Manual per-module rollback(id) is also exposed.
+- **RuntimeUpdateViewModel** exposes a StateFlow of UiState (Idle/Checking/UpToDate/Available/Downloading/Installing/Applied/RequiresAppUpdate/Disabled/Error) that the UI collects.
+- **RuntimeUpdateCenterActivity** is the UI: current runtime version, last-checked, Check / Install / Cancel, per-module download progress, release notes + total size, active-module list with per-module Rollback (only shown when a previous version exists).
+- **RuntimeUpdateCheckWorker** (WorkManager, periodic 12h, network-required) discovers in the background and posts a low-importance notification that opens the Update Center. It never downloads or installs automatically - every apply is signature-verified AND user-approved.
+
+Nothing executable is shipped or run as a runtime update; native changes still use the APK path. As with Stage 1, until JARVIS_RUNTIME_SIGNING_PUBLIC_KEY is set, signature verification returns false and no update is ever applied.

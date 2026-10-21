@@ -722,6 +722,58 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/rowRuntimeUpdateCenter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:background="@drawable/bg_jarvis_row_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_jarvis_icon_square">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_settings_plug"
+                        app:tint="?attr/themeAccent"
+                        android:contentDescription="Runtime Update Center" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Runtime Update Center"
+                        android:textColor="?attr/themeTextPrimary"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Signed runtime updates - verified before install"
+                        android:textColor="?attr/themeTextSecondary"
+                        android:textSize="12sp"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- Row 1: API & Connection -->
                 <LinearLayout
                     android:id="@+id/rowApiConnection"

@@ -207,6 +207,10 @@ class SettingsFragment : Fragment() {
             startActivity(Intent(requireContext(), RuntimeUpdatesActivity::class.java))
         }
 
+        binding.rowRuntimeUpdateCenter.setOnClickListener {
+            startActivity(Intent(requireContext(), com.jarvis.assistant.runtime.update.RuntimeUpdateCenterActivity::class.java))
+        }
+
         binding.rowMemory.setOnClickListener {
             startActivity(Intent(requireContext(), MemoryActivity::class.java))
         }
