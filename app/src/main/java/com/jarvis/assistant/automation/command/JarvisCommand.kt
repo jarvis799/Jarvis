@@ -1,0 +1,66 @@
+package com.jarvis.assistant.automation.command
+
+sealed class JarvisCommand {
+    data class PlayYouTube(val query: String) : JarvisCommand()
+    data class SearchYouTube(val query: String) : JarvisCommand()
+    data class OpenApp(val packageName: String) : JarvisCommand()
+    data class WhatsAppMessage(val contact: String, val message: String) : JarvisCommand()
+    data class WhatsAppCall(val contact: String, val video: Boolean) : JarvisCommand()
+    data class WhatsAppDeleteMessage(val contact: String?, val forEveryone: Boolean) : JarvisCommand()
+    object SubscribeChannel : JarvisCommand()
+    object ToggleFullscreen : JarvisCommand()
+    data class Brightness(val level: Int, val isRelative: Boolean = false, val delta: Int = 0) : JarvisCommand()
+    data class Volume(val level: Int, val isRelative: Boolean = false, val delta: Int = 0) : JarvisCommand()
+    data class Flash(val enabled: Boolean) : JarvisCommand()
+    data class Remember(val text: String) : JarvisCommand()
+    data class Forget(val query: String) : JarvisCommand()
+    object WhatDoYouRemember : JarvisCommand()
+    data class SearchWeb(val query: String) : JarvisCommand()
+    data class OpenWebUrls(val urls: List<String>) : JarvisCommand()
+    data class PhoneCall(val contactOrNumber: String) : JarvisCommand()
+    object PauseMedia : JarvisCommand()
+    object ResumeMedia : JarvisCommand()
+    object NextMedia : JarvisCommand()
+    object PreviousMedia : JarvisCommand()
+    data class ConfirmAction(val confirmed: Boolean) : JarvisCommand()
+    data class DisambiguationChoice(val choice: String) : JarvisCommand()
+    object RecallBirthday : JarvisCommand()
+    object RecallFavoriteSong : JarvisCommand()
+    object RecallRoutine : JarvisCommand()
+    object AcceptCall : JarvisCommand()
+    object ShareApkOnTelegram : JarvisCommand()
+    data class SaveContact(val name: String, val number: String) : JarvisCommand()
+    data class CreateWebsite(val brief: String) : JarvisCommand()
+
+    data class Decision(val topic: String) : JarvisCommand()
+
+    object GoToBackground : JarvisCommand()
+
+    object LockPhone : JarvisCommand()
+
+    // DEV STYLE: mic control + phone shutdown ("mic off", "shutdown my phone")
+    object MicOn : JarvisCommand()
+    object MicOff : JarvisCommand()
+    object ShutdownPhone : JarvisCommand()
+
+    data class ToggleOnGuard(val enable: Boolean) : JarvisCommand()
+
+    // DEV STYLE: owner identity, skill lab and parallel-universe planning
+    data class SetUserName(val name: String) : JarvisCommand()
+    data class SetWakeWord(val name: String) : JarvisCommand()
+    object SkillLab : JarvisCommand()
+    data class PlanGoal(val goal: String) : JarvisCommand()
+
+    // DEV STYLE: AI Background Remover (English, Bangla, Hindi)
+    object RemoveBackground : JarvisCommand()
+
+    // DEV STYLE: Macro Center - MacroDroid-style automations built by the macro brain
+    data class CreateMacro(val prompt: String) : JarvisCommand()
+    object ListMacros : JarvisCommand()
+
+    // DEV STYLE: Gmail IMAP integration - voice email commands
+    object ReadLatestEmail : JarvisCommand()
+    object SummarizeEmails : JarvisCommand()
+    data class DraftEmailReply(val instruction: String) : JarvisCommand()
+    object SendEmailReply : JarvisCommand()
+}

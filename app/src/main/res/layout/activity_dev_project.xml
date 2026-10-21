@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/themeBg">
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintTop_toTopOf="parent">
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_jarvis_icon_square"
+            android:src="@drawable/ic_back"
+            app:tint="?attr/themeTextPrimary"
+            android:contentDescription="Back" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Project Studio"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-medium"
+            android:textStyle="bold" />
+    </LinearLayout>    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="28dp">
+            <TextView
+                android:id="@+id/tvStep"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="@drawable/bg_jarvis_card"
+                android:textColor="?attr/themeTextSecondary"
+                android:textSize="12sp"
+                android:text="Describe what you want to build." />
+            <EditText
+                android:id="@+id/etPrompt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="?attr/themeInputBg"
+                android:padding="12dp"
+                android:gravity="top|start"
+                android:hint="Example: amar business er jonno ekta portfolio site banao"
+                android:textColorHint="?attr/themeTextMuted"
+                android:textColor="?attr/themeTextPrimary"
+                android:inputType="textMultiLine"
+                android:minLines="3"
+                android:maxLines="8" />            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/btnMic"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Voice"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <TextView
+                    android:id="@+id/btnPlan"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Create plan"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/llQuestion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/tvQuestion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_jarvis_card"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textSize="14sp"
+                    android:text="" />
+                <EditText
+                    android:id="@+id/etAnswer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="?attr/themeInputBg"
+                    android:padding="12dp"
+                    android:hint="Your answer (or tap Skip)"
+                    android:textColorHint="?attr/themeTextMuted"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:inputType="text" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/btnAnswer"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
+                        android:padding="14dp"
+                        android:background="@drawable/bg_jarvis_pill_button"
+                        android:text="Send answer"
+                        android:textColor="?attr/themeTextPrimary"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true" />
+                    <TextView
+                        android:id="@+id/btnSkip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
+                        android:padding="14dp"
+                        android:background="@drawable/bg_jarvis_chip"
+                        android:text="Skip"
+                        android:textColor="?attr/themeTextPrimary"
+                        android:clickable="true"
+                        android:focusable="true" />
+                    <TextView
+                        android:id="@+id/btnMakePlan"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
+                        android:padding="14dp"
+                        android:background="@drawable/bg_jarvis_chip"
+                        android:text="Plan now"
+                        android:textColor="?attr/themeTextPrimary"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
+            </LinearLayout>
+            <TextView
+                android:id="@+id/tvPlan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:padding="12dp"
+                android:background="@drawable/bg_jarvis_card"
+                android:textColor="?attr/themeTextPrimary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:text="" />
+            <ProgressBar
+                android:id="@+id/pbJob"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:max="100"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tvStage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="?attr/themeTextSecondary"
+                android:textSize="12sp"
+                android:text="" />
+            <TextView
+                android:id="@+id/tvValidation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:padding="12dp"
+                android:background="@drawable/bg_jarvis_card"
+                android:textColor="?attr/themeTextSecondary"
+                android:textSize="12sp"
+                android:text="" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Files"
+                android:textColor="?attr/themeTextPrimary"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginTop="6dp">
+                <LinearLayout
+                    android:id="@+id/llFiles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Activity log"
+                android:textColor="?attr/themeTextPrimary"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="6dp">
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="?attr/themeTextSecondary"
+                    android:textSize="11sp"
+                    android:text="" />
+            </ScrollView>            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/btnExport"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Export ZIP"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <TextView
+                    android:id="@+id/btnPublish"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="GitHub push"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/btnDeploy"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Vercel deploy"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <TextView
+                    android:id="@+id/btnPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Local preview"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/btnCancelJob"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Cancel"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+                <TextView
+                    android:id="@+id/btnStopPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_jarvis_pill_button"
+                    android:text="Stop preview"
+                    android:textColor="?attr/themeTextPrimary"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>            <TextView
+                android:id="@+id/btnClear"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:padding="14dp"
+                android:background="@drawable/bg_jarvis_pill_button"
+                android:text="Clear screen"
+                android:textColor="?attr/themeTextPrimary"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+            <TextView
+                android:id="@+id/tvResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:padding="12dp"
+                android:background="@drawable/bg_jarvis_card"
+                android:textColor="?attr/themeAccent"
+                android:textSize="12sp"
+                android:text="" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Recent runs"
+                android:textColor="?attr/themeTextPrimary"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+            <LinearLayout
+                android:id="@+id/llHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

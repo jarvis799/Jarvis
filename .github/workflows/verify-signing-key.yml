@@ -1,0 +1,27 @@
+name: Verify signing key
+on:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore and verify the permanent signing key
+        uses: ./.github/actions/jarvis-signing
+        with:
+          keystore-base64: ${{ secrets.JARVIS_RELEASE_KEYSTORE_BASE64 }}
+          store-password: ${{ secrets.JARVIS_RELEASE_STORE_PASSWORD }}
+          key-alias: ${{ secrets.JARVIS_RELEASE_KEY_ALIAS }}
+          key-password: ${{ secrets.JARVIS_RELEASE_KEY_PASSWORD }}
+          certificate-sha256: ${{ secrets.JARVIS_RELEASE_CERT_SHA256 }}
+      - name: Show the restored identity
+        env:
+          KS_B64: ${{ secrets.JARVIS_RELEASE_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.JARVIS_RELEASE_STORE_PASSWORD }}
+        run: |
+          printf '%s' "$KS_B64" | base64 -d > /tmp/jarvis-release.p12
+          keytool -list -v -keystore /tmp/jarvis-release.p12 -storepass "$KS_PASS" | grep -E 'Alias name|SHA256' | head -4

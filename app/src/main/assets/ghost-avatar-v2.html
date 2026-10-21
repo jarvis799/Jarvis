@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" style="background:transparent">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghost Avatar</title>
+<style>
+  html, body { height:100%; margin:0; }
+  body { display:flex; align-items:center; justify-content:center; background:transparent; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; touch-action:manipulation; }
+  #root { display:flex; flex-direction:column; align-items:center; gap:16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="./vendor/react.umd.js"></script>
+<script src="./vendor/react-dom.umd.js"></script>
+<script src="./vendor/bot-avatars.js"></script>
+<script>
+  
+  for (const t of ["pointermove", "mousemove", "mouseover", "touchmove"])
+    window.addEventListener(t, e => { if (e.isTrusted) e.stopImmediatePropagation(); }, true);
+
+  window.addEventListener("pointerdown", e => {
+    if (!e.isTrusted) return;
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: e.clientX, clientY: e.clientY,
+      pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true,
+      bubbles: true, cancelable: true
+    }));
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el) el.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: e.clientX, clientY: e.clientY,
+      pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true,
+      bubbles: true, cancelable: true
+    }));
+  }, true);
+
+  try {
+    
+    const { createRoot } = ReactDOM;
+    const { BotAvatar } = window.BotAvatars;
+    const { createElement: h } = React;
+
+    createRoot(document.getElementById("root")).render(
+      h(BotAvatar, { type: "ghost", face: "mouth", size: 64, shading: "fabric", interactive: true })
+    );
+  } catch (e) {
+    document.getElementById("root").textContent = "Load failed: " + e.message + " (internet check karo)";
+  }
+</script>
+</body>
+</html>

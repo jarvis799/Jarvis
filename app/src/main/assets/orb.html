@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en" class="embedded">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>JARVIS — Liquid Glass Core</title>
+<script src="hud/three.min.js"></script>
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.42);
+    --glass-brd: rgba(255, 255, 255, 0.55);
+    --glass-strong: rgba(255, 255, 255, 0.58);
+    --ink: #1a2e05;
+    --ink-soft: #4a5d3a;
+    --ink-faint: #8a9b7a;
+    --accent: #65a30d;
+    --font-mono: "SF Mono", "Roboto Mono", ui-monospace, monospace;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; margin: 0; padding: 0;
+    overflow: hidden; user-select: none; -webkit-user-select: none;
+    font-family: var(--font-ui);
+    color: var(--ink);
+    background: linear-gradient(135deg, #DDF7C7 0%, #F0FCE8 35%, #F2FCE2 60%, #DDF7C7 100%);
+  }
+  .gpu { transform: translateZ(0); will-change: transform; }
+  #hud {
+    position: relative; width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: space-between;
+    z-index: 2;
+    padding: calc(40px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .header-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 10px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-brd);
+    border-radius: 20px;
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow: 0 10px 40px -8px rgba(101,163,13,.18), inset 0 1.5px 1px rgba(255,255,255,.85);
+  }
+  .brand-area { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .reactor-mini-glyph {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, #d9f99d 45%, #65a30d 80%, #3f6212 100%);
+    box-shadow: 0 0 10px rgba(101,163,13,.7), 0 0 18px rgba(101,163,13,.4);
+    animation: miniPulse 2.6s ease-in-out infinite; flex-shrink: 0;
+  }
+  @keyframes miniPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+  .brand-text-col { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
+  .brand-title { font-family: var(--font-mono); font-size: .92rem; font-weight: 800; letter-spacing: .16em; color: var(--ink); }
+  .brand-sub { font-family: var(--font-mono); font-size: .5rem; font-weight: 700; letter-spacing: .14em; color: var(--ink-soft); }
+  .status-pill {
+    display: flex; align-items: center; gap: 7px; padding: 6px 14px;
+    background: rgba(255,255,255,.4); border: 1px solid var(--glass-brd);
+    border-radius: 20px; font-family: var(--font-mono); font-size: .66rem;
+    font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    transition: background .3s, box-shadow .3s; flex-shrink: 0;
+  }
+  .live-clock { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .08em; }
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .hdr-btn {
+    width: 34px; height: 34px; border-radius: 12px;
+    background: rgba(255,255,255,.42); border: 1px solid var(--glass-brd);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-soft); cursor: pointer;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    transition: transform .15s, background-color .2s;
+  }
+  .hdr-btn:active { transform: scale(.9); background: rgba(255,255,255,.7); }
+  .hdr-btn svg { width: 17px; height: 17px; fill: currentColor; }
+  .orb-center-stage {
+    position: relative; width: 100%; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: auto;
+  }
+  .reactor-housing {
+    position: relative; width: 300px; height: 300px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  #blob-canvas { width: 100%; height: 100%; }
+  .orb-caption {
+    margin-top: 26px; font-family: var(--font-mono); font-size: .72rem;
+    font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--ink-soft); text-shadow: 0 0 10px rgba(101,163,13,.3);
+    transition: color .3s;
+  }
+  .control-dock {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px 16px;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-brd);
+    border-radius: 28px;
+    backdrop-filter: blur(32px) saturate(190%);
+    -webkit-backdrop-filter: blur(32px) saturate(190%);
+    box-shadow: 0 16px 50px -10px rgba(101,163,13,.22), inset 0 1.5px 1px rgba(255,255,255,.9);
+  }
+  .dock-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 14px; border: none; background: transparent;
+    color: var(--ink-soft); cursor: pointer; border-radius: 16px;
+    transition: background .2s, color .2s;
+  }
+  .dock-btn:active { background: rgba(101,163,13,.12); }
+  .dock-btn svg { width: 22px; height: 22px; fill: currentColor; }
+  .dock-label { font-family: var(--font-mono); font-size: .52rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .dock-btn.btn-active { color: var(--accent); }
+  .center-mic-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #d9f99d, #65a30d);
+    border: 2px solid rgba(255,255,255,.6);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; cursor: pointer; flex-shrink: 0;
+    box-shadow: 0 6px 20px rgba(101,163,13,.45), inset 0 1.5px 1px rgba(255,255,255,.5);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .center-mic-btn:active { transform: scale(.92); }
+  .center-mic-btn svg { width: 26px; height: 26px; fill: currentColor; }
+  #hud[data-state="listening"] .center-mic-btn { box-shadow: 0 0 24px rgba(63,182,224,.6), 0 6px 20px rgba(63,182,224,.4); }
+  #hud[data-state="speaking"] .center-mic-btn { box-shadow: 0 0 24px rgba(245,158,11,.6), 0 6px 20px rgba(245,158,11,.4); }
+  .reactor-housing::before { content: ''; position: absolute; inset: 17%; border-radius: 44% 56% 61% 39%; background: radial-gradient(circle at 30% 25%, #ffffff, #d9f99d 36%, #84cc16 72%, #3f6212); box-shadow: inset 0 3px 14px #ffffff, 0 15px 48px #84cc1644; animation: liquidMorph 5s ease-in-out infinite alternate; }
+  .reactor-housing.rendered::before { display: none; }
+  #blob-canvas { position: relative; z-index: 1; touch-action: none; }
+  @keyframes liquidMorph { to { border-radius: 61% 39% 44% 56%; transform: rotate(16deg) scale(1.06); } }
+  html.embedded, body.embedded, body.embedded #hud { background: transparent; padding: 0; }
+  body.embedded .header-bar, body.embedded footer, body.embedded .orb-caption { display: none; }
+  body.embedded .orb-center-stage { width: 100%; height: 100%; min-height: 0; }
+  body.embedded .reactor-housing { width: min(100vw, 100vh); height: min(100vw, 100vh); max-width: 100%; max-height: 100%; }
+  @media (max-width: 420px) { .header-bar { padding: 10px; gap: 6px; } .live-clock { display: none; } .dock-btn { padding: 8px 9px; } }
+</style>
+</head>
+<body class="embedded">
+<div id="hud" data-state="idle">
+  <header class="header-bar gpu">
+    <div class="brand-area" id="core-mark-btn">
+      <div class="reactor-mini-glyph"></div>
+      <div class="brand-text-col">
+        <div class="brand-title" style="display:none">JARVIS</div>
+        <div class="brand-sub">LIQUID GLASS</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">ONLINE</span>
+    </div>
+    <div class="live-clock" id="live-clock">--:--</div>
+    <div class="header-actions">
+      <button class="hdr-btn" id="settings-trigger-btn" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
+      <button class="hdr-btn" id="hdr-settings-btn" title="Config">
+        <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.06-.65.06-.98 0-.33-.02-.66-.06-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.06.65-.06.98 0 .33.02.66.06.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main class="orb-center-stage">
+    <div class="reactor-housing gpu" id="reactor-assembly">
+      <canvas id="blob-canvas"></canvas>
+    </div>
+    <div class="orb-caption" id="orb-caption">SYSTEM ONLINE &bull; TAP TO SPEAK</div>
+  </main>
+  <footer style="width:100%;">
+    <nav class="control-dock gpu">
+      <button class="dock-btn" id="btn-power" title="Sleep / Wake">
+        <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A7.92 7.92 0 0 1 20 12c0 4.42-3.58 8-8 8s-8-3.58-8-8c0-2.45 1.12-4.64 2.89-6.09L5.47 4.49A9.957 9.957 0 0 0 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-2.76-1.12-5.26-2.93-7.07l-.24-.76z"/></svg>
+        <span class="dock-label" id="label-power">Active</span>
+      </button>
+      <button class="dock-btn" id="btn-vision" title="Screen Vision">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        <span class="dock-label" id="label-vision">Vision</span>
+      </button>
+      <button class="center-mic-btn gpu" id="btn-mic" title="Voice Input">
+        <svg id="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      </button>
+      <button class="dock-btn" id="btn-history" title="Chat History">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-2-4H7v-2h10v2zm0-4H7V9h10v2z"/></svg>
+        <span class="dock-label">History</span>
+      </button>
+      <button class="dock-btn" id="btn-settings-bottom" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span class="dock-label">Config</span>
+      </button>
+    </nav>
+  </footer>
+</div>
+<script type="x-shader/x-vertex" id="blob-vertex">
+varying vec2 vUv; varying vec3 v_normal; varying vec3 v_position;
+uniform float u_time; uniform float u_amp; uniform float u_speed; uniform float u_audio; uniform float u_progress;
+vec4 permute(vec4 x){ return mod(((x*34.0)+1.0)*x,289.0); }
+vec4 taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0); const vec4 D = vec4(0.0,0.5,1.0,2.0);
+  vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g; vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + 1.0*C.xxx; vec3 x2 = x0 - i2 + 2.0*C.xxx; vec3 x3 = x0 - 1.0 + 3.0*C.xxx;
+  i = mod(i,289.0);
+  vec4 p = permute(permute(permute(i.z + vec4(0.0,i1.z,i2.z,1.0)) + i.y + vec4(0.0,i1.y,i2.y,1.0)) + i.x + vec4(0.0,i1.x,i2.x,1.0));
+  float n_ = 1.0/7.0; vec3 ns = n_*D.wyz - D.xzx;
+  vec4 j = p - 49.0*floor(p*ns.z*ns.z);
+  vec4 x_ = floor(j*ns.z); vec4 y_ = floor(j - 7.0*x_);
+  vec4 x = x_*ns.x + ns.yyyy; vec4 y = y_*ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x); vec3 p1 = vec3(a0.zw, h.y); vec3 p2 = vec3(a1.xy, h.z); vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m*m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}
+void main(){
+  vUv = uv; v_normal = normalize(normalMatrix * normal);
+  float n = snoise(position*1.4 + u_time*u_speed*0.24);
+  float amp = u_amp + u_audio*0.14;
+  vec3 newPos = position + normal * n * amp * u_progress;
+  v_position = newPos;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+}
+</script>
+<script type="x-shader/x-fragment" id="blob-fragment">
+varying vec2 vUv; varying vec3 v_normal; varying vec3 v_position;
+uniform float u_time; uniform vec3 u_cA; uniform vec3 u_cB; uniform vec3 u_cC;
+void main(){
+  float m1 = sin(v_position.x*1.4 + u_time*0.4)*0.5 + 0.5;
+  float m2 = cos(v_position.y*1.8 - u_time*0.36)*0.5 + 0.5;
+  vec3 base = mix(u_cA, u_cB, m1);
+  base = mix(base, u_cC, m2*0.7);
+  vec3 lightDir = normalize(vec3(1.0, 1.5, 2.0));
+  vec3 normalDirection = normalize(v_normal);
+  float diff = max(dot(normalDirection, lightDir), 0.0);
+  float rim = pow(1.0 - abs(normalDirection.z), 3.0);
+  float specular = pow(max(dot(reflect(-lightDir, normalDirection), vec3(0.0, 0.0, 1.0)), 0.0), 26.0);
+  vec3 glass = mix(base * (0.76 + diff*0.24), vec3(1.0), min(0.85, rim*0.65 + specular*0.85));
+  gl_FragColor = vec4(glass, 0.92);
+}
+</script>
+<script>
+(function(){
+  'use strict';
+  var hud = document.getElementById('hud');
+  var statusText = document.getElementById('status-text');
+  var statusDot = document.getElementById('status-dot');
+  var liveClock = document.getElementById('live-clock');
+  var orbCaption = document.getElementById('orb-caption');
+  var reactorAssembly = document.getElementById('reactor-assembly');
+  var btnMic = document.getElementById('btn-mic');
+  var btnPower = document.getElementById('btn-power');
+  var labelPower = document.getElementById('label-power');
+  var btnVision = document.getElementById('btn-vision');
+  var labelVision = document.getElementById('label-vision');
+  var btnHistory = document.getElementById('btn-history');
+  var btnSettings = document.getElementById('settings-trigger-btn');
+  var btnSettingsBottom = document.getElementById('btn-settings-bottom');
+  var hdrSettings = document.getElementById('hdr-settings-btn');
+  var coreMark = document.getElementById('core-mark-btn');
+  var currentState = 'idle';
+
+  function tween(target, props, duration){
+    var ease = function(t){ return -(Math.cos(Math.PI*t)-1)/2; };
+    var start = {};
+    for (var k in props){
+      if (typeof props[k] === 'number') start[k] = target[k];
+      else if (typeof props[k] === 'object' && target[k]){
+        start[k] = {};
+        for (var s in props[k]) start[k][s] = target[k][s];
+      }
+    }
+    var t0 = performance.now();
+    function step(){
+      var t = Math.min((performance.now()-t0)/(duration*1000), 1);
+      var e = ease(t);
+      for (var k in props){
+        if (typeof props[k] === 'number') target[k] = start[k] + (props[k]-start[k])*e;
+        else if (typeof props[k] === 'object' && target[k]){
+          for (var s in props[k]) target[k][s] = start[k][s] + (props[k][s]-start[k][s])*e;
+        }
+      }
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  var STATES = {
+    idle:      {cA:[0.90,0.95,0.80], cB:[0.65,0.80,0.30], cC:[0.40,0.60,0.10], amp:0.22, speed:1.2, scale:1.0,  dot:'#65a30d', cap:'SYSTEM ONLINE &bull; TAP TO SPEAK', st:'ONLINE'},
+    listening: {cA:[0.72,0.95,1.0],  cB:[0.50,0.85,0.94], cC:[0.31,0.72,0.88], amp:0.30, speed:2.0, scale:1.06, dot:'#3fb6e0', cap:'TRANSCRIBING VOICE INPUT...',  st:'LISTENING'},
+    thinking:  {cA:[0.85,0.77,1.0], cB:[0.69,0.61,0.94], cC:[0.54,0.43,0.88], amp:0.34, speed:3.0, scale:1.09, dot:'#8a6fe0', cap:'PROCESSING REQUEST...',         st:'ANALYZING'},
+    speaking:  {cA:[1.0,0.90,0.75],  cB:[1.0,0.75,0.40],  cC:[0.95,0.62,0.20], amp:0.28, speed:1.6, scale:1.05, dot:'#f59e0b', cap:'JARVIS TRANSMITTING AUDIO',     st:'TRANSMITTING'}
+  };
+
+  var scene, camera, renderer, blob, uniforms;
+  var rotationX = 0, rotationY = 0;
+  function initBlob(){
+    var canvas = document.getElementById('blob-canvas');
+    if (typeof THREE === 'undefined') return;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.z = 6;
+    try { renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true, alpha: true}); }
+    catch (error) { console.warn('WebGL unavailable; showing the animated glass orb.', error); return; }
+    reactorAssembly.classList.add('rendered');
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    uniforms = {
+      u_time: {value: 0}, u_progress: {value: 1.0}, u_amp: {value: 0.22},
+      u_speed: {value: 1.2}, u_audio: {value: 0},
+      u_cA: {value: new THREE.Vector3(STATES.idle.cA[0], STATES.idle.cA[1], STATES.idle.cA[2])},
+      u_cB: {value: new THREE.Vector3(STATES.idle.cB[0], STATES.idle.cB[1], STATES.idle.cB[2])},
+      u_cC: {value: new THREE.Vector3(STATES.idle.cC[0], STATES.idle.cC[1], STATES.idle.cC[2])}
+    };
+    var geo = new THREE.SphereGeometry(1.6, 128, 128);
+    var mat = new THREE.ShaderMaterial({
+      vertexShader: document.getElementById('blob-vertex').textContent,
+      fragmentShader: document.getElementById('blob-fragment').textContent,
+      uniforms: uniforms, transparent: true
+    });
+    blob = new THREE.Mesh(geo, mat);
+    scene.add(blob);
+    resizeBlob();
+    animateBlob();
+  }
+  function resizeBlob(){
+    if (!renderer) return;
+    var w = Math.max(reactorAssembly.clientWidth, 1), h = Math.max(reactorAssembly.clientHeight, 1);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  var t0 = performance.now();
+  function animateBlob(){
+    requestAnimationFrame(animateBlob);
+    if (!uniforms) return;
+    var t = (performance.now() - t0) / 1000;
+    uniforms.u_time.value = t;
+    uniforms.u_progress.value = 1.0 + 0.15 * Math.sin(t * 0.8);
+    if (blob){ blob.rotation.x = t * 0.05 + rotationX; blob.rotation.y = t * 0.08 + rotationY; }
+    if (renderer) renderer.render(scene, camera);
+  }
+  window.addEventListener('resize', resizeBlob);
+  if (window.ResizeObserver) new ResizeObserver(resizeBlob).observe(reactorAssembly);
+
+  function applyState(s, audioLevel){
+    var cfg = STATES[s] || STATES.idle;
+    currentState = s;
+    hud.dataset.state = s;
+    if (uniforms){
+      tween(uniforms.u_amp, {value: cfg.amp}, 0.6);
+      tween(uniforms.u_speed, {value: cfg.speed}, 0.6);
+      tween(uniforms.u_cA.value, {x: cfg.cA[0], y: cfg.cA[1], z: cfg.cA[2]}, 0.6);
+      tween(uniforms.u_cB.value, {x: cfg.cB[0], y: cfg.cB[1], z: cfg.cB[2]}, 0.6);
+      tween(uniforms.u_cC.value, {x: cfg.cC[0], y: cfg.cC[1], z: cfg.cC[2]}, 0.6);
+    }
+    if (blob) tween(blob.scale, {x: cfg.scale, y: cfg.scale, z: cfg.scale}, 0.6);
+    statusText.textContent = cfg.st;
+    orbCaption.innerHTML = cfg.cap;
+    orbCaption.style.color = cfg.dot;
+    statusDot.style.background = cfg.dot;
+    statusDot.style.boxShadow = '0 0 10px ' + cfg.dot;
+    if (typeof audioLevel === 'number' && uniforms) uniforms.u_audio.value = Math.min(audioLevel, 1);
+  }
+
+  function renderLocalClock(){
+    if (!liveClock) return;
+    var now = new Date(); var h = now.getHours();
+    var m = String(now.getMinutes()).padStart(2, '0');
+    var ap = h >= 12 ? 'PM' : 'AM'; h = h % 12; h = h ? h : 12;
+    liveClock.textContent = h + ':' + m + ' ' + ap;
+  }
+  renderLocalClock(); setInterval(renderLocalClock, 1000);
+
+  window.setOrbState = function(state, audioLevel){
+    if (!state) return;
+    applyState(state.toLowerCase(), audioLevel);
+  };
+  window.updateState = window.setOrbState;
+  window.setAudioLevel = function(level){
+    if (uniforms && (currentState === 'listening' || currentState === 'speaking'))
+      uniforms.u_audio.value = Math.min(level, 1);
+  };
+  window.setAudioFrequency = function(amp, pitchHz, bass, mid, high){
+    if (uniforms && currentState === 'speaking')
+      uniforms.u_audio.value = Math.min((bass||0)*0.5 + (mid||0)*0.3, 1);
+  };
+  window.setConnectionStatus = function(status){ if (status) statusText.textContent = status.toUpperCase(); };
+  window.updateConnectionStatus = window.setConnectionStatus;
+  window.setLiveTime = function(){ renderLocalClock(); };
+  window.updateLiveTime = window.setLiveTime;
+  window.setPowerState = function(isOn){
+    if (isOn){ btnPower.classList.add('btn-active'); labelPower.textContent = 'Active'; labelPower.style.color = 'var(--accent)'; }
+    else { btnPower.classList.remove('btn-active'); labelPower.textContent = 'Sleep'; labelPower.style.color = 'var(--ink-soft)'; }
+  };
+  window.updatePowerState = window.setPowerState;
+  window.setMicMuted = function(isMuted){ btnMic.style.opacity = isMuted ? 0.55 : 1; };
+  window.updateMicMuted = window.setMicMuted;
+  window.setScreenShareState = function(isSharing){
+    if (isSharing){ btnVision.classList.add('btn-active'); labelVision.textContent = 'Vision On'; labelVision.style.color = 'var(--accent)'; }
+    else { btnVision.classList.remove('btn-active'); labelVision.textContent = 'Vision'; labelVision.style.color = 'var(--ink-soft)'; }
+  };
+  window.updateScreenShareState = window.setScreenShareState;
+  // HomeFragment uses this contract, not OrbHelper. Both native entry points share the same orb.
+  window.JarvisOrb = {
+    setState: window.setOrbState,
+    setExternalAudio: function(amp, bass, high){ window.setAudioLevel(Math.max(amp || 0, bass || 0, high || 0)); },
+    setTheme: function(theme){
+      var palettes = {light: [[0.90,0.95,0.80],[0.65,0.80,0.30],[0.40,0.60,0.10]], dark: [[0.72,0.95,1.0],[0.34,0.69,0.85],[0.31,0.43,0.75]], red: [[1.0,0.85,0.87],[0.95,0.38,0.45],[0.67,0.16,0.26]], sunset: [[1.0,0.90,0.75],[1.0,0.65,0.42],[0.80,0.35,0.50]]};
+      var colors = palettes[theme] || palettes.light;
+      STATES.idle.cA = colors[0]; STATES.idle.cB = colors[1]; STATES.idle.cC = colors[2];
+      if (currentState === 'idle') applyState('idle', 0);
+    },
+    setBackground: function(hex){
+      if (!/^#[0-9a-f]{6}$/i.test(hex)) return;
+      var color = parseInt(hex.slice(1), 16), rgb = [(color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255];
+      STATES.idle.cA = rgb.map(function(value){ return value * 0.3 + 0.7; }); STATES.idle.cB = rgb; STATES.idle.cC = rgb.map(function(value){ return value * 0.6; });
+      if (currentState === 'idle') applyState('idle', 0);
+    },
+    startListening: function(){ window.setOrbState('listening'); },
+    startThinking: function(){ window.setOrbState('thinking'); },
+    startSpeaking: function(){ window.setOrbState('speaking'); },
+    stopSpeaking: function(){ window.setOrbState('idle'); }
+  };
+  var pointerX = 0, pointerY = 0, dragging = false;
+  reactorAssembly.addEventListener('pointerdown', function(event){ dragging = true; pointerX = event.clientX; pointerY = event.clientY; });
+  reactorAssembly.addEventListener('pointermove', function(event){ if (dragging && blob) { rotationY += (event.clientX - pointerX) * 0.01; rotationX += (event.clientY - pointerY) * 0.01; pointerX = event.clientX; pointerY = event.clientY; } });
+  window.addEventListener('pointerup', function(){ dragging = false; });
+  window.addEventListener('pointercancel', function(){ dragging = false; });
+  window.updateLiveUserTranscript = function(){};
+  window.updateLiveAssistantResponse = function(){};
+  window.finalizeLiveTurn = function(){};
+  window.syncChatTurns = function(){};
+
+  function callBridge(fn){ if (window.JarvisBridge && window.JarvisBridge[fn]) window.JarvisBridge[fn](); }
+  reactorAssembly.addEventListener('click', function(){ callBridge('onMicClicked'); });
+  btnMic.addEventListener('click', function(){ callBridge('onMicClicked'); });
+  btnPower.addEventListener('click', function(){ callBridge('onPowerClicked'); });
+  btnVision.addEventListener('click', function(){ callBridge('onScreenShareClicked'); });
+  btnHistory.addEventListener('click', function(){ callBridge('onHistoryClicked'); });
+  if (coreMark) coreMark.addEventListener('click', function(){ callBridge('onHistoryClicked'); });
+  function openSettings(){ callBridge('onSettingsClicked'); }
+  if (hdrSettings) hdrSettings.addEventListener('click', openSettings);
+  if (btnSettings) btnSettings.addEventListener('click', openSettings);
+  if (btnSettingsBottom) btnSettingsBottom.addEventListener('click', openSettings);
+
+  initBlob();
+  applyState('idle', 0);
+})();
+</script>
+</body>
+</html>

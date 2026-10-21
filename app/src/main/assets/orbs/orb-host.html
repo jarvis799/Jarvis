@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jarvis Orb</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+#stage{position:fixed;inset:0;display:block;border:0;width:100%;height:100%;background:transparent}
+</style></head>
+<body>
+<iframe id="stage" allow="microphone; autoplay" title="Jarvis orb"></iframe>
+<script>
+(function () {
+  var FILES = { jarvis1: "jarvis1.html", "voice-orb": "voice-orb.html", "face-flow": "face-flow/index.html" };
+  var frame = document.getElementById("stage");
+  var current = null, theme = "light", accent = "";
+  function query() {
+    var parts = (location.search || "").replace(/^\?/, "").split("&"), out = {};
+    for (var i = 0; i < parts.length; i++) { var kv = parts[i].split("="); if (kv[0]) out[kv[0]] = decodeURIComponent(kv[1] || ""); }
+    return out;
+  }
+  var boot = query();
+  if (boot.theme) theme = boot.theme;
+  if (boot.accent) accent = boot.accent;
+  function urlFor(id) {
+    var u = FILES[id] + "?embedded=1&theme=" + encodeURIComponent(theme);
+    if (accent) u += "&accent=" + encodeURIComponent(accent);
+    return u;
+  }
+  function show(id) {
+    if (!FILES[id]) id = "jarvis1";
+    if (current === id) return;
+    current = id;
+    frame.src = urlFor(id);
+  }
+  function post(message) { try { frame.contentWindow.postMessage(message, "*"); } catch (e) {} }
+  window.JarvisVisual = { set: show, current: function () { return current; } };
+  window.JarvisOrb = {
+    setState: function (state) { post({ type: "jarvis:state", state: state }); },
+    setExternalAudio: function (amp, bass, high) { post({ type: "jarvis:audio", amp: amp, bass: bass, high: high }); },
+    setTheme: function (key) { if (!key || key === theme) return; theme = key; accent = ""; if (current) frame.src = urlFor(current); },
+    setBackground: function (hex) { if (!hex || hex === accent) return; accent = hex; if (current) frame.src = urlFor(current); },
+    say: function (text) { if (text) post({ type: "jarvis:say", text: String(text) }); },
+    answerEnd: function () { post({ type: "jarvis:say-end" }); }
+  };
+  show(boot.orb || "jarvis1");
+})();
+</script>
+</body></html>

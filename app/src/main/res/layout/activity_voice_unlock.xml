@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="Voice Unlock"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Say the unlock phrase while the phone is locked and Jarvis opens Android's own unlock screen. On a secured phone Android still asks for your PIN, password or fingerprint: no app is allowed to bypass that."
+            android:textColor="?attr/themeTextMuted"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_jarvis_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchVoiceUnlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Voice unlock"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:lineSpacingExtra="4dp"
+                android:textColor="?attr/themeTextMuted"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnReady"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Keep Jarvis ready on the lock screen" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="SAY IT LIKE THIS"
+            android:textColor="?attr/themeTextMuted"
+            android:textSize="11sp"
+            android:letterSpacing="0.08"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvPhrases"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="6dp"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="Hands-free unlock: Android only lets a voice open the phone by itself when the phone has no secure lock, or when Google's own Voice Match is switched on from the system settings."
+            android:textColor="?attr/themeTextMuted"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

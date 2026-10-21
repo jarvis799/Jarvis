@@ -1,0 +1,39 @@
+name: One-time signing key provisioning
+on:
+  push:
+    paths:
+      - '.github/workflows/one-time-signing-key.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Create the single permanent publisher keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          ALIAS="jarvis-release"
+          STORE_PASS="$(openssl rand -hex 16)"
+          KEY_PASS="$STORE_PASS"
+          keytool -genkeypair -noprompt \
+            -keystore jarvis-release.p12 -storetype PKCS12 \
+            -alias "$ALIAS" -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
+            -dname "CN=DEV STYLE, OU=Jarvis Assistant, O=DEV STYLE, L=Dhaka, ST=Dhaka, C=BD"
+          BASE64_KS="$(base64 -w0 jarvis-release.p12)"
+          SHA="$(keytool -list -v -keystore jarvis-release.p12 -storepass "$STORE_PASS" -alias "$ALIAS" | sed -n 's/.*SHA256: //p' | tr -d ':' | tr -d ' \r' | tr '[:lower:]' '[:upper:]')"
+          echo "-----JARVIS-SIGNING-VALUES-----"
+          echo "JARVIS_RELEASE_KEYSTORE_BASE64=$BASE64_KS"
+          echo "JARVIS_RELEASE_STORE_PASSWORD=$STORE_PASS"
+          echo "JARVIS_RELEASE_KEY_ALIAS=$ALIAS"
+          echo "JARVIS_RELEASE_KEY_PASSWORD=$KEY_PASS"
+          echo "JARVIS_RELEASE_CERT_SHA256=$SHA"
+          echo "JARVIS_KEYSTORE_BYTES=$(stat -c%s jarvis-release.p12)"
+          echo "-----END-JARVIS-SIGNING-VALUES-----"

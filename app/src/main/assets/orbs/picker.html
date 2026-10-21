@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jarvis Visual Core</title>
+<style>
+ :root{color-scheme:dark;--ink:#eaffd6;--mute:#a8c98a;--line:rgba(255,255,255,.11);--card:rgba(255,255,255,.045);
+ --p1:#bef264;--p2:#65a30d;--p3:#0ea472}
+ *{box-sizing:border-box}
+ body{margin:0;padding:18px 16px 26px;background:radial-gradient(120% 70% at 50% -10%,rgba(163,230,53,.20),transparent 60%),radial-gradient(90% 60% at 100% 0%,rgba(14,164,114,.18),transparent 55%),#06140b;
+   color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+ .kicker{font-size:11px;letter-spacing:.24em;color:var(--mute);text-align:center}
+ h1{margin:4px 0 2px;font-size:25px;text-align:center;font-weight:800;letter-spacing:-.02em}
+ h1 span{background:linear-gradient(92deg,var(--p1),var(--p2) 55%,var(--p3));-webkit-background-clip:text;background-clip:text;color:transparent}
+ .sub{margin:0 auto 16px;max-width:330px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--mute)}
+ .stage{position:relative;border-radius:22px;padding:1px;background:linear-gradient(140deg,rgba(190,242,100,.8),rgba(101,163,13,.6) 45%,rgba(14,164,114,.62))}
+ .stage-in{position:relative;border-radius:21px;overflow:hidden;background:#04120a;aspect-ratio:1/1}
+ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent}
+ .sheen{pointer-events:none;position:absolute;inset:0;border-radius:21px;background:linear-gradient(180deg,rgba(255,255,255,.06),transparent 32%)}
+ .meta{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 16px;font-size:13px}
+ .badge{font-size:10px;letter-spacing:.14em;font-weight:700;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--p1);background:rgba(190,242,100,.10)}
+ .grid{display:grid;grid-template-columns:1fr;gap:10px}
+ .card{display:flex;gap:12px;align-items:center;text-align:left;width:100%;padding:12px;border-radius:16px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:inherit;transition:border-color .18s,transform .18s,background .18s}
+ .card:active{transform:scale(.99)}
+ .card[aria-pressed="true"]{border-color:rgba(255,138,210,.6);background:linear-gradient(120deg,rgba(255,138,210,.12),rgba(154,123,255,.1))}
+ .thumb{width:52px;height:52px;border-radius:14px;flex:0 0 52px;border:1px solid var(--line)}
+ .t1{background:radial-gradient(circle at 50% 50%,rgba(255,185,105,.95),rgba(255,150,214,.65) 42%,rgba(8,8,13,.2) 72%)}
+ .t2{background:radial-gradient(circle at 50% 50%,rgba(94,234,212,.9),rgba(122,132,255,.6) 45%,rgba(8,8,13,.2) 74%)}
+ .t3{background:conic-gradient(from 210deg,rgba(154,123,255,.9),rgba(79,214,230,.75),rgba(255,138,210,.8),rgba(154,123,255,.9))}
+ .t4{background:radial-gradient(circle at 50% 45%,rgba(163,230,53,.95),rgba(101,163,13,.55) 45%,rgba(6,20,11,.25) 75%)}
+ .cname{font-size:14.5px;font-weight:700}
+ .ctag{font-size:9.5px;letter-spacing:.13em;margin-left:7px;color:var(--p3);border:1px solid var(--line);border-radius:999px;padding:2px 7px;vertical-align:1px}
+ .cline{font-size:11.5px;line-height:1.45;color:var(--mute);margin-top:3px}
+ .apply{position:sticky;bottom:0;margin-top:16px;width:100%;padding:15px;border:0;border-radius:16px;font-size:13.5px;font-weight:800;letter-spacing:.1em;
+  color:#06210f;background:linear-gradient(92deg,var(--p1),var(--p2) 55%,var(--p3));box-shadow:0 12px 30px rgba(101,163,13,.32)}
+ .apply[disabled]{opacity:.55;box-shadow:none}
+ .hint{margin-top:9px;text-align:center;font-size:11px;color:var(--mute)}
+ .toast{position:fixed;left:50%;bottom:84px;transform:translate(-50%,14px);opacity:0;pointer-events:none;transition:.24s;
+  background:rgba(12,12,18,.94);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:10px 15px;border-radius:999px}
+ .toast.on{opacity:1;transform:translate(-50%,0)}
+</style></head>
+<body>
+ <div class="kicker">JARVIS VISUAL CORE</div>
+ <h1>Orb <span>Studio</span></h1>
+ <p class="sub">Pick the presence Jarvis wears on the home screen. Premium visuals render live — on-device.</p>
+ <div class="stage"><div class="stage-in"><iframe id="prev" title="Live orb preview"></iframe><div class="sheen"></div></div></div>
+ <div class="meta"><span class="badge" id="badge">DEFAULT</span><span id="name">Speaking Orb</span></div>
+ <div class="grid" id="grid"></div>
+ <button class="apply" id="apply">APPLY TO HOME SCREEN</button>
+ <div class="hint">Tap an orb to preview it, then apply. Nothing leaves your device.</div>
+ <div class="toast" id="toast"></div>
+<script>
+ (function () {
+  var ORBS = [
+   { id: "jarvis1", name: "Speaking Orb", tag: "DEFAULT", file: "jarvis1.html", cls: "t1",
+     line: "Reactive particle sphere that listens, thinks and speaks with live captions." },
+   { id: "voice-orb", name: "Voice Orb", tag: "IMMERSIVE", file: "voice-orb.html", cls: "t2",
+     line: "Four-state orb — idle, listening, thinking, speaking — driven by live audio bands." },
+   { id: "face-flow", name: "Face Flow 3D", tag: "PREMIUM 3D", file: "face-flow/index.html", cls: "t3",
+     line: "Lifelike three-dimensional face with motion flow and voice-timed dialogue." },
+   { id: "hud-hologram", name: "HUD Hologram", tag: "HOLOGRAM", file: "../hud/index.html", cls: "t4",
+     line: "Reactor hologram HUD with live clock, connection status and captions." }
+  ];
+  var selected = "jarvis1", applied = null, prev = document.getElementById("prev");
+  var grid = document.getElementById("grid"), badge = document.getElementById("badge"),
+      nameEl = document.getElementById("name"), applyBtn = document.getElementById("apply"), toastEl = document.getElementById("toast");
+  function byId(id) { for (var i = 0; i < ORBS.length; i++) if (ORBS[i].id === id) return ORBS[i]; return null; }
+  function toast(text) { toastEl.textContent = text; toastEl.classList.add("on"); setTimeout(function () { toastEl.classList.remove("on"); }, 1700); }
+  function refreshApply() { applyBtn.disabled = (applied === selected); }
+  function select(id, scroll) {
+    var orb = byId(id) || ORBS[0];
+    selected = orb.id;
+    prev.src = orb.file;
+    badge.textContent = orb.tag;
+    nameEl.textContent = orb.name;
+    var cards = grid.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) cards[i].setAttribute("aria-pressed", String(cards[i].getAttribute("data-id") === orb.id));
+    refreshApply();
+    if (scroll === false) return;
+  }
+  ORBS.forEach(function (orb) {
+    var card = document.createElement("button");
+    card.className = "card";
+    card.type = "button";
+    card.setAttribute("data-id", orb.id);
+    card.setAttribute("aria-pressed", "false");
+    card.innerHTML = '<span class="thumb ' + orb.cls + '"></span><span style="flex:1"><span class="cname">' + orb.name +
+      '</span><span class="ctag">' + orb.tag + '</span><span class="cline">' + orb.line + '</span></span>';
+    card.addEventListener("click", function () { select(orb.id); });
+    grid.appendChild(card);
+  });
+  applyBtn.addEventListener("click", function () {
+    applied = selected;
+    refreshApply();
+    if (window.OrbVisualBridge && window.OrbVisualBridge.selectOrb) window.OrbVisualBridge.selectOrb(selected);
+    var orb = byId(selected);
+    toast(orb.name + " applied");
+  });
+  window.setCurrentOrb = function (id) { applied = id; select(id); refreshApply(); };
+  select("jarvis1");
+  if (window.OrbVisualBridge && window.OrbVisualBridge.pageReady) window.OrbVisualBridge.pageReady();
+ })();
+</script>
+</body></html>
