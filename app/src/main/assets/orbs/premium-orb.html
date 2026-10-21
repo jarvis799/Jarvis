@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jarvis Premium Orb</title>
+<style>
+ html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+ :root{--lime:#a3e635;--lime-2:#65a30d;--lime-3:#0ea472}
+ *{box-sizing:border-box}
+ #stage{position:fixed;inset:0;display:grid;place-items:center}
+ .wrap{position:relative;width:min(86vw,86vh);aspect-ratio:1/1}
+ svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+ .core{position:absolute;inset:38%;border-radius:50%;
+   background:radial-gradient(circle at 50% 45%,#ecfccb,var(--lime) 42%,var(--lime-2) 70%,transparent 78%);
+   box-shadow:0 0 40px 8px rgba(163,230,53,.55),inset 0 0 22px rgba(255,255,255,.5)}
+ .halo{position:absolute;inset:6%;border-radius:50%;background:radial-gradient(circle,rgba(163,230,53,.16),transparent 64%);filter:blur(6px)}
+ .caption{position:absolute;left:0;right:0;bottom:8%;text-align:center;font:700 12px/1.2 system-ui;letter-spacing:.22em;color:var(--lime);text-shadow:0 0 10px rgba(163,230,53,.6);opacity:.92}
+ .ring{transform-origin:center;animation:spin var(--d) linear infinite}
+ .ring.rev{animation-direction:reverse}
+ @keyframes spin{to{transform:rotate(360deg)}}
+ .pulse{animation:pulse 2.6s ease-in-out infinite}
+ @keyframes pulse{0%,100%{opacity:.55;transform:scale(.97)}50%{opacity:1;transform:scale(1.03)}}
+ .scan{animation:scan 3.4s linear infinite}
+ @keyframes scan{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-560}}
+ @media (prefers-reduced-motion:reduce){.ring,.pulse,.scan{animation:none}}
+</style></head>
+<body>
+<div id="stage"><div class="wrap">
+  <div class="halo pulse"></div>
+  <svg viewBox="0 0 200 200">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bef264"/><stop offset=".5" stop-color="#a3e635"/><stop offset="1" stop-color="#65a30d"/>
+    </linearGradient></defs>
+    <circle class="ring" cx="100" cy="100" r="92" fill="none" stroke="rgba(163,230,53,.22)" stroke-width="1.2" style="--d:26s"/>
+    <circle class="ring rev" cx="100" cy="100" r="80" fill="none" stroke="url(#g)" stroke-width="1.6" stroke-dasharray="6 10" style="--d:18s"/>
+    <circle class="ring" cx="100" cy="100" r="68" fill="none" stroke="rgba(163,230,53,.3)" stroke-width="1" style="--d:14s"/>
+    <g class="ring rev" style="--d:22s"><circle cx="100" cy="100" r="56" fill="none" stroke="rgba(190,242,100,.5)" stroke-width="2.4" stroke-dasharray="2 26"/></g>
+    <circle class="ring" cx="100" cy="100" r="44" fill="none" stroke="url(#g)" stroke-width="1.4" stroke-dasharray="40 16" style="--d:10s"/>
+    <circle class="scan" cx="100" cy="100" r="100" fill="none" stroke="rgba(163,230,53,.5)" stroke-width="1.4" stroke-dasharray="120 440"/>
+    <g id="ticks"></g>
+  </svg>
+  <div class="core pulse"></div>
+  <div class="caption" id="cap">JARVIS ONLINE</div>
+</div></div>
+<script>
+(function(){
+  var cap=document.getElementById("cap"),core=document.querySelector(".core"),wrap=document.querySelector(".wrap");
+  var t=document.getElementById("ticks"),ns="http://www.w3.org/2000/svg";
+  for(var i=0;i<60;i++){var a=i*6*Math.PI/180,l=document.createElementNS(ns,"line");
+    l.setAttribute("x1",100+Math.cos(a)*96);l.setAttribute("y1",100+Math.sin(a)*96);
+    l.setAttribute("x2",100+Math.cos(a)*(i%5===0?90:94));l.setAttribute("y2",100+Math.sin(a)*(i%5===0?90:94));
+    l.setAttribute("stroke",i%5===0?"rgba(163,230,53,.7)":"rgba(163,230,53,.25)");l.setAttribute("stroke-width",i%5===0?1.4:.8);
+    t.appendChild(l);}
+  var q={};location.search.replace(/^\?/,"").split("&").forEach(function(p){var k=p.split("=");if(k[0])q[k[0]]=decodeURIComponent(k[1]||"");});
+  function setCaption(x){cap.textContent=x||"JARVIS ONLINE";cap.style.opacity=.92;}
+  function state(s){
+    if(s==="listening"){setCaption("LISTENING");core.style.boxShadow="0 0 60px 14px rgba(163,230,53,.8),inset 0 0 22px rgba(255,255,255,.6)";}
+    else if(s==="thinking"){setCaption("PROCESSING");core.style.boxShadow="0 0 50px 10px rgba(132,204,22,.7),inset 0 0 22px rgba(255,255,255,.5)";}
+    else if(s==="speaking"){setCaption("SPEAKING");core.style.boxShadow="0 0 70px 18px rgba(190,242,100,.9),inset 0 0 24px rgba(255,255,255,.7)";}
+    else{setCaption("JARVIS ONLINE");core.style.boxShadow="0 0 40px 8px rgba(163,230,53,.55),inset 0 0 22px rgba(255,255,255,.5)";}
+  }
+  function audio(amp){var s=1+Math.min(0.18,(amp||0)*0.18);core.style.transform="scale("+s+")";}
+  function say(text){if(text)setCaption(String(text).toUpperCase().slice(0,40));}
+  window.addEventListener("message",function(e){var m=e.data||{};
+    if(m.type==="jarvis:state")state(m.state);
+    else if(m.type==="jarvis:audio")audio(m.amp);
+    else if(m.type==="jarvis:say")say(m.text);
+    else if(m.type==="jarvis:say-end")setCaption("JARVIS ONLINE");});
+  wrap.addEventListener("click",function(){core.style.transform="scale(1.08)";setTimeout(function(){core.style.transform="";},160);});
+  if(q.theme==="dark")document.documentElement.style.background="#06140b";
+  state(q.state||"idle");
+})();
+</script></body></html>

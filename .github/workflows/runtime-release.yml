@@ -1,0 +1,95 @@
+name: Runtime Release
+
+on:
+  push:
+    tags:
+      - 'runtime-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. runtime-v1.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sign and publish runtime manifest
+        env:
+          JARVIS_RUNTIME_SIGNING_PRIVATE_KEY: ${{ secrets.JARVIS_RUNTIME_SIGNING_PRIVATE_KEY }}
+          JARVIS_RUNTIME_SIGNING_KEY_ID: ${{ secrets.JARVIS_RUNTIME_SIGNING_KEY_ID }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${JARVIS_RUNTIME_SIGNING_PRIVATE_KEY}" ]; then
+            echo "JARVIS_RUNTIME_SIGNING_PRIVATE_KEY secret is not set" >&2; exit 1
+          fi
+          node <<'NODE'
+          const crypto = require('crypto');
+          const fs = require('fs');
+          const path = require('path');
+          const tag = process.env.TAG;
+          const tpl = path.join('docs', 'runtime-manifest.template.json');
+          if (!fs.existsSync(tpl)) { console.error('Missing docs/runtime-manifest.template.json'); process.exit(1); }
+          const m = JSON.parse(fs.readFileSync(tpl, 'utf8'));
+          m.runtime_version = String(tag).replace(/^runtime-v/, '');
+          m.published_at = new Date().toISOString();
+          m.signing_key_id = process.env.JARVIS_RUNTIME_SIGNING_KEY_ID || 'key-1';
+
+          // Compute SHA-256 + size for modules that name a local asset_path.
+          for (const mod of (m.modules || [])) {
+            if (mod.asset_path && fs.existsSync(mod.asset_path)) {
+              const buf = fs.readFileSync(mod.asset_path);
+              mod.sha256 = crypto.createHash('sha256').update(buf).digest('hex');
+              mod.size = buf.length;
+            }
+            if (mod.sha256) mod.sha256 = String(mod.sha256).toLowerCase();
+          }
+
+          // Canonical string — MUST match ManifestSignatureVerifier.canonicalString exactly.
+          function canonical(m) {
+            let s = '';
+            s += 'v=' + m.schema_version + '\n';
+            s += 'rv=' + m.runtime_version + '\n';
+            s += 'mav=' + m.minimum_supported_app_version + '\n';
+            s += 'ut=' + (m.update_type || 'runtime') + '\n';
+            s += 'pa=' + m.published_at + '\n';
+            s += 'ea=' + (m.expires_at || '') + '\n';
+            s += 'kid=' + m.signing_key_id + '\n';
+            s += 'm=' + (m.modules || []).length + '\n';
+            for (const mod of (m.modules || [])) {
+              s += 'mi=' + [mod.id, mod.name, mod.version, mod.type, mod.download_url,
+                mod.size, mod.sha256 || '', mod.entry || ''].join('|') + '\n';
+            }
+            const c = m.compatibility || {};
+            s += 'c=' + [c.min_app_version || '1.0.0', c.max_app_version || '',
+              c.min_runtime_version || '', c.sdk_min || 0].join('|');
+            return s;
+          }
+          const canon = canonical(m);
+          const priv = crypto.createPrivateKey(process.env.JARVIS_RUNTIME_SIGNING_PRIVATE_KEY);
+          const sig = crypto.sign('sha256', Buffer.from(canon, 'utf8'), priv);
+          m.signature = sig.toString('base64');
+          fs.writeFileSync('runtime-manifest.json', JSON.stringify(m, null, 2));
+          console.log('Signed manifest for', tag);
+          NODE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-manifest
+          path: runtime-manifest.json
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: runtime-manifest.json

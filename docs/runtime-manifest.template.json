@@ -1,0 +1,31 @@
+{
+  "schema_version": 2,
+  "runtime_version": "0.0.0",
+  "minimum_supported_app_version": "3.6.0",
+  "release_notes": "",
+  "published_at": "",
+  "expires_at": "",
+  "update_type": "runtime",
+  "signing_key_id": "key-1",
+  "signature": "",
+  "compatibility": {
+    "min_app_version": "3.6.0",
+    "max_app_version": "",
+    "min_runtime_version": "",
+    "sdk_min": 0
+  },
+  "modules": [
+    {
+      "id": "prompts-core",
+      "name": "Core Prompts",
+      "version": "1.0.0",
+      "type": "prompt_pack",
+      "download_url": "https://github.com/jarvis799/Jarvis/releases/download/runtime-v0.0.0/prompts-core.zip",
+      "asset_path": "",
+      "size": 0,
+      "sha256": "",
+      "entry": "",
+      "depends_on": []
+    }
+  ]
+}
