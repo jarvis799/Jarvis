@@ -19,6 +19,8 @@ jobs:
   build-debug-apk:
     name: Build debug APK
     runs-on: ubuntu-latest
+    env:
+      SIGNING_KEY: ${{ secrets.JARVIS_RELEASE_KEYSTORE_BASE64 }}
 
     steps:
       - name: Check out repository
@@ -57,6 +59,7 @@ jobs:
           if-no-files-found: error
 
       - name: Restore the permanent signing key
+        if: env.SIGNING_KEY != ''
         uses: ./.github/actions/jarvis-signing
         with:
           keystore-base64: ${{ secrets.JARVIS_RELEASE_KEYSTORE_BASE64 }}
@@ -88,7 +91,7 @@ jobs:
           retention-days: 14
 
       - name: Verify the APK signature
-        if: success()
+        if: success() && env.SIGNING_KEY != ''
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
@@ -115,7 +118,7 @@ jobs:
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
           TAG="apk-build-${GITHUB_RUN_NUMBER}"
           NAME="Jarvis-${GITHUB_RUN_NUMBER}.apk"
-          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Signed with the project's permanent release key. The SHA-256 is printed in this run's log and attached as apk-sha256.txt."
+          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleDebug (debug-signed when release secrets are not configured). SHA-256 attached as apk-sha256.txt."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK#$NAME" apk-sha256.txt apk-cert.txt --clobber
           else
