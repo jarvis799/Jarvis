@@ -154,6 +154,7 @@
         <activity android:name=".macro.MacroListActivity" android:exported="false" />
         <activity android:name=".ui.settings.OrbVisualActivity" android:exported="false" />
         <activity android:name=".ui.settings.RuntimeUpdatesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".runtime.update.RuntimeUpdateCenterActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".runtime.FeatureViewerActivity" android:exported="false" />
     <activity android:name=".scanner.ScannerActivity" android:exported="false" />
         <activity android:name=".battery.BatteryActivity" android:exported="false" />

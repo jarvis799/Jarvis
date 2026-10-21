@@ -100,6 +100,9 @@ class JarvisApp : Application() {
 
         VoskModelManager.init(this, CoroutineScope(Dispatchers.Default))
 
+        // Runtime Update Center - periodic signed-manifest discovery
+        runCatching { com.jarvis.assistant.runtime.update.RuntimeUpdateScheduler.schedule(this) }
+
         // DEV STYLE: On-Guard mode resumes automatically when enabled
         if (preferences.isThiefGuardEnabled) {
             runCatching {

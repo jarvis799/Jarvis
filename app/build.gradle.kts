@@ -18,6 +18,7 @@ val developerName = configuredValue("JARVIS_DEVELOPER_NAME")?.ifBlank { null } ?
 val copyrightOwner = configuredValue("JARVIS_COPYRIGHT_OWNER")?.ifBlank { null } ?: "Ayan Ahamed"
 val verificationEndpoint = configuredValue("JARVIS_VERIFICATION_ENDPOINT").orEmpty()
 val runtimeSigningPublicKey = configuredValue("JARVIS_RUNTIME_SIGNING_PUBLIC_KEY")?.ifBlank { null }.orEmpty()
+val runtimeManifestUrl = configuredValue("JARVIS_RUNTIME_MANIFEST_URL")?.ifBlank { null }.orEmpty()
 val releaseSigningReady = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 
 android {
@@ -37,6 +38,7 @@ android {
         buildConfigField("String", "PINNED_RELEASE_CERT_SHA256", buildConfigString(releaseCertSha256))
         buildConfigField("String", "VERIFICATION_ENDPOINT", buildConfigString(verificationEndpoint))
         buildConfigField("String", "RUNTIME_SIGNING_PUBLIC_KEY", buildConfigString(runtimeSigningPublicKey))
+        buildConfigField("String", "RUNTIME_MANIFEST_URL", buildConfigString(runtimeManifestUrl))
     }
 
     signingConfigs {
