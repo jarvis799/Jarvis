@@ -63,6 +63,7 @@ class AppPreferences(context: Context) {
     const val ORB_VOICE = "voice-orb"
     const val ORB_FACE = "face-flow"
     const val ORB_HUD = "hud-hologram"
+    const val ORB_PREMIUM = "premium"
         private const val KEY_OWNER_VOICE_THRESHOLD = "key_owner_voice_threshold"
         private const val KEY_OWNER_VOICE_SAMPLE_COUNT = "key_owner_voice_sample_count"
         private const val KEY_LANGUAGE = "key_language"
@@ -337,11 +338,11 @@ class AppPreferences(context: Context) {
 
     var orbStyle: String
         get() {
-            val stored = prefs.getString(KEY_ORB_STYLE, ORB_SPEAKING) ?: ORB_SPEAKING
-            return if (stored == ORB_VOICE || stored == ORB_FACE || stored == ORB_HUD) stored else ORB_SPEAKING
+            val stored = prefs.getString(KEY_ORB_STYLE, ORB_PREMIUM) ?: ORB_PREMIUM
+            return if (stored == ORB_SPEAKING || stored == ORB_VOICE || stored == ORB_FACE || stored == ORB_HUD || stored == ORB_PREMIUM) stored else ORB_PREMIUM
         }
         set(value) {
-            val safe = if (value == ORB_VOICE || value == ORB_FACE || value == ORB_HUD) value else ORB_SPEAKING
+            val safe = if (value == ORB_SPEAKING || value == ORB_VOICE || value == ORB_FACE || value == ORB_HUD || value == ORB_PREMIUM) value else ORB_PREMIUM
             prefs.edit().putString(KEY_ORB_STYLE, safe).apply()
         }
 

@@ -27,6 +27,7 @@
  .t2{background:radial-gradient(circle at 50% 50%,rgba(94,234,212,.9),rgba(122,132,255,.6) 45%,rgba(8,8,13,.2) 74%)}
  .t3{background:conic-gradient(from 210deg,rgba(154,123,255,.9),rgba(79,214,230,.75),rgba(255,138,210,.8),rgba(154,123,255,.9))}
  .t4{background:radial-gradient(circle at 50% 45%,rgba(163,230,53,.95),rgba(101,163,13,.55) 45%,rgba(6,20,11,.25) 75%)}
+ .t5{background:conic-gradient(from 0deg,rgba(190,242,100,.95),rgba(101,163,13,.55),rgba(163,230,53,.9),rgba(190,242,100,.95))}
  .cname{font-size:14.5px;font-weight:700}
  .ctag{font-size:9.5px;letter-spacing:.13em;margin-left:7px;color:var(--p3);border:1px solid var(--line);border-radius:999px;padding:2px 7px;vertical-align:1px}
  .cline{font-size:11.5px;line-height:1.45;color:var(--mute);margin-top:3px}
@@ -51,7 +52,9 @@
 <script>
  (function () {
   var ORBS = [
-   { id: "jarvis1", name: "Speaking Orb", tag: "DEFAULT", file: "jarvis1.html", cls: "t1",
+   { id: "premium", name: "Reactor Core", tag: "DEFAULT", file: "premium-orb.html", cls: "t5",
+     line: "Premium lime reactor orb - concentric holographic rings, live state and audio-reactive core." },
+   { id: "jarvis1", name: "Speaking Orb", tag: "CLASSIC", file: "jarvis1.html", cls: "t1",
      line: "Reactive particle sphere that listens, thinks and speaks with live captions." },
    { id: "voice-orb", name: "Voice Orb", tag: "IMMERSIVE", file: "voice-orb.html", cls: "t2",
      line: "Four-state orb — idle, listening, thinking, speaking — driven by live audio bands." },
@@ -60,7 +63,7 @@
    { id: "hud-hologram", name: "HUD Hologram", tag: "HOLOGRAM", file: "../hud/index.html", cls: "t4",
      line: "Reactor hologram HUD with live clock, connection status and captions." }
   ];
-  var selected = "jarvis1", applied = null, prev = document.getElementById("prev");
+  var selected = "premium", applied = null, prev = document.getElementById("prev");
   var grid = document.getElementById("grid"), badge = document.getElementById("badge"),
       nameEl = document.getElementById("name"), applyBtn = document.getElementById("apply"), toastEl = document.getElementById("toast");
   function byId(id) { for (var i = 0; i < ORBS.length; i++) if (ORBS[i].id === id) return ORBS[i]; return null; }
@@ -96,7 +99,7 @@
     toast(orb.name + " applied");
   });
   window.setCurrentOrb = function (id) { applied = id; select(id); refreshApply(); };
-  select("jarvis1");
+  select("premium");
   if (window.OrbVisualBridge && window.OrbVisualBridge.pageReady) window.OrbVisualBridge.pageReady();
  })();
 </script>
