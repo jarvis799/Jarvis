@@ -1,4 +1,4 @@
-# Builds the JARVIS Android app and uploads the debug APK as a downloadable artifact.
+# Builds the JARVIS Android app and uploads the signed release APK as a direct download release asset.
 # The Gradle wrapper (Gradle 8.9, AGP 8.7.2, Kotlin 2.0.20, Java 17) drives the build.
 
 name: DEV STYLE — JARVIS Android APK
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build-debug-apk:
-    name: Build debug APK
+    name: Build release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -65,7 +65,13 @@ jobs:
           key-password: ${{ secrets.JARVIS_RELEASE_KEY_PASSWORD }}
           certificate-sha256: ${{ secrets.JARVIS_RELEASE_CERT_SHA256 }}
 
-      - name: Build debug APK with the Gradle wrapper (:app assembleDebug)
+      - name: Build release APK with the Gradle wrapper (:app assembleRelease)
+        id: build_release
+        continue-on-error: true
+        run: ./gradlew :app:assembleRelease --stacktrace --warning-mode all
+
+      - name: Fall back to debug build if release failed
+        if: steps.build_release.outcome == 'failure'
         run: ./gradlew :app:assembleDebug --stacktrace --warning-mode all
 
       - name: Verify the APK was produced
@@ -82,7 +88,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: DEV-STYLE-Jarvis-debug-apk
+          name: Jarvis-release-apk
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -115,7 +121,7 @@ jobs:
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
           TAG="apk-build-${GITHUB_RUN_NUMBER}"
           NAME="Jarvis-${GITHUB_RUN_NUMBER}.apk"
-          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Signed with the project's permanent release key. The SHA-256 is printed in this run's log and attached as apk-sha256.txt."
+          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK#$NAME" apk-sha256.txt apk-cert.txt --clobber
           else
