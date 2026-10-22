@@ -13,7 +13,7 @@ object GmailAutoReplyScanner {
         }
         return try {
             GmailStore.recordScan(context, "Checking inbox...")
-            val unread = GmailClient.fetchUnread(context, 10)
+            val unread = GmailClient.fetchUnread(context, 50)
             var sent = 0
             val aiEnabled = GmailStore.aiReplyEnabled(context)
             val apiKey = GmailStore.geminiApiKey(context)

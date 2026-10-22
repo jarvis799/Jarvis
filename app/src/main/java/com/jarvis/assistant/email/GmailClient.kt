@@ -137,7 +137,7 @@ object GmailClient {
             unread.sortBy { it.messageNumber }
             unread.asSequence()
                 .filter { !GmailStore.isHandled(context, messageId(it)) }
-                .take(limit.coerceIn(1, 20))
+                .take(limit.coerceIn(1, 60))
                 .map { message -> toGmailMessage(message, includeBody = true) }.toList()
         } finally {
             runCatching { store.close() }

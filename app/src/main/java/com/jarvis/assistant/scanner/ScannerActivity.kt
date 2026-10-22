@@ -50,12 +50,12 @@ class ScannerActivity : AppCompatActivity() {
             setPadding(dp(20), dp(28), dp(20), dp(20))
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                intArrayOf(0xFF1D1436.toInt(), 0xFF3B2A66.toInt(), 0xFF5B4B8A.toInt())
+                intArrayOf(0xFF1A2E0A.toInt(), 0xFF2E4D12.toInt(), 0xFF4D7C0F.toInt())
             )
         }
         statusText = TextView(this).apply {
             textSize = 15f
-            setTextColor(0xFFF3F0FF.toInt())
+            setTextColor(0xFFE8FBE0.toInt())
             text = "Point the camera at a QR code or barcode - Jarvis handles everything else."
             setPadding(dp(4), 0, dp(4), dp(12))
         }
@@ -64,7 +64,7 @@ class ScannerActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f).apply { bottomMargin = dp(14) }
             background = android.graphics.drawable.GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(0xFF120C22.toInt())
+                setColor(0xFF0A1407.toInt())
             }
             clipToOutline = true
         }
@@ -72,7 +72,7 @@ class ScannerActivity : AppCompatActivity() {
         resultText = TextView(this).apply {
             textSize = 14f
             setTextIsSelectable(true)
-            setTextColor(0xFFEDE7FF.toInt())
+            setTextColor(0xFFE8FBE0.toInt())
             setPadding(dp(14), dp(12), dp(14), dp(12))
             minLines = 2
             background = android.graphics.drawable.GradientDrawable().apply {
@@ -100,7 +100,7 @@ class ScannerActivity : AppCompatActivity() {
                 textSize = 12f
                 gravity = android.view.Gravity.CENTER
                 typeface = if (active) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
-                setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFFB9AEE0.toInt())
+                setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFF6B7F3A.toInt())
                 background = android.graphics.drawable.GradientDrawable().apply {
                     cornerRadius = dp(16).toFloat()
                     setColor(if (active) 0x33FFFFFF else 0x00000000)

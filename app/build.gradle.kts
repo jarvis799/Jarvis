@@ -167,6 +167,9 @@ dependencies {
     implementation("com.sun.mail:android-activation:1.6.7")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
+    // Premium Telegram bot - pre-bundled so it ships inside the APK at install time
+    implementation("com.github.pengrad:java-telegram-bot-api:6.3.0")
+
     testImplementation("junit:junit:4.13.2")
 }
 

@@ -330,12 +330,12 @@ class AppPreferences(context: Context) {
 
     // Migrate existing installs once; keep credentials, history and later visual choices.
     fun activateLiquidGlassUi() {
-        if (!prefs.getBoolean("holographic_hud_ui_v3", false)) {
+        if (!prefs.getBoolean("holographic_hud_ui_v4", false)) {
             prefs.edit()
-                .putString(KEY_APP_THEME, "hud")
-                .putString(KEY_ORB_STYLE, ORB_HUD)
+                .putString(KEY_APP_THEME, "light")
+                .putString(KEY_ORB_STYLE, "neural")
                 .putBoolean("liquid_glass_ui_v2", true)
-                .putBoolean("holographic_hud_ui_v3", true)
+                .putBoolean("holographic_hud_ui_v4", true)
                 .commit()
         }
     }

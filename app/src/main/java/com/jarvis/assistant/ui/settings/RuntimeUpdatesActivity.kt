@@ -42,10 +42,10 @@ class RuntimeUpdatesActivity : Activity() {
     private lateinit var listHost: LinearLayout
     private var busy = false
 
-    private val cyan = 0xFF48CEDA.toInt()
-    private val purple = 0xFF7E63F5.toInt()
-    private val ink = 0xFFF4F7FF.toInt()
-    private val grey = 0xFF8FA3C8.toInt()
+    private val cyan = 0xFF4D7C0F.toInt()
+    private val purple = 0xFF65A30D.toInt()
+    private val ink = 0xFF12250A.toInt()
+    private val grey = 0xFF4C6436.toInt()
     private val red = 0xFFF87171.toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +66,7 @@ class RuntimeUpdatesActivity : Activity() {
     private fun buildUi(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF0A0C10.toInt())
+            setBackgroundColor(0xFFF3FBEA.toInt())
         }
         val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(10), dp(14), dp(18), dp(4)) }
         bar.addView(TextView(this).apply {
@@ -209,7 +209,7 @@ class RuntimeUpdatesActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = GradientDrawable().apply { setColor(0xFF12161D.toInt()); cornerRadius = dp(14).toFloat() }
+            background = GradientDrawable().apply { setColor(0xFFEAFFE0.toInt()); cornerRadius = dp(14).toFloat() }
             setPadding(dp(16), dp(12), dp(16), dp(12))
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = dp(8)
