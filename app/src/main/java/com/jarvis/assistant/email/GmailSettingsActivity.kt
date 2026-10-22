@@ -53,6 +53,9 @@ class GmailSettingsActivity : AppCompatActivity() {
     private lateinit var rulesButton: MaterialButton
     private lateinit var disconnectButton: MaterialButton
     private lateinit var scanButton: MaterialButton
+    private lateinit var geminiInput: EditText
+    private lateinit var signatureInput: EditText
+    private lateinit var aiToggle: android.widget.Switch
     private var scanRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,7 +163,7 @@ class GmailSettingsActivity : AppCompatActivity() {
 
         scanButton = limeButton("Check inbox now", false)
         column.addView(scanButton)
-        scanButton.setOnClickListener { GmailAutoReplyWorker.scanNow(this) }
+        scanButton.setOnClickListener { EmailWatchService.checkNow(this) }
         val batteryButton = limeButton("Android battery / background settings", false)
         column.addView(batteryButton)
         batteryButton.setOnClickListener {
@@ -179,8 +182,25 @@ class GmailSettingsActivity : AppCompatActivity() {
         rulesButton.setOnClickListener {
             GmailStore.setTemplate(this, templateInput.text.toString().trim())
             GmailStore.setKeywords(this, keywordsInput.text.toString().trim())
+            GmailStore.setGeminiApiKey(this, geminiInput.text.toString().trim())
+            GmailStore.setReplySignature(this, signatureInput.text.toString().trim())
+            GmailStore.setAiReplyEnabled(this, aiToggle.isChecked)
             Toast.makeText(this, "Rules saved. Next inbox scan e kaj korbe.", Toast.LENGTH_SHORT).show()
         }
+
+        column.addView(title("AI auto reply (Gemini)").apply { setPadding(0, px(22), 0, px(6)) })
+        column.addView(hint("Gemini API key dile Jarvis nijey sender er email porhe smart reply lekhe (sender er bhashay). Key na thakle template use hobe. aistudio.google.com theke free key nen. Spam/no-reply mail e reply jay na."))
+        aiToggle = android.widget.Switch(this).apply {
+            text = "AI smart reply ON"
+            isChecked = GmailStore.aiReplyEnabled(this@GmailSettingsActivity)
+            setTextColor(ink)
+        }
+        column.addView(aiToggle, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(10) })
+        geminiInput = input("Gemini API key (aiza...)", true, GmailStore.geminiApiKey(this))
+        column.addView(geminiInput, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(10) })
+        column.addView(title("Reply signature").apply { setPadding(0, px(14), 0, px(6)) })
+        signatureInput = input("Best regards,\nAyan", false, GmailStore.replySignature(this), multiline = true)
+        column.addView(signatureInput, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(10) })
 
         disconnectButton = limeButton("Disconnect Gmail", false)
         disconnectButton.setTextColor(Color.parseColor("#EF4444"))
@@ -188,6 +208,7 @@ class GmailSettingsActivity : AppCompatActivity() {
         column.addView(disconnectButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(22) })
         disconnectButton.setOnClickListener {
             GmailStore.clear(this)
+            EmailWatchService.stop(this)
             GmailAutoReplyWorker.cancel(this)
             Toast.makeText(this, "Gmail disconnected, 24/7 auto reply OFF.", Toast.LENGTH_SHORT).show()
             refreshUi()
@@ -219,6 +240,9 @@ class GmailSettingsActivity : AppCompatActivity() {
         }
         GmailStore.setTemplate(this, templateInput.text.toString())
         GmailStore.setKeywords(this, keywordsInput.text.toString())
+        GmailStore.setGeminiApiKey(this, geminiInput.text.toString().trim())
+        GmailStore.setReplySignature(this, signatureInput.text.toString().trim())
+        GmailStore.setAiReplyEnabled(this, aiToggle.isChecked)
         passwordInput.setText("")
         saveButton.isEnabled = false
         testButton.isEnabled = false
@@ -228,7 +252,7 @@ class GmailSettingsActivity : AppCompatActivity() {
                 GmailClient.testConnection(this@GmailSettingsActivity)
                 GmailStore.setConnectionVerified(this@GmailSettingsActivity, true)
                 GmailStore.setAutoReplyEnabled(this@GmailSettingsActivity, true)
-                GmailAutoReplyWorker.schedule(this@GmailSettingsActivity)
+                EmailWatchService.start(this@GmailSettingsActivity)
                 Toast.makeText(this@GmailSettingsActivity, "Gmail verified. Background auto reply is ON.", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 GmailStore.setAutoReplyEnabled(this@GmailSettingsActivity, false)
@@ -266,7 +290,7 @@ class GmailSettingsActivity : AppCompatActivity() {
     private fun toggleAutoReply() {
         val nowEnabled = !GmailStore.autoReplyEnabled(this)
         GmailStore.setAutoReplyEnabled(this, nowEnabled)
-        if (nowEnabled) GmailAutoReplyWorker.schedule(this) else GmailAutoReplyWorker.cancel(this)
+        if (nowEnabled) EmailWatchService.start(this) else EmailWatchService.stop(this)
         refreshUi()
     }
 
