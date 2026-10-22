@@ -87,8 +87,8 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
-        createTaskFallbackPanel()
         hudSurface = HudHomeSurface(binding)
+        createTaskFallbackPanel()
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
 
         // Top Navigation
@@ -641,6 +641,7 @@ class HomeFragment : Fragment() {
     private fun createTaskFallbackPanel() {
         val root = binding.root as? androidx.constraintlayout.widget.ConstraintLayout ?: return
         val panel = android.widget.LinearLayout(requireContext()).apply {
+            id = View.generateViewId()
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(dp(14), dp(10), dp(14), dp(10))
             background = android.graphics.drawable.GradientDrawable().apply {

@@ -11,8 +11,19 @@ class HudHomeSurface(private val binding: FragmentHomeBinding) {
     private val cards = listOf(binding.cardWeather, binding.btnScreenShareQuick, binding.btnSavedMemories, binding.btnConversationLanguageQuick)
     private val backgrounds = cards.map { it.background }
 
+    private var active: Boolean? = null
+
     fun apply(enabled: Boolean) {
+        if (active == enabled) return
+        active = enabled
+        val visibility = (0 until binding.root.childCount).associate {
+            binding.root.getChildAt(it).let { child -> child.id to child.visibility }
+        }
         original.applyTo(binding.root)
+        for (index in 0 until binding.root.childCount) {
+            val child = binding.root.getChildAt(index)
+            visibility[child.id]?.let { child.visibility = it }
+        }
         decor.forEach { it.visibility = if (enabled) View.GONE else View.VISIBLE }
         cards.forEachIndexed { index, view ->
             if (enabled) view.setBackgroundResource(R.drawable.bg_hud_panel)
