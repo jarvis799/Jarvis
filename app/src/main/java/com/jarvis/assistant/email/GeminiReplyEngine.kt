@@ -41,14 +41,15 @@ object GeminiReplyEngine {
         val payload = JSONObject()
             .put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
             .put("generationConfig", JSONObject().put("temperature", 0.35).put("maxOutputTokens", 700))
-        val connection = (URL(ENDPOINT + apiKey).openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            connectTimeout = 15000
-            readTimeout = 25000
-            doOutput = true
-            setRequestProperty("Content-Type", "application/json; charset=utf-8")
-        }
-        try {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = (URL(ENDPOINT + apiKey).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 15000
+                readTimeout = 25000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
@@ -60,7 +61,7 @@ object GeminiReplyEngine {
             if (text.isBlank()) throw IllegalStateException("Gemini returned an empty reply.")
             text
         } finally {
-            connection.disconnect()
+            connection?.disconnect()
         }
     }
 }

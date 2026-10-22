@@ -27,7 +27,11 @@ class EmailWatchService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY }
+            ACTION_STOP -> {
+                runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID) }
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_CHECK_NOW -> {
                 startForeground(NOTIFICATION_ID, notification("Checking inbox now"))
                 scope.launch { GmailAutoReplyScanner.scan(applicationContext); updateNotification(lastStatus()) }
