@@ -20,7 +20,7 @@ object GmailVoiceCommands {
 
     fun draftPending(): Boolean = draft != null
 
-    fun notConnectedHint(): String = "Gmail ekhono connect kora hoy nai, Sir. Settings Control Center theke Gmail Auto Reply khule apnar address ar 16 character App Password save korun."
+    fun notConnectedHint(): String = "Gmail ekhono connect kora hoy nai, Sir. Home ba Settings er Gmail Auto Reply button khule apnar address ar 16 character App Password save korun."
 
     suspend fun readLatest(context: Context): String {
         if (!GmailStore.isConnected(context)) return notConnectedHint()

@@ -26,6 +26,9 @@ object GmailStore {
     private const val KEY_HOUR_COUNT = "hour_count"
     private const val KEY_DAY_BUCKET = "day_bucket"
     private const val KEY_DAY_COUNT = "day_count"
+    private const val KEY_VERIFIED = "connection_verified"
+    private const val KEY_SCAN_AT = "last_scan_at"
+    private const val KEY_SCAN_STATUS = "last_scan_status"
 
     const val DEFAULT_TEMPLATE = "Hello {name},\n\nThank you for your email. I have received it and will get back to you soon.\n\nBest regards,\nAyan"
 
@@ -53,9 +56,21 @@ object GmailStore {
         prefs(context).edit()
             .putString(KEY_EMAIL, normalizedEmail)
             .putString(KEY_APP_PASSWORD, normalizedPassword)
-            .putBoolean(KEY_AUTO_REPLY_ENABLED, true)
-            .putLong(KEY_LAST_REPLY_AT, 0L)
+            .putBoolean(KEY_AUTO_REPLY_ENABLED, false)
+            .putBoolean(KEY_VERIFIED, false)
             .apply()
+    }
+
+    fun connectionVerified(context: Context): Boolean = prefs(context).getBoolean(KEY_VERIFIED, false)
+    fun setConnectionVerified(context: Context, verified: Boolean) { prefs(context).edit().putBoolean(KEY_VERIFIED, verified).apply() }
+    fun recordScan(context: Context, status: String) {
+        prefs(context).edit().putLong(KEY_SCAN_AT, System.currentTimeMillis()).putString(KEY_SCAN_STATUS, status).apply()
+    }
+    fun scanStatus(context: Context): String {
+        val p = prefs(context)
+        val at = p.getLong(KEY_SCAN_AT, 0L)
+        return if (at == 0L) "No inbox check yet" else
+            android.text.format.DateFormat.format("dd MMM HH:mm", at).toString() + " — " + p.getString(KEY_SCAN_STATUS, "")
     }
 
     fun clear(context: Context) {

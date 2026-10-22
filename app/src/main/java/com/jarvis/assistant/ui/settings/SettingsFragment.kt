@@ -98,6 +98,7 @@ class SettingsFragment : Fragment() {
     }
 
     private fun loadUserData() {
+        com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
         val userName = preferences.userName.ifBlank { "Dev Ayan" }
         binding.tvProfileName.text = userName
         binding.tvProfileSubtitle.text = "JARVIS OPERATOR • PRIMARY USER"

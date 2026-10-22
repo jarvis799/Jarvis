@@ -114,7 +114,7 @@
         android:layout_height="0dp"
         android:clipChildren="false"
         android:clipToPadding="false"
-        app:layout_constraintHeight_percent="0.45"
+        app:layout_constraintHeight_percent="0.36"
         app:layout_constraintVertical_bias="0.45"
         app:layout_constraintTop_toBottomOf="@id/layoutTitle"
         app:layout_constraintBottom_toTopOf="@id/layoutStatusIndicator"
@@ -144,7 +144,7 @@
         android:orientation="vertical"
         android:gravity="center"
         android:layout_marginBottom="22dp"
-        app:layout_constraintBottom_toTopOf="@id/cardWeather"
+        app:layout_constraintBottom_toTopOf="@id/btnGmailSetup"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -187,6 +187,16 @@
             android:fontFamily="sans-serif"
             android:layout_marginTop="5dp" />
     </LinearLayout>
+
+    <include
+        android:id="@+id/btnGmailSetup"
+        layout="@layout/view_gmail_entry"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@id/cardWeather"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Weather Widget Card -->
     <LinearLayout

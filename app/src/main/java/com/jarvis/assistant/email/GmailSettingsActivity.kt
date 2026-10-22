@@ -29,10 +29,17 @@ import kotlinx.coroutines.withContext
  */
 class GmailSettingsActivity : AppCompatActivity() {
 
-    private val lime = Color.parseColor("#65A30D")
-    private val ink = Color.parseColor("#1F2937")
-    private val muted = Color.parseColor("#6B7280")
-    private val border = Color.parseColor("#E5E7EB")
+    private fun themeColor(attribute: Int): Int {
+        val value = android.util.TypedValue()
+        theme.resolveAttribute(attribute, value, true)
+        return value.data
+    }
+    private val lime get() = themeColor(com.jarvis.assistant.R.attr.themeAccent)
+    private val ink get() = themeColor(com.jarvis.assistant.R.attr.themeTextPrimary)
+    private val muted get() = themeColor(com.jarvis.assistant.R.attr.themeTextMuted)
+    private val border get() = themeColor(com.jarvis.assistant.R.attr.themeCardBorder)
+    private val surface get() = themeColor(com.jarvis.assistant.R.attr.themeCardBg)
+    private val backgroundColor get() = themeColor(com.jarvis.assistant.R.attr.themeBg)
 
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
@@ -45,18 +52,25 @@ class GmailSettingsActivity : AppCompatActivity() {
     private lateinit var toggleButton: MaterialButton
     private lateinit var rulesButton: MaterialButton
     private lateinit var disconnectButton: MaterialButton
+    private lateinit var scanButton: MaterialButton
+    private var scanRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         setContentView(buildUi())
         refreshUi()
+        androidx.work.WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWorkLiveData(GmailAutoReplyWorker.IMMEDIATE_WORK).observe(this) { jobs ->
+                scanRunning = jobs.any { !it.state.isFinished }
+                refreshUi()
+            }
     }
 
     private fun px(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun card(view: View): View {
-        view.background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = px(18).toFloat(); setStroke(px(1), border) }
+        view.background = GradientDrawable().apply { setColor(surface); cornerRadius = px(4).toFloat(); setStroke(px(1), border) }
         return view
     }
 
@@ -74,7 +88,7 @@ class GmailSettingsActivity : AppCompatActivity() {
         textSize = 14f
         setTextColor(ink)
         setHintTextColor(muted)
-        background = GradientDrawable().apply { setColor(Color.parseColor("#F7FBEF")); cornerRadius = px(12).toFloat(); setStroke(px(1), border) }
+        background = GradientDrawable().apply { setColor(surface); cornerRadius = px(4).toFloat(); setStroke(px(1), border) }
         setPadding(px(14), px(11), px(14), px(11))
         inputType = when {
             secret -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -88,9 +102,9 @@ class GmailSettingsActivity : AppCompatActivity() {
         this.text = text
         if (filled) {
             backgroundTintList = ColorStateList.valueOf(lime)
-            setTextColor(Color.WHITE)
+            setTextColor(backgroundColor)
         } else {
-            backgroundTintList = ColorStateList.valueOf(Color.WHITE)
+            backgroundTintList = ColorStateList.valueOf(surface)
             setTextColor(lime)
             strokeColor = ColorStateList.valueOf(lime)
             strokeWidth = px(1)
@@ -106,13 +120,13 @@ class GmailSettingsActivity : AppCompatActivity() {
             setPadding(px(18), px(20), px(18), px(24))
         }
         val scroll = ScrollView(this).apply { addView(column) }
-        scroll.setBackgroundColor(Color.WHITE)
+        scroll.setBackgroundColor(backgroundColor)
 
         column.addView(TextView(this).apply {
             text = "Gmail 24/7 Auto Reply"
             setTextColor(ink); textSize = 22f; setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
-        column.addView(hint("IMAP + SMTP over SSL - App Password only. App password save korar shathe shathe 24/7 auto reply ON hoye jabe. Credentials Android Keystore diye encrypted thake, kokhono server e jay na.").apply { setPadding(0, px(8), 0, px(4)) })
+        column.addView(hint("Gmail address + Google's 16-character App Password (not an access token). Save tests both inbox and sending, then enables background replies. Credentials stay encrypted on this phone. Scans run about every 15 minutes; Android may delay them. Phone off, no internet or Force stop means no replies.").apply { setPadding(0, px(8), 0, px(4)) })
 
         statusText = TextView(this).apply { text = ""; setTextColor(Color.parseColor("#16A34A")); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
         accountText = hint("")
@@ -131,7 +145,7 @@ class GmailSettingsActivity : AppCompatActivity() {
         column.addView(passwordInput)
         column.addView(hint("Google Account > Security > 2-Step Verification > App passwords theke nien - na Gmail password.").apply { setPadding(0, px(6), 0, 0) })
 
-        saveButton = limeButton("Save - 24/7 Auto Reply ON", true)
+        saveButton = limeButton("Save & Test — Auto Reply ON", true)
         column.addView(saveButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(16) })
         saveButton.setOnClickListener { saveAndConnect() }
 
@@ -143,6 +157,16 @@ class GmailSettingsActivity : AppCompatActivity() {
         column.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(10) })
         testButton.setOnClickListener { runTest() }
         toggleButton.setOnClickListener { toggleAutoReply() }
+
+        scanButton = limeButton("Check inbox now", false)
+        column.addView(scanButton)
+        scanButton.setOnClickListener { GmailAutoReplyWorker.scanNow(this) }
+        val batteryButton = limeButton("Android battery / background settings", false)
+        column.addView(batteryButton)
+        batteryButton.setOnClickListener {
+            startActivity(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+        column.addView(hint("Build " + com.jarvis.assistant.BuildConfig.VERSION_NAME + " • Never paste this App Password into chat. Leave its field blank to keep an already saved key."))
 
         column.addView(title("Auto reply rules").apply { setPadding(0, px(22), 0, px(6)) })
         column.addView(hint("Template e {name} thakle sender er name bosbe. Keywords dile sudhu matching email gulote reply jabe - faka rakhle sob unkown personal email e jay (bulk/newsletter automatic skip)."))
@@ -174,21 +198,49 @@ class GmailSettingsActivity : AppCompatActivity() {
 
     private fun saveAndConnect() {
         val email = emailInput.text.toString().trim()
-        val password = passwordInput.text.toString()
+        val password = passwordInput.text.toString().ifBlank {
+            if (email.equals(GmailStore.email(this), true)) GmailStore.appPassword(this) else ""
+        }
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             Toast.makeText(this, "Thik Gmail address din.", Toast.LENGTH_SHORT).show()
             return
         }
+        if (password.replace(" ", "").trim().length != 16) {
+            Toast.makeText(this, "Enter the 16-character Google App Password.", Toast.LENGTH_LONG).show()
+            return
+        }
+        GmailStore.setAutoReplyEnabled(this, false)
+        GmailAutoReplyWorker.cancel(this)
         try {
             GmailStore.saveCredentials(this, email, password)
         } catch (e: IllegalArgumentException) {
             Toast.makeText(this, e.message ?: "Invalid App Password.", Toast.LENGTH_LONG).show()
             return
         }
-        GmailAutoReplyWorker.schedule(this)
+        GmailStore.setTemplate(this, templateInput.text.toString())
+        GmailStore.setKeywords(this, keywordsInput.text.toString())
         passwordInput.setText("")
-        Toast.makeText(this, "Saved. 24/7 Auto Reply is ON.", Toast.LENGTH_LONG).show()
-        refreshUi()
+        saveButton.isEnabled = false
+        testButton.isEnabled = false
+        saveButton.text = "Testing Gmail..."
+        lifecycleScope.launch {
+            try {
+                GmailClient.testConnection(this@GmailSettingsActivity)
+                GmailStore.setConnectionVerified(this@GmailSettingsActivity, true)
+                GmailStore.setAutoReplyEnabled(this@GmailSettingsActivity, true)
+                GmailAutoReplyWorker.schedule(this@GmailSettingsActivity)
+                Toast.makeText(this@GmailSettingsActivity, "Gmail verified. Background auto reply is ON.", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                GmailStore.setAutoReplyEnabled(this@GmailSettingsActivity, false)
+                MaterialAlertDialogBuilder(this@GmailSettingsActivity).setTitle("Gmail connection failed")
+                    .setMessage(e.message ?: "Check your address and App Password.").setPositiveButton("OK", null).show()
+            } finally {
+                saveButton.isEnabled = true
+                testButton.isEnabled = true
+                saveButton.text = "Save & Test — Auto Reply ON"
+                refreshUi()
+            }
+        }
     }
 
     private fun runTest() {
@@ -196,7 +248,9 @@ class GmailSettingsActivity : AppCompatActivity() {
         testButton.text = "Testing..."
         lifecycleScope.launch {
             val result = try {
-                GmailClient.testConnection(this@GmailSettingsActivity)
+                val report = GmailClient.testConnection(this@GmailSettingsActivity)
+                GmailStore.setConnectionVerified(this@GmailSettingsActivity, true)
+                report
             } catch (e: Exception) {
                 "Failed: " + (e.message ?: e.javaClass.simpleName)
             }
@@ -204,6 +258,7 @@ class GmailSettingsActivity : AppCompatActivity() {
                 testButton.isEnabled = true
                 testButton.text = "Test Gmail"
                 MaterialAlertDialogBuilder(this@GmailSettingsActivity).setTitle("Gmail Connection Test").setMessage(result).setPositiveButton("OK", null).show()
+                refreshUi()
             }
         }
     }
@@ -218,20 +273,20 @@ class GmailSettingsActivity : AppCompatActivity() {
     private fun refreshUi() {
         val connected = GmailStore.isConnected(this)
         val enabled = GmailStore.autoReplyEnabled(this)
+        scanButton.isEnabled = connected && enabled && !scanRunning
+        testButton.isEnabled = connected && saveButton.isEnabled
         if (connected) {
-            statusText.text = "CONNECTED - 24/7 AUTO REPLY " + (if (enabled) "ON" else "PAUSED")
+            statusText.text = if (!GmailStore.connectionVerified(this)) "SAVED — TEST CONNECTION" else
+                "GMAIL VERIFIED — AUTO REPLY " + (if (enabled) "ON" else "PAUSED")
             statusText.setTextColor(if (enabled) Color.parseColor("#16A34A") else Color.parseColor("#D97706"))
-            accountText.text = GmailStore.email(this)
-            emailInput.setText(GmailStore.email(this))
-            templateInput.setText(GmailStore.template(this))
-            keywordsInput.setText(GmailStore.keywords(this).joinToString(", "))
+            accountText.text = GmailStore.email(this) + "\n" + GmailStore.scanStatus(this)
             toggleButton.text = if (enabled) "Pause 24/7" else "Resume 24/7"
-            toggleButton.isEnabled = true
+            toggleButton.isEnabled = GmailStore.connectionVerified(this)
             disconnectButton.isEnabled = true
         } else {
             statusText.text = "NOT CONNECTED"
             statusText.setTextColor(Color.parseColor("#EF4444"))
-            accountText.text = "Address ar App Password save korun - taile Jarvis apnar inbox 24/7 monitor korbe."
+            accountText.text = "Enter your Gmail address and 16-character Google App Password below, then tap Save & Test."
             toggleButton.isEnabled = false
             disconnectButton.isEnabled = false
         }
