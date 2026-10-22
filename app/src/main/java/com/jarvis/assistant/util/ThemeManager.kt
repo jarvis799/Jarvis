@@ -20,6 +20,7 @@ object ThemeManager {
 
     fun getThemeBgColor(themeKey: String, customHex: String?): Int {
         return when (themeKey) {
+            "hud" -> Color.parseColor("#050B16")
             "dark" -> Color.parseColor("#070914")
             "red" -> Color.parseColor("#0E0307")
             "sunset" -> Color.parseColor("#FFF0EA")
@@ -31,9 +32,10 @@ object ThemeManager {
     fun applyTheme(activity: Activity) {
         val prefs = try { JarvisApp.instance.preferences } catch (_: Exception) { null }
         prefs?.activateLiquidGlassUi()
-        val themeKey = prefs?.appTheme ?: "light"
+        val themeKey = prefs?.appTheme ?: "hud"
 
         val (themeRes, isLightStatusBar, bgColor) = when (themeKey) {
+            "hud" -> Triple(R.style.Theme_JarvisAssistant_Hud, false, Color.parseColor("#050B16"))
             "dark" -> Triple(R.style.Theme_JarvisAssistant_Dark, false, Color.parseColor("#070914"))
             "red" -> Triple(R.style.Theme_JarvisAssistant_Red, false, Color.parseColor("#0E0307"))
             "sunset" -> Triple(R.style.Theme_JarvisAssistant_Sunset, true, Color.parseColor("#FFF0EA"))
@@ -69,7 +71,7 @@ object ThemeManager {
 
     fun applyDynamicBackground(view: View) {
         val prefs = try { JarvisApp.instance.preferences } catch (_: Exception) { null }
-        val themeKey = prefs?.appTheme ?: "light"
+        val themeKey = prefs?.appTheme ?: "hud"
         val customHex = prefs?.customThemeColor ?: "#FFFFFF"
         val color = getThemeBgColor(themeKey, customHex)
         view.setBackgroundColor(color)
