@@ -45,7 +45,7 @@ class EmailWatchService : Service() {
     }
 
     private suspend fun loop() {
-        while (isActive) {
+        while (scope.isActive) {
             if (GmailStore.isConnected(this) && GmailStore.autoReplyEnabled(this)) {
                 GmailAutoReplyScanner.scan(this)
                 updateNotification(lastStatus())
