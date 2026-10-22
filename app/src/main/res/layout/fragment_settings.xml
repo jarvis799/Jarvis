@@ -98,6 +98,8 @@
             android:orientation="vertical"
             android:paddingBottom="32dp">
 
+            <include android:id="@+id/btnGmailSetup" layout="@layout/view_gmail_entry" />
+
             <!-- Executive VIP Profile & Identity Card -->
             <LinearLayout
                 android:id="@+id/cardProfile"

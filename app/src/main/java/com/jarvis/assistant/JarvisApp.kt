@@ -75,6 +75,12 @@ class JarvisApp : Application() {
         instance = this
         preferences = AppPreferences(this)
         chatRepository = ChatRepository(preferences)
+        appScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            if (com.jarvis.assistant.email.GmailStore.isConnected(this@JarvisApp) &&
+                com.jarvis.assistant.email.GmailStore.autoReplyEnabled(this@JarvisApp)) {
+                com.jarvis.assistant.email.GmailAutoReplyWorker.schedule(this@JarvisApp)
+            }
+        }
 
         // Memory System
         memoryDatabase = MemoryDatabase.getInstance(this)

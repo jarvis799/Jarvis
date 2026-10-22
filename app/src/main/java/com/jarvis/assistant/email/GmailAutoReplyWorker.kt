@@ -1,79 +1,74 @@
 package com.jarvis.assistant.email
 
 import android.content.Context
-import androidx.work.BackoffPolicy
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
+import androidx.work.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.TimeUnit
 
-/**
- * DEV STYLE: 24/7 Gmail auto reply. A periodic WorkManager job (shortest safe
- * interval: 15 minutes) scans the unread inbox over IMAP and answers only the
- * emails the configured rules allow. Runs even when the app is closed;
- * WorkManager persists it across reboots. Gmail limits are respected strictly.
- */
+/** Device-local background scans. Android can delay the 15-minute schedule. */
 class GmailAutoReplyWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+    override suspend fun doWork(): Result = scanLock.withLock { scanInbox() }
 
-    override suspend fun doWork(): Result {
+    private suspend fun scanInbox(): Result {
         val context = applicationContext
-        if (!GmailStore.isConnected(context) || !GmailStore.autoReplyEnabled(context)) {
-            return Result.success()
-        }
+        if (!GmailStore.isConnected(context) || !GmailStore.autoReplyEnabled(context)) return Result.success()
         return try {
+            GmailStore.recordScan(context, "Checking inbox...")
             val unread = GmailClient.fetchUnread(context, 10)
-            for ((gmail, original) in unread) {
-                if (GmailStore.isHandled(context, gmail.messageId)) continue
-                if (!shouldReply(context, gmail)) {
-                    GmailStore.markHandled(context, gmail.messageId)
+            var sent = 0
+            for (mail in unread) {
+                if (!GmailStore.autoReplyEnabled(context)) break
+                if (GmailStore.isHandled(context, mail.messageId)) continue
+                if (!GmailReplyPolicy.allows(mail, GmailStore.email(context), GmailStore.keywords(context))) {
+                    GmailStore.markHandled(context, mail.messageId)
                     continue
                 }
                 if (!GmailStore.rateLimitAllows(context)) break
-                sendAutoReply(context, gmail, original)
+                val body = GmailStore.template(context).replace("{name}", mail.fromName)
+                GmailClient.send(context, mail.fromEmail, "Re: " + mail.subject, body, mail.messageId)
+                GmailStore.markHandled(context, mail.messageId)
+                GmailStore.recordAutoReply(context)
+                sent++
+                GmailClient.markSeen(context, mail.uid)
             }
+            GmailStore.recordScan(context, "Inbox checked — $sent auto reply sent")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            val status = if (e is javax.mail.AuthenticationFailedException) "Gmail rejected the sign-in. Check the address and 16-character App Password."
+                else "Inbox check failed. Check internet and use Test Gmail for connection details."
+            GmailStore.recordScan(context, status)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }
 
-    private fun shouldReply(context: Context, gmail: GmailMessage): Boolean {
-        if (gmail.isBulk) return false
-        val address = gmail.fromEmail.lowercase()
-        if (address.contains("no-reply") || address.contains("noreply") || address.contains("donotreply")) return false
-        if (address == GmailStore.email(context).lowercase()) return false
-        val keywords = GmailStore.keywords(context)
-        if (keywords.isNotEmpty()) {
-            val haystack = (gmail.fromEmail + " " + gmail.fromName + " " + gmail.subject + " " + gmail.body).lowercase()
-            if (keywords.none { haystack.contains(it) }) return false
-        }
-        if (gmail.subject.startsWith("Re:", ignoreCase = true) && gmail.body.contains("Thank you for your email", ignoreCase = true)) return false
-        return true
-    }
-
-    private suspend fun sendAutoReply(context: Context, gmail: GmailMessage, original: javax.mail.Message) {
-        val body = GmailStore.template(context).replace("{name}", gmail.fromName)
-        GmailClient.send(context, gmail.fromEmail, "Re: " + gmail.subject, body)
-        GmailClient.markSeen(original)
-        GmailStore.markHandled(context, gmail.messageId)
-        GmailStore.recordAutoReply(context)
-    }
-
     companion object {
         private const val UNIQUE_WORK = "jarvis_gmail_auto_reply_247"
+        const val IMMEDIATE_WORK = "jarvis_gmail_auto_reply_now"
+        private val scanLock = Mutex()
+        private val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-        /** Arms the 24/7 loop. Called the moment credentials are saved. */
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<GmailAutoReplyWorker>(15, TimeUnit.MINUTES)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-                .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(UNIQUE_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+                .setConstraints(network)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build()
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(UNIQUE_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
+            scanNow(context)
+        }
+
+        fun scanNow(context: Context) {
+            if (!GmailStore.isConnected(context) || !GmailStore.autoReplyEnabled(context)) return
+            val request = OneTimeWorkRequestBuilder<GmailAutoReplyWorker>().setConstraints(network)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build()
+            WorkManager.getInstance(context).enqueueUniqueWork(IMMEDIATE_WORK, ExistingWorkPolicy.KEEP, request)
         }
 
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_WORK)
+            WorkManager.getInstance(context).cancelUniqueWork(IMMEDIATE_WORK)
         }
     }
 }

@@ -45,6 +45,7 @@ class HomeFragment : Fragment() {
     private var lastAudioPushTime = 0L
     private var taskFallbackPanel: android.widget.LinearLayout? = null
     private var taskFallbackText: android.widget.TextView? = null
+    private var hudSurface: HudHomeSurface? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -87,6 +88,8 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
         createTaskFallbackPanel()
+        hudSurface = HudHomeSurface(binding)
+        com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
 
         // Top Navigation
         binding.btnTopChat.setOnClickListener {
@@ -157,17 +160,22 @@ class HomeFragment : Fragment() {
             // DEV STYLE: HUD hologram bridge - its header buttons talk through window.JarvisBridge
             addJavascriptInterface(object {
                 @android.webkit.JavascriptInterface
-                fun onMicClicked() { /* orb taps already come through the gesture detector */ }
+                fun onMicClicked() { post { (activity as? MainActivity)?.handleMicOrOrbClick() } }
                 @android.webkit.JavascriptInterface
-                fun onPowerClicked() { /* reserved */ }
+                fun onOrbClicked() { post { (activity as? MainActivity)?.handleMicOrOrbClick() } }
+                @android.webkit.JavascriptInterface
+                fun onPowerClicked() { post {
+                    if (viewModel.isSessionOn.value) (activity as? MainActivity)?.handleHoldMicOrOrb()
+                    else (activity as? MainActivity)?.handleMicOrOrbClick()
+                } }
                 @android.webkit.JavascriptInterface
                 fun onSettingsClicked() {
                     post { com.jarvis.assistant.JarvisApp.instance.startActivity(android.content.Intent(com.jarvis.assistant.JarvisApp.instance, com.jarvis.assistant.ui.settings.SettingsActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 }
                 @android.webkit.JavascriptInterface
-                fun onHistoryClicked() { /* reserved */ }
+                fun onHistoryClicked() { post { (activity as? MainActivity)?.selectTab(MainActivity.TAB_CHAT) } }
                 @android.webkit.JavascriptInterface
-                fun onScreenShareClicked() { /* reserved */ }
+                fun onScreenShareClicked() { post { (activity as? MainActivity)?.toggleLiveScreenShare() } }
             }, "JarvisBridge")
 
             settings.apply {
@@ -216,16 +224,18 @@ class HomeFragment : Fragment() {
             })
 
             setOnTouchListener { v, event ->
-                gestureDetector.onTouchEvent(event)
-                v.onTouchEvent(event)
+                if (loadedOrbStyle == "hud-hologram") false
+                else { gestureDetector.onTouchEvent(event); v.onTouchEvent(event) }
             }
             loadedOrbStyle = preferences.orbStyle
+            hudSurface?.apply(loadedOrbStyle == "hud-hologram")
             loadUrl(orbUrl(loadedOrbStyle ?: "jarvis1"))
         }
     }
 
     private fun syncOrbStyle() {
         val style = preferences.orbStyle
+        hudSurface?.apply(style == "hud-hologram")
         if (loadedOrbStyle != null && loadedOrbStyle != style) {
             // The HUD hologram lives on its own page - switching to or from it needs a reload.
             if (style == "hud-hologram" || loadedOrbStyle == "hud-hologram") {
@@ -260,7 +270,7 @@ class HomeFragment : Fragment() {
         }
     }
     private fun orbUrl(style: String): String {
-        if (style == "hud-hologram") return "file:///android_asset/hud/index.html?embedded=1"
+        if (style == "hud-hologram") return "file:///android_asset/hud/index.html?home=1"
         val theme = preferences.appTheme
         val accent = if (theme == "custom") preferences.customThemeColor else ""
         val url = StringBuilder("file:///android_asset/orbs/orb-host.html?embedded=1&theme=").append(theme)
@@ -293,6 +303,7 @@ class HomeFragment : Fragment() {
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
         binding.orbWebView.onResume()
         binding.orbWebView.resumeTimers()
+        com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
         renderTaskFallback(com.jarvis.assistant.automation.agent.AgentTaskEngine.taskState.value)
 
         // Sync theme with settings
@@ -435,6 +446,7 @@ class HomeFragment : Fragment() {
                     ) { isOn, isMuted, state, isStandby ->
                         HomeStatusState(isOn, isMuted, state, isStandby)
                     }.collect { status ->
+                        binding.orbWebView.evaluateJavascript("window.setPowerState && window.setPowerState(${status.isOn}); window.setMicMuted && window.setMicMuted(${status.isMuted});", null)
                         if (!status.isOn) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = "JARVIS OFF • TAP TO START"
@@ -696,6 +708,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        hudSurface = null
         _binding = null
     }
 }
