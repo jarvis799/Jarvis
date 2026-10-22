@@ -29,6 +29,9 @@ object GmailStore {
     private const val KEY_VERIFIED = "connection_verified"
     private const val KEY_SCAN_AT = "last_scan_at"
     private const val KEY_SCAN_STATUS = "last_scan_status"
+    private const val KEY_GEMINI_API_KEY = "gemini_api_key"
+    private const val KEY_AI_REPLY_ENABLED = "ai_reply_enabled"
+    private const val KEY_REPLY_SIGNATURE = "reply_signature"
 
     const val DEFAULT_TEMPLATE = "Hello {name},\n\nThank you for your email. I have received it and will get back to you soon.\n\nBest regards,\nAyan"
 
@@ -98,6 +101,13 @@ object GmailStore {
     fun setKeywords(context: Context, keywords: String) {
         runCatching { prefs(context).edit().putString(KEY_REPLY_KEYWORDS, keywords.trim()).apply() }
     }
+
+    fun geminiApiKey(context: Context): String = runCatching { prefs(context).getString(KEY_GEMINI_API_KEY, "") ?: "" }.getOrDefault("")
+    fun setGeminiApiKey(context: Context, key: String) { runCatching { prefs(context).edit().putString(KEY_GEMINI_API_KEY, key.trim()).apply() } }
+    fun aiReplyEnabled(context: Context): Boolean = runCatching { prefs(context).getBoolean(KEY_AI_REPLY_ENABLED, false) }.getOrDefault(false)
+    fun setAiReplyEnabled(context: Context, enabled: Boolean) { runCatching { prefs(context).edit().putBoolean(KEY_AI_REPLY_ENABLED, enabled).apply() } }
+    fun replySignature(context: Context): String = runCatching { prefs(context).getString(KEY_REPLY_SIGNATURE, "") ?: "" }.getOrDefault("").ifBlank { "Best regards" }
+    fun setReplySignature(context: Context, signature: String) { runCatching { prefs(context).edit().putString(KEY_REPLY_SIGNATURE, signature.trim()).apply() } }
 
     fun isHandled(context: Context, messageId: String): Boolean = runCatching { prefs(context).getStringSet(KEY_HANDLED_IDS, emptySet())?.contains(messageId) ?: false }.getOrDefault(false)
 

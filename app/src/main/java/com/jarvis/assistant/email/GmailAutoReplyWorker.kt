@@ -12,37 +12,9 @@ class GmailAutoReplyWorker(appContext: Context, params: WorkerParameters) : Coro
     override suspend fun doWork(): Result = scanLock.withLock { scanInbox() }
 
     private suspend fun scanInbox(): Result {
-        val context = applicationContext
-        if (!GmailStore.isConnected(context) || !GmailStore.autoReplyEnabled(context)) return Result.success()
-        return try {
-            GmailStore.recordScan(context, "Checking inbox...")
-            val unread = GmailClient.fetchUnread(context, 10)
-            var sent = 0
-            for (mail in unread) {
-                if (!GmailStore.autoReplyEnabled(context)) break
-                if (GmailStore.isHandled(context, mail.messageId)) continue
-                if (!GmailReplyPolicy.allows(mail, GmailStore.email(context), GmailStore.keywords(context))) {
-                    GmailStore.markHandled(context, mail.messageId)
-                    continue
-                }
-                if (!GmailStore.rateLimitAllows(context)) break
-                val body = GmailStore.template(context).replace("{name}", mail.fromName)
-                GmailClient.send(context, mail.fromEmail, "Re: " + mail.subject, body, mail.messageId)
-                GmailStore.markHandled(context, mail.messageId)
-                GmailStore.recordAutoReply(context)
-                sent++
-                GmailClient.markSeen(context, mail.uid)
-            }
-            GmailStore.recordScan(context, "Inbox checked — $sent auto reply sent")
-            Result.success()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            val status = if (e is javax.mail.AuthenticationFailedException) "Gmail rejected the sign-in. Check the address and 16-character App Password."
-                else "Inbox check failed. Check internet and use Test Gmail for connection details."
-            GmailStore.recordScan(context, status)
-            if (runAttemptCount < 3) Result.retry() else Result.failure()
-        }
+        val r = GmailAutoReplyScanner.scan(applicationContext)
+        if (r.retry && runAttemptCount < 3) return Result.retry()
+        return Result.success()
     }
 
     companion object {

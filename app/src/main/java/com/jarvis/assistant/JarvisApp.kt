@@ -78,7 +78,7 @@ class JarvisApp : Application() {
         appScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             if (com.jarvis.assistant.email.GmailStore.isConnected(this@JarvisApp) &&
                 com.jarvis.assistant.email.GmailStore.autoReplyEnabled(this@JarvisApp)) {
-                com.jarvis.assistant.email.GmailAutoReplyWorker.schedule(this@JarvisApp)
+                com.jarvis.assistant.email.EmailWatchService.start(this@JarvisApp)
             }
         }
 
