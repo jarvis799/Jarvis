@@ -126,45 +126,45 @@
         <item name="themeAccentLight">#3A0C16</item>
     </style>
 
-    <!-- 6. HUD THEME - HOLOGRAPHIC ARC REACTOR EDITION -->
-    <style name="Theme.JarvisAssistant.Hud" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:statusBarColor">#050B16</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">#050B16</item>
-        <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:windowBackground">#050B16</item>
+    <!-- 6. HUD THEME - FUTURE STICK HOLOGRAM (LIGHT LIME) EDITION -->
+    <style name="Theme.JarvisAssistant.Hud" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:statusBarColor">#F5F8EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#F5F8EF</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">#F5F8EF</item>
         <item name="android:fontFamily">@font/poppins</item>
         <item name="fontFamily">@font/poppins</item>
-        <item name="colorPrimary">#00D4FF</item>
-        <item name="colorOnPrimary">#050B16</item>
-        <item name="colorSurface">#140A1A2E</item>
-        <item name="colorOnSurface">#D7F6FF</item>
+        <item name="colorPrimary">#65A30D</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">#A6FFFFFF</item>
+        <item name="colorOnSurface">#2A2F29</item>
 
-        <item name="themeBg">#050B16</item>
-        <item name="themeSurface">#140A1A2E</item>
-        <item name="themeCardBg">#140A1A2E</item>
-        <item name="themeCardBorder">#6600D4FF</item>
-        <item name="themeCardGlassStart">#1AD7F6FF</item>
-        <item name="themeCardGlassEnd">#0A00D4FF</item>
-        <item name="themeDockBg">#1A0A1A2E</item>
-        <item name="themeDockGlassStart">#2BD7F6FF</item>
-        <item name="themeDockGlassEnd">#0D00D4FF</item>
-        <item name="themeDockBorder">#6600D4FF</item>
-        <item name="themeGlassSpecular">#80D7F6FF</item>
-        <item name="themeChipBg">#140A1A2E</item>
-        <item name="themeInputBg">#1A0A1A2E</item>
-        <item name="themeGlowBlob1">@drawable/bg_liquid_glow_dark_1</item>
-        <item name="themeGlowBlob2">@drawable/bg_liquid_glow_dark_2</item>
-        <item name="themeGlowBlob3">@drawable/bg_liquid_glow_dark_3</item>
+        <item name="themeBg">#F5F8EF</item>
+        <item name="themeSurface">#A6FFFFFF</item>
+        <item name="themeCardBg">#A6FFFFFF</item>
+        <item name="themeCardBorder">#C7D9B8</item>
+        <item name="themeCardGlassStart">#E8FFFFFF</item>
+        <item name="themeCardGlassEnd">#52FFFFFF</item>
+        <item name="themeDockBg">#D9FFFFFF</item>
+        <item name="themeDockGlassStart">#F0FFFFFF</item>
+        <item name="themeDockGlassEnd">#8AFFFFFF</item>
+        <item name="themeDockBorder">#C7D9B8</item>
+        <item name="themeGlassSpecular">#FFFFFF</item>
+        <item name="themeChipBg">#70FFFFFF</item>
+        <item name="themeInputBg">#B3FFFFFF</item>
+        <item name="themeGlowBlob1">@drawable/bg_liquid_glow_lime_1</item>
+        <item name="themeGlowBlob2">@drawable/bg_liquid_glow_lime_2</item>
+        <item name="themeGlowBlob3">@drawable/bg_liquid_glow_lime_3</item>
 
-        <item name="themeTextPrimary">#D7F6FF</item>
-        <item name="themeTextSecondary">#7FB8D6</item>
-        <item name="themeTextMuted">#4F7A92</item>
-        <item name="themeAccent1">#00D4FF</item>
-        <item name="themeAccent2">#5B8CFF</item>
-        <item name="themeAccent3">#22D3EE</item>
-        <item name="themeAccent">#00D4FF</item>
-        <item name="themeAccentLight">#0A1A2E</item>
+        <item name="themeTextPrimary">#2A2F29</item>
+        <item name="themeTextSecondary">#7D857A</item>
+        <item name="themeTextMuted">#9AA295</item>
+        <item name="themeAccent1">#65A30D</item>
+        <item name="themeAccent2">#A3E635</item>
+        <item name="themeAccent3">#84CC16</item>
+        <item name="themeAccent">#65A30D</item>
+        <item name="themeAccentLight">#E3F0D8</item>
     </style>
 
     <!-- 4. SUNSET THEME - LIQUID SUNSET GLASS EDITION -->
