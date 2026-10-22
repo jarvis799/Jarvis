@@ -328,16 +328,21 @@ class AppPreferences(context: Context) {
             prefs.edit().putString(KEY_USER_NAME, value.trim()).commit()
         }
 
-    // Activate the requested redesign once; later theme choices remain user-controlled.
+    // Migrate existing installs once; keep credentials, history and later visual choices.
     fun activateLiquidGlassUi() {
-        if (!prefs.getBoolean("liquid_glass_ui_v2", false)) {
-            prefs.edit().putString(KEY_APP_THEME, "light").putBoolean("liquid_glass_ui_v2", true).commit()
+        if (!prefs.getBoolean("holographic_hud_ui_v3", false)) {
+            prefs.edit()
+                .putString(KEY_APP_THEME, "hud")
+                .putString(KEY_ORB_STYLE, ORB_HUD)
+                .putBoolean("liquid_glass_ui_v2", true)
+                .putBoolean("holographic_hud_ui_v3", true)
+                .commit()
         }
     }
 
     var orbStyle: String
         get() {
-            val stored = prefs.getString(KEY_ORB_STYLE, ORB_SPEAKING) ?: ORB_SPEAKING
+            val stored = prefs.getString(KEY_ORB_STYLE, ORB_HUD) ?: ORB_HUD
             return if (stored == ORB_VOICE || stored == ORB_FACE || stored == ORB_HUD) stored else ORB_SPEAKING
         }
         set(value) {
@@ -347,14 +352,15 @@ class AppPreferences(context: Context) {
 
     var appTheme: String
         get() {
-            val stored = prefs.getString(KEY_APP_THEME, "sunset") ?: "sunset"
+            val stored = prefs.getString(KEY_APP_THEME, "hud") ?: "hud"
             return when (stored) {
+                "hud" -> "hud"
                 "light", "pearl_white" -> "light"
                 "dark", "midnight_onyx", "cyberpunk_neon", "emerald_obsidian" -> "dark"
                 "red" -> "red"
                 "sunset", "rose_gold" -> "sunset"
                 "custom" -> "custom"
-                else -> "light"
+                else -> "hud"
             }
         }
         set(value) = prefs.edit().putString(KEY_APP_THEME, value).apply()
