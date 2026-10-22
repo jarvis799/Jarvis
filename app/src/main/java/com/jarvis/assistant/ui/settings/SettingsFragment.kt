@@ -149,6 +149,7 @@ class SettingsFragment : Fragment() {
 
         // Theme
         binding.tvCurrentTheme.text = when (preferences.appTheme) {
+            "hud" -> "Holographic HUD"
             "dark" -> "Dark Theme"
             "red" -> "Red Theme"
             "sunset" -> "Sunset Theme"
