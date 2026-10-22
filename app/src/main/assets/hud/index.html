@@ -218,6 +218,7 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh)}
 <script>
 (function(){
   'use strict';
+  if(new URLSearchParams(window.location.search).get('embedded')==='1'){document.documentElement.classList.add('embedded');document.body.classList.add('embedded');}
   var hud=document.getElementById('hud');
   var statusText=document.getElementById('status-text');
   var statusDot=document.getElementById('status-dot');

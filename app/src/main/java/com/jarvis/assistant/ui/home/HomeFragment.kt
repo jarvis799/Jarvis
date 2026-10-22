@@ -260,7 +260,7 @@ class HomeFragment : Fragment() {
         }
     }
     private fun orbUrl(style: String): String {
-        if (style == "hud-hologram") return "file:///android_asset/hud/index.html"
+        if (style == "hud-hologram") return "file:///android_asset/hud/index.html?embedded=1"
         val theme = preferences.appTheme
         val accent = if (theme == "custom") preferences.customThemeColor else ""
         val url = StringBuilder("file:///android_asset/orbs/orb-host.html?embedded=1&theme=").append(theme)

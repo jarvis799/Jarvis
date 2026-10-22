@@ -20,8 +20,8 @@ object ThemeManager {
 
     fun getThemeBgColor(themeKey: String, customHex: String?): Int {
         return when (themeKey) {
-            "hud" -> Color.parseColor("#F5F8EF")
-            "dark" -> Color.parseColor("#070914")
+            "hud" -> Color.parseColor("#020713")
+            "dark" -> Color.parseColor("#020713")
             "red" -> Color.parseColor("#0E0307")
             "sunset" -> Color.parseColor("#FFF0EA")
             "custom" -> try { Color.parseColor(customHex ?: "#FFFFFF") } catch (_: Exception) { Color.WHITE }
@@ -35,8 +35,8 @@ object ThemeManager {
         val themeKey = prefs?.appTheme ?: "hud"
 
         val (themeRes, isLightStatusBar, bgColor) = when (themeKey) {
-            "hud" -> Triple(R.style.Theme_JarvisAssistant_Hud, true, Color.parseColor("#F5F8EF"))
-            "dark" -> Triple(R.style.Theme_JarvisAssistant_Dark, false, Color.parseColor("#070914"))
+            "hud" -> Triple(R.style.Theme_JarvisAssistant_Hud, false, Color.parseColor("#020713"))
+            "dark" -> Triple(R.style.Theme_JarvisAssistant_Dark, false, Color.parseColor("#020713"))
             "red" -> Triple(R.style.Theme_JarvisAssistant_Red, false, Color.parseColor("#0E0307"))
             "sunset" -> Triple(R.style.Theme_JarvisAssistant_Sunset, true, Color.parseColor("#FFF0EA"))
             "custom" -> {
