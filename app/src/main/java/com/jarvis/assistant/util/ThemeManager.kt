@@ -25,14 +25,14 @@ object ThemeManager {
             "red" -> Color.parseColor("#0E0307")
             "sunset" -> Color.parseColor("#FFF0EA")
             "custom" -> try { Color.parseColor(customHex ?: "#FFFFFF") } catch (_: Exception) { Color.WHITE }
-            else -> Color.parseColor("#F3FBEA")
+            else -> Color.parseColor("#F0F4F7")
         }
     }
 
     fun applyTheme(activity: Activity) {
         val prefs = try { JarvisApp.instance.preferences } catch (_: Exception) { null }
         prefs?.activateLiquidGlassUi()
-        val themeKey = prefs?.appTheme ?: "hud"
+        val themeKey = prefs?.appTheme ?: "light"
 
         val (themeRes, isLightStatusBar, bgColor) = when (themeKey) {
             "hud" -> Triple(R.style.Theme_JarvisAssistant_Hud, false, Color.parseColor("#020713"))

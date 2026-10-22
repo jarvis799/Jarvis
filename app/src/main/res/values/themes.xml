@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Base App Theme: Holographic HUD (Dark Cyan) -->
-    <style name="Theme.JarvisAssistant" parent="Theme.JarvisAssistant.Hud" />
+    <style name="Theme.JarvisAssistant" parent="Theme.JarvisAssistant.Light" />
 
-    <!-- 1. LIGHT THEME - LIQUID PEARL GLASS EDITION -->
+    <!-- 1. LIGHT THEME - PREMIUM NEON GREEN GLASS EDITION -->
     <style name="Theme.JarvisAssistant.Light" parent="Theme.Material3.Light.NoActionBar">
-        <item name="android:statusBarColor">#E9F4DA</item>
+        <item name="android:statusBarColor">#F0F4F7</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">#E9F4DA</item>
+        <item name="android:navigationBarColor">#F0F4F7</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:windowBackground">#E9F4DA</item>
+        <item name="android:windowBackground">#F0F4F7</item>
         <item name="android:fontFamily">@font/poppins</item>
         <item name="fontFamily">@font/poppins</item>
-        <item name="colorPrimary">#4D7C0F</item>
+        <item name="colorPrimary">#22C55E</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSurface">#A6FFFFFF</item>
-        <item name="colorOnSurface">#12250A</item>
+        <item name="colorSurface">#CCFFFFFF</item>
+        <item name="colorOnSurface">#1A1A1A</item>
 
-        <item name="themeBg">#E9F4DA</item>
-        <item name="themeSurface">#A6FFFFFF</item>
-        <item name="themeCardBg">#A6FFFFFF</item>
-        <item name="themeCardBorder">#99A3C43B</item>
-        <item name="themeCardGlassStart">#E8FFFFFF</item>
-        <item name="themeCardGlassEnd">#52FFFFFF</item>
-        <item name="themeDockBg">#D9FFFFFF</item>
-        <item name="themeDockGlassStart">#F0FFFFFF</item>
-        <item name="themeDockGlassEnd">#8AFFFFFF</item>
-        <item name="themeDockBorder">#99A3C43B</item>
+        <item name="themeBg">#F0F4F7</item>
+        <item name="themeSurface">#CCFFFFFF</item>
+        <item name="themeCardBg">#CCFFFFFF</item>
+        <item name="themeCardBorder">#6622C55E</item>
+        <item name="themeCardGlassStart">#F2FFFFFF</item>
+        <item name="themeCardGlassEnd">#99FFFFFF</item>
+        <item name="themeDockBg">#E6FFFFFF</item>
+        <item name="themeDockGlassStart">#F5FFFFFF</item>
+        <item name="themeDockGlassEnd">#B3FFFFFF</item>
+        <item name="themeDockBorder">#6622C55E</item>
         <item name="themeGlassSpecular">#FFFFFF</item>
-        <item name="themeChipBg">#70FFFFFF</item>
+        <item name="themeChipBg">#99FFFFFF</item>
         <item name="themeInputBg">#B3FFFFFF</item>
         <item name="themeGlowBlob1">@drawable/bg_liquid_glow_lime_1</item>
         <item name="themeGlowBlob2">@drawable/bg_liquid_glow_lime_2</item>
         <item name="themeGlowBlob3">@drawable/bg_liquid_glow_lime_3</item>
 
-        <item name="themeTextPrimary">#12250A</item>
-        <item name="themeTextSecondary">#40532C</item>
-        <item name="themeTextMuted">#4C6436</item>
-        <item name="themeAccent1">#4D7C0F</item>
-        <item name="themeAccent2">#65A30D</item>
-        <item name="themeAccent3">#0E9F6E</item>
-        <item name="themeAccent">#4D7C0F</item>
-        <item name="themeAccentLight">#D6EBB4</item>
+        <item name="themeTextPrimary">#1A1A1A</item>
+        <item name="themeTextSecondary">#444444</item>
+        <item name="themeTextMuted">#777777</item>
+        <item name="themeAccent1">#22C55E</item>
+        <item name="themeAccent2">#39FF14</item>
+        <item name="themeAccent3">#16A34A</item>
+        <item name="themeAccent">#22C55E</item>
+        <item name="themeAccentLight">#DCFCE7</item>
     </style>
 
     <!-- 2. DARK THEME - HOLOGRAPHIC CYAN EDITION -->
