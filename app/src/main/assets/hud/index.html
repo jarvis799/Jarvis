@@ -3,61 +3,61 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-<title>JARVIS — Arc Reactor HUD</title>
+<title>JARVIS — Hologram Orb</title>
 <style>
 :root{
-  --hud-cyan:#00f0ff; --hud-cyan-bright:#70f7ff; --hud-cyan-dim:rgba(0,240,255,.22); --hud-cyan-border:rgba(0,240,255,.4);
-  --hud-blue:#0066ff; --hud-blue-electric:#0284c7; --hud-blue-deep:#0b1f4d;
-  --hud-bg:#020713; --hud-warning:#ff2a5f;
+  --hud-cyan:#84cc16; --hud-cyan-bright:#d9f99d; --hud-cyan-dim:rgba(132,204,22,.22); --hud-cyan-border:rgba(132,204,22,.45);
+  --hud-blue:#65a30d; --hud-blue-electric:#84cc16; --hud-blue-deep:#3f6212;
+  --hud-bg:#F5F8EF; --hud-warning:#ff2a5f;
   --font-mono:"Orbitron","Rajdhani",ui-monospace,"Roboto Mono",monospace;
   --font-ui:system-ui,-apple-system,"Segoe UI",sans-serif;
   --accent:var(--hud-cyan);
-  --ink:#e8f9ff; --ink-soft:rgba(232,249,255,.66); --ink-faint:rgba(232,249,255,.38);
+  --ink:#2A2F29; --ink-soft:rgba(42,47,41,.66); --ink-faint:rgba(42,47,41,.38);
   --spin-outer:24s; --spin-seg:15s; --spin-mech:32s; --spin-tick:72s; --spin-inner:18s; --spin-scan:7s;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;user-select:none;-webkit-user-select:none;background:var(--hud-bg);color:var(--ink);font-family:var(--font-ui)}
 .gpu{transform:translateZ(0);will-change:transform}
 #hud{position:relative;width:100%;height:100%;display:flex;flex-direction:column;justify-content:space-between;z-index:2;padding:calc(34px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
-.header-bar{display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 14px;background:rgba(5,19,41,.55);border:1px solid var(--hud-cyan-border);border-radius:18px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 0 22px -6px rgba(0,240,255,.25),inset 0 1px 1px rgba(255,255,255,.08)}
+.header-bar{display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 14px;background:rgba(255,255,255,.6);border:1px solid var(--hud-cyan-border);border-radius:18px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 6px 22px -10px rgba(101,163,13,.35),inset 0 1px 1px rgba(255,255,255,.6)}
 .brand-area{display:flex;align-items:center;gap:9px;cursor:pointer}
-.reactor-mini-glyph{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#fff 0%,var(--hud-cyan-bright) 40%,var(--hud-cyan) 72%,var(--hud-blue-deep) 100%);box-shadow:0 0 10px var(--hud-cyan),0 0 18px rgba(0,102,255,.4);animation:miniPulse 2.6s ease-in-out infinite;flex-shrink:0}
+.reactor-mini-glyph{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff 0%,var(--hud-cyan-bright) 38%,var(--hud-cyan) 70%,var(--hud-blue-deep) 100%);box-shadow:0 0 10px var(--hud-cyan),0 0 18px rgba(132,204,22,.4);animation:miniPulse 2.6s ease-in-out infinite;flex-shrink:0}
 @keyframes miniPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
 .brand-text-col{display:flex;flex-direction:column;gap:1px;line-height:1}
 .brand-title{font-family:var(--font-mono);font-size:.86rem;font-weight:800;letter-spacing:.18em;color:var(--ink)}
-.brand-sub{font-family:var(--font-mono);font-size:.5rem;font-weight:700;letter-spacing:.16em;color:var(--hud-cyan)}
-.status-pill{display:flex;align-items:center;gap:7px;padding:5px 12px;background:rgba(0,240,255,.08);border:1px solid var(--hud-cyan-border);border-radius:18px;font-family:var(--font-mono);font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.brand-sub{font-family:var(--font-mono);font-size:.5rem;font-weight:700;letter-spacing:.16em;color:var(--hud-blue)}
+.status-pill{display:flex;align-items:center;gap:7px;padding:5px 12px;background:rgba(132,204,22,.1);border:1px solid var(--hud-cyan-border);border-radius:18px;font-family:var(--font-mono);font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);transition:background .3s,box-shadow .3s;flex-shrink:0}
 .live-clock{font-family:var(--font-mono);font-size:.64rem;font-weight:700;color:var(--ink-soft);letter-spacing:.08em}
 .header-actions{display:flex;align-items:center;gap:7px}
-.hdr-btn{width:32px;height:32px;border-radius:11px;background:rgba(0,240,255,.08);border:1px solid var(--hud-cyan-border);display:flex;align-items:center;justify-content:center;color:var(--hud-cyan);cursor:pointer;transition:transform .15s,background-color .2s}
-.hdr-btn:active{transform:scale(.9);background:rgba(0,240,255,.18)}
+.hdr-btn{width:32px;height:32px;border-radius:11px;background:rgba(132,204,22,.08);border:1px solid var(--hud-cyan-border);display:flex;align-items:center;justify-content:center;color:var(--hud-blue);cursor:pointer;transition:transform .15s,background-color .2s}
+.hdr-btn:active{transform:scale(.9);background:rgba(132,204,22,.18)}
 .hdr-btn svg{width:16px;height:16px;fill:currentColor}
 .orb-center-stage{position:relative;width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;min-height:0}
 .reactor-housing{position:relative;width:min(300px,86vmin);height:min(300px,86vmin);max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.reactor-glow{position:absolute;inset:-8%;border-radius:50%;pointer-events:none;animation:ambient 8s ease-in-out infinite;background:radial-gradient(circle,rgba(0,240,255,.30) 0%,rgba(0,102,255,.18) 48%,rgba(0,0,0,0) 70%);transition:background .7s}
+.reactor-glow{position:absolute;inset:-12%;border-radius:50%;pointer-events:none;animation:ambient 8s ease-in-out infinite;background:radial-gradient(circle,rgba(163,230,53,.42) 0%,rgba(132,204,22,.22) 46%,rgba(0,0,0,0) 70%);transition:background .7s}
 .reactor-svg{position:relative;width:100%;height:100%;overflow:visible;z-index:2}
-.orb-caption{margin-top:18px;font-family:var(--font-mono);font-size:.66rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);text-shadow:0 0 10px rgba(0,240,255,.3);transition:color .3s;text-align:center;min-height:1em}
-.control-dock{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 12px;background:rgba(5,19,41,.6);border:1px solid var(--hud-cyan-border);border-radius:26px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 14px 44px -12px rgba(0,240,255,.28),inset 0 1px 1px rgba(255,255,255,.07)}
+.orb-caption{margin-top:18px;font-family:var(--font-mono);font-size:.66rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);text-shadow:0 0 10px rgba(132,204,22,.25);transition:color .3s;text-align:center;min-height:1em}
+.control-dock{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 12px;background:rgba(255,255,255,.65);border:1px solid var(--hud-cyan-border);border-radius:26px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 14px 44px -16px rgba(101,163,13,.4),inset 0 1px 1px rgba(255,255,255,.6)}
 .dock-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 11px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;border-radius:14px;transition:background .2s,color .2s}
-.dock-btn:active{background:rgba(0,240,255,.12)}
+.dock-btn:active{background:rgba(132,204,22,.14)}
 .dock-btn svg{width:20px;height:20px;fill:currentColor}
 .dock-label{font-family:var(--font-mono);font-size:.5rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-.dock-btn.btn-active{color:var(--hud-cyan)}
-.center-mic-btn{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--hud-cyan-bright) 38%,var(--hud-cyan) 70%,var(--hud-blue-deep));border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex-shrink:0;box-shadow:0 0 22px rgba(0,240,255,.55),inset 0 1px 1px rgba(255,255,255,.45);transition:transform .15s,box-shadow .2s}
+.dock-btn.btn-active{color:var(--hud-blue)}
+.center-mic-btn{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--hud-cyan-bright) 38%,var(--hud-cyan) 70%,var(--hud-blue-deep));border:2px solid rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;color:#1a2e05;cursor:pointer;flex-shrink:0;box-shadow:0 0 22px rgba(132,204,22,.55),inset 0 1px 1px rgba(255,255,255,.6);transition:transform .15s,box-shadow .2s}
 .center-mic-btn:active{transform:scale(.92)}
 .center-mic-btn svg{width:24px;height:24px;fill:currentColor}
-#hud[data-state="listening"] .center-mic-btn{box-shadow:0 0 28px rgba(0,240,255,.8),0 6px 22px rgba(0,240,255,.45)}
-#hud[data-state="speaking"] .center-mic-btn{box-shadow:0 0 28px rgba(112,247,255,.85),0 6px 22px rgba(0,102,255,.5)}
-#hud[data-state="thinking"] .center-mic-btn{box-shadow:0 0 26px rgba(138,111,224,.7)}
+#hud[data-state="listening"] .center-mic-btn{box-shadow:0 0 28px rgba(163,230,53,.85),0 6px 22px rgba(132,204,22,.5)}
+#hud[data-state="speaking"] .center-mic-btn{box-shadow:0 0 28px rgba(217,249,157,.95),0 6px 22px rgba(132,204,22,.5)}
+#hud[data-state="thinking"] .center-mic-btn{box-shadow:0 0 26px rgba(101,163,13,.7)}
 #hud[data-state="error"] .center-mic-btn{box-shadow:0 0 26px rgba(255,42,95,.7)}
 #hud[data-state="error"] .reactor-glow{background:radial-gradient(circle,rgba(255,42,95,.35) 0%,rgba(255,42,95,.15) 45%,rgba(0,0,0,0) 72%)}
 @keyframes rotate-cw{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes rotate-ccw{from{transform:rotate(360deg)}to{transform:rotate(0)}}
-@keyframes core-breathe{0%,100%{transform:scale(.97);opacity:.9;filter:drop-shadow(0 0 12px rgba(0,240,255,.45))}50%{transform:scale(1.05);opacity:1;filter:drop-shadow(0 0 28px rgba(0,240,255,.85)) drop-shadow(0 0 45px rgba(0,102,255,.5))}}
-@keyframes core-pulse-listening{0%,100%{transform:scale(.95);filter:drop-shadow(0 0 16px rgba(0,240,255,.6))}50%{transform:scale(1.12);filter:drop-shadow(0 0 35px rgba(0,240,255,.95)) drop-shadow(0 0 60px rgba(0,200,255,.7))}}
-@keyframes core-pulse-thinking{0%{transform:scale(.96) rotate(0);filter:drop-shadow(0 0 18px rgba(0,240,255,.7))}50%{transform:scale(1.08) rotate(180deg);filter:drop-shadow(0 0 38px rgba(112,247,255,.95))}100%{transform:scale(.96) rotate(360deg);filter:drop-shadow(0 0 18px rgba(0,240,255,.7))}}
-@keyframes core-pulse-speaking{0%,100%{transform:scale(.94);opacity:.85}25%{transform:scale(1.09);opacity:1;filter:drop-shadow(0 0 30px rgba(0,240,255,.9))}50%{transform:scale(1.02);opacity:.92}75%{transform:scale(1.14);opacity:1;filter:drop-shadow(0 0 42px rgba(0,240,255,1)) drop-shadow(0 0 65px rgba(0,102,255,.7))}}
+@keyframes core-breathe{0%,100%{transform:scale(.98);opacity:.95;filter:drop-shadow(0 0 14px rgba(132,204,22,.5))}50%{transform:scale(1.04);opacity:1;filter:drop-shadow(0 0 30px rgba(163,230,53,.85)) drop-shadow(0 0 48px rgba(132,204,22,.5))}}
+@keyframes core-pulse-listening{0%,100%{transform:scale(.96);filter:drop-shadow(0 0 16px rgba(132,204,22,.6))}50%{transform:scale(1.1);filter:drop-shadow(0 0 36px rgba(163,230,53,.95)) drop-shadow(0 0 60px rgba(132,204,22,.7))}}
+@keyframes core-pulse-thinking{0%{transform:scale(.97) rotate(0);filter:drop-shadow(0 0 18px rgba(132,204,22,.7))}50%{transform:scale(1.07) rotate(180deg);filter:drop-shadow(0 0 38px rgba(217,249,157,.95))}100%{transform:scale(.97) rotate(360deg);filter:drop-shadow(0 0 18px rgba(132,204,22,.7))}}
+@keyframes core-pulse-speaking{0%,100%{transform:scale(.95);opacity:.9}25%{transform:scale(1.08);opacity:1;filter:drop-shadow(0 0 30px rgba(163,230,53,.9))}50%{transform:scale(1.01);opacity:.94}75%{transform:scale(1.12);opacity:1;filter:drop-shadow(0 0 42px rgba(163,230,53,1)) drop-shadow(0 0 65px rgba(132,204,22,.7))}}
 @keyframes error-flash{0%,100%{opacity:1;filter:drop-shadow(0 0 18px rgba(255,42,95,.9));transform:scale(1)}50%{opacity:.45;filter:drop-shadow(0 0 6px rgba(255,42,95,.4));transform:scale(.96)}}
 @keyframes ambient{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:.95;transform:scale(1.06)}}
 .ring{transform-box:fill-box;transform-origin:center}
@@ -98,7 +98,7 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
       <div class="reactor-mini-glyph"></div>
       <div class="brand-text-col">
         <div class="brand-title">JARVIS</div>
-        <div class="brand-sub">ARC REACTOR</div>
+        <div class="brand-sub">HOLOGRAM CORE</div>
       </div>
     </div>
     <div class="status-pill">
@@ -123,38 +123,29 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
         <defs>
           <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <filter id="coreGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b1"/><feGaussianBlur stdDeviation="14" result="b2"/><feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <radialGradient id="coreSphere" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="16%" stop-color="#e0faff" stop-opacity=".98"/><stop offset="34%" stop-color="#38bdf8" stop-opacity=".92"/><stop offset="56%" stop-color="#00f0ff" stop-opacity=".85"/><stop offset="78%" stop-color="#0284c7" stop-opacity=".65"/><stop offset="92%" stop-color="#082f49" stop-opacity=".35"/><stop offset="100%" stop-color="#020713" stop-opacity=".05"/></radialGradient>
-          <radialGradient id="coreSphereError" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff"/><stop offset="20%" stop-color="#ff7b9f" stop-opacity=".95"/><stop offset="45%" stop-color="#ff2a5f" stop-opacity=".9"/><stop offset="75%" stop-color="#990526" stop-opacity=".75"/><stop offset="100%" stop-color="#1a0208" stop-opacity=".1"/></radialGradient>
-          <linearGradient id="glareGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="50%" stop-color="#a5f3fc" stop-opacity=".3"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></linearGradient>
-          <radialGradient id="scanGrad" cx="250" cy="250" r="185" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#00f0ff" stop-opacity=".15"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
-          <linearGradient id="wingGradL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#0066ff" stop-opacity=".15"/><stop offset="100%" stop-color="#051329" stop-opacity=".05"/></linearGradient>
-          <linearGradient id="wingGradR" x1="1" y1="0" x2="0" y2="0"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#0066ff" stop-opacity=".15"/><stop offset="100%" stop-color="#051329" stop-opacity=".05"/></linearGradient>
+          <filter id="stipple" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.24  0 0 0 0 0.32  0 0 0 0 0.10  0 0 0 0.5 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+          <radialGradient id="coreSphere" cx="42%" cy="38%" r="60%"><stop offset="0%" stop-color="#f7ffe0" stop-opacity="1"/><stop offset="18%" stop-color="#d9f99d" stop-opacity=".98"/><stop offset="42%" stop-color="#a3e635" stop-opacity=".95"/><stop offset="68%" stop-color="#84cc16" stop-opacity=".85"/><stop offset="88%" stop-color="#4d7c0f" stop-opacity=".7"/><stop offset="100%" stop-color="#3f6212" stop-opacity=".4"/></radialGradient>
+          <radialGradient id="coreSphereError" cx="42%" cy="38%" r="60%"><stop offset="0%" stop-color="#fff"/><stop offset="20%" stop-color="#ff7b9f" stop-opacity=".95"/><stop offset="45%" stop-color="#ff2a5f" stop-opacity=".9"/><stop offset="75%" stop-color="#990526" stop-opacity=".75"/><stop offset="100%" stop-color="#1a0208" stop-opacity=".1"/></radialGradient>
+          <linearGradient id="glareGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".85"/><stop offset="50%" stop-color="#ecfccb" stop-opacity=".4"/><stop offset="100%" stop-color="#a3e635" stop-opacity="0"/></linearGradient>
+          <radialGradient id="scanGrad" cx="250" cy="250" r="185" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#84cc16" stop-opacity=".4"/><stop offset="60%" stop-color="#84cc16" stop-opacity=".15"/><stop offset="100%" stop-color="#84cc16" stop-opacity="0"/></radialGradient>
+          <linearGradient id="wingGradL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#84cc16" stop-opacity=".4"/><stop offset="60%" stop-color="#65a30d" stop-opacity=".15"/><stop offset="100%" stop-color="#3f6212" stop-opacity=".05"/></linearGradient>
+          <linearGradient id="wingGradR" x1="1" y1="0" x2="0" y2="0"><stop offset="0%" stop-color="#84cc16" stop-opacity=".4"/><stop offset="60%" stop-color="#65a30d" stop-opacity=".15"/><stop offset="100%" stop-color="#3f6212" stop-opacity=".05"/></linearGradient>
         </defs>
 
         <g class="reactor-outer-ring ring" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="186" fill="none" stroke="var(--hud-cyan)" stroke-width="1.4" stroke-dasharray="95 18 45 12 180 25 70 15" opacity=".85" filter="url(#ringGlow)"/>
-          <circle cx="250" cy="250" r="186" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="32 420" stroke-dashoffset="12" opacity=".95"/>
-          <circle cx="250" cy="250" r="186" fill="none" stroke="#fff" stroke-width="2.2" stroke-dasharray="42 440" stroke-dashoffset="260" opacity=".95"/>
-          <circle cx="250" cy="250" r="198" fill="none" stroke="var(--hud-cyan)" stroke-width=".8" stroke-dasharray="4 8 18 12" opacity=".45"/>
-          <circle cx="250" cy="250" r="214" fill="none" stroke="var(--hud-cyan)" stroke-width=".6" stroke-dasharray="2 12" opacity=".3"/>
-          <circle cx="250" cy="64" r="3.2" fill="#fff" filter="url(#ringGlow)"/><circle cx="250" cy="64" r="1.5" fill="var(--hud-cyan)"/>
-          <circle cx="436" cy="250" r="2.8" fill="var(--hud-cyan)" filter="url(#ringGlow)"/>
-          <circle cx="250" cy="436" r="3.2" fill="#fff" filter="url(#ringGlow)"/>
-          <circle cx="64" cy="250" r="2.8" fill="var(--hud-cyan)" filter="url(#ringGlow)"/>
+          <circle cx="250" cy="250" r="186" fill="none" stroke="var(--hud-blue)" stroke-width="1.4" stroke-dasharray="95 18 45 12 180 25 70 15" opacity=".55" filter="url(#ringGlow)"/>
+          <circle cx="250" cy="250" r="198" fill="none" stroke="var(--hud-cyan)" stroke-width=".8" stroke-dasharray="4 8 18 12" opacity=".5"/>
+          <circle cx="250" cy="250" r="214" fill="none" stroke="var(--hud-cyan)" stroke-width=".6" stroke-dasharray="2 12" opacity=".35"/>
           <g id="outer-labels"></g>
         </g>
 
         <g class="reactor-segment-ring ring" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="165" fill="none" stroke="var(--hud-cyan)" stroke-width="4" stroke-dasharray="22 10 35 14 15 10 40 18" opacity=".65" filter="url(#ringGlow)"/>
-          <circle cx="250" cy="250" r="165" fill="none" stroke="#fff" stroke-width="3.5" stroke-dasharray="12 120" stroke-dashoffset="45" opacity=".9"/>
-          <circle cx="250" cy="250" r="165" fill="none" stroke="#fff" stroke-width="3.5" stroke-dasharray="12 120" stroke-dashoffset="180" opacity=".9"/>
+          <circle cx="250" cy="250" r="165" fill="none" stroke="var(--hud-blue)" stroke-width="4" stroke-dasharray="22 10 35 14 15 10 40 18" opacity=".4" filter="url(#ringGlow)"/>
           <circle cx="250" cy="250" r="156" fill="none" stroke="var(--hud-blue)" stroke-width="1.5" stroke-dasharray="4 6" opacity=".5"/>
         </g>
 
         <g class="reactor-mechanical-ring ring" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="142" fill="none" stroke="var(--hud-cyan)" stroke-width="5" stroke-dasharray="6 14 18 10 32 16 8 8 24 12" opacity=".85"/>
-          <circle cx="250" cy="250" r="148" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="4 8 12 8" opacity=".8"/>
-          <circle cx="250" cy="250" r="134" fill="none" stroke="var(--hud-blue-electric)" stroke-width="1.2" stroke-dasharray="3 6" opacity=".6"/>
+          <circle cx="250" cy="250" r="142" fill="none" stroke="var(--hud-blue)" stroke-width="5" stroke-dasharray="6 14 18 10 32 16 8 8 24 12" opacity=".5"/>
           <circle cx="250" cy="250" r="154" fill="none" stroke="var(--hud-cyan)" stroke-width=".6" stroke-dasharray="1 5" opacity=".4"/>
           <g id="mech-calipers"></g>
         </g>
@@ -162,49 +153,38 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
         <g class="reactor-tick-ring ring" style="transform-origin:250px 250px">
           <g id="tick-ring"></g>
           <g id="tick-cardinals"></g>
-          <circle cx="250" cy="115" r="2.4" fill="#fff"/><circle cx="250" cy="385" r="2.4" fill="#fff"/>
-          <circle cx="115" cy="250" r="2.4" fill="#fff"/><circle cx="385" cy="250" r="2.4" fill="#fff"/>
         </g>
 
         <g class="reactor-glass-wings">
           <g filter="url(#ringGlow)">
-            <path d="M 197 202 C 192 216 189 233 189 250 C 189 267 192 284 197 298 L 204 304 C 200 286 197 268 197 250 C 197 232 200 214 204 196 Z" fill="url(#wingGradL)" stroke="var(--hud-cyan)" stroke-width="1.2"/>
-            <path d="M 197 202 L 175 190 L 179 204 L 195 214" fill="none" stroke="#fff" stroke-width="1.5" opacity=".9"/>
-            <path d="M 197 298 L 175 310 L 179 296 L 195 286" fill="none" stroke="#fff" stroke-width="1.5" opacity=".9"/>
-            <circle cx="175" cy="190" r="2" fill="#fff"/><circle cx="175" cy="310" r="2" fill="#fff"/>
+            <path d="M 197 202 C 192 216 189 233 189 250 C 189 267 192 284 197 298 L 204 304 C 200 286 197 268 197 250 C 197 232 200 214 204 196 Z" fill="url(#wingGradL)" stroke="var(--hud-blue)" stroke-width="1.2"/>
+            <circle cx="175" cy="190" r="2" fill="var(--hud-cyan)"/><circle cx="175" cy="310" r="2" fill="var(--hud-cyan)"/>
           </g>
           <g filter="url(#ringGlow)">
-            <path d="M 303 202 C 308 216 311 233 311 250 C 311 267 308 284 303 298 L 296 304 C 300 286 303 268 303 250 C 303 232 300 214 296 196 Z" fill="url(#wingGradR)" stroke="var(--hud-cyan)" stroke-width="1.2"/>
-            <path d="M 303 202 L 325 190 L 321 204 L 305 214" fill="none" stroke="#fff" stroke-width="1.5" opacity=".9"/>
-            <path d="M 303 298 L 325 310 L 321 296 L 305 286" fill="none" stroke="#fff" stroke-width="1.5" opacity=".9"/>
-            <circle cx="325" cy="190" r="2" fill="#fff"/><circle cx="325" cy="310" r="2" fill="#fff"/>
+            <path d="M 303 202 C 308 216 311 233 311 250 C 311 267 308 284 303 298 L 296 304 C 300 286 303 268 303 250 C 303 232 300 214 296 196 Z" fill="url(#wingGradR)" stroke="var(--hud-blue)" stroke-width="1.2"/>
+            <circle cx="325" cy="190" r="2" fill="var(--hud-cyan)"/><circle cx="325" cy="310" r="2" fill="var(--hud-cyan)"/>
           </g>
         </g>
 
         <g class="reactor-inner-ring ring" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="88" fill="none" stroke="var(--hud-cyan)" stroke-width="3.2" stroke-dasharray="42 6 85 8 130 12" opacity=".9" filter="url(#ringGlow)"/>
-          <circle cx="250" cy="250" r="88" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="28 240" stroke-dashoffset="20" opacity=".95"/>
-          <circle cx="250" cy="250" r="88" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="28 240" stroke-dashoffset="140" opacity=".95"/>
+          <circle cx="250" cy="250" r="88" fill="none" stroke="var(--hud-blue-deep)" stroke-width="3.2" stroke-dasharray="42 6 85 8 130 12" opacity=".6" filter="url(#ringGlow)"/>
           <g id="inner-chevrons"></g>
-          <g opacity=".75"><text x="250" y="169" text-anchor="middle" fill="#fff" font-size="4.5" font-family="monospace" font-weight="bold" letter-spacing=".5">ARC·85</text>
-          <text x="250" y="337" text-anchor="middle" fill="var(--hud-cyan)" font-size="4.5" font-family="monospace" letter-spacing=".5">FLUX·98</text></g>
-          <circle cx="250" cy="250" r="76" fill="none" stroke="var(--hud-blue)" stroke-width="1.2" stroke-dasharray="4 8" opacity=".6"/>
-          <circle cx="250" cy="250" r="68" fill="none" stroke="#fff" stroke-width=".6" stroke-dasharray="2 4" opacity=".5"/>
+          <circle cx="250" cy="250" r="76" fill="none" stroke="var(--hud-blue)" stroke-width="1.2" stroke-dasharray="4 8" opacity=".5"/>
         </g>
 
         <g class="reactor-scan-effect" style="transform-origin:250px 250px">
-          <path d="M 250 250 L 380 120 A 185 185 0 0 1 435 250 Z" fill="url(#scanGrad)" opacity=".65"/>
-          <line x1="250" y1="250" x2="435" y2="250" stroke="#fff" stroke-width="1.6" opacity=".9" style="filter:drop-shadow(0 0 6px var(--hud-cyan))"/>
-          <circle cx="435" cy="250" r="2.5" fill="#fff"/>
+          <path d="M 250 250 L 380 120 A 185 185 0 0 1 435 250 Z" fill="url(#scanGrad)" opacity=".5"/>
+          <circle cx="435" cy="250" r="2.5" fill="var(--hud-cyan)"/>
         </g>
 
         <g class="reactor-energy-core" id="energy-core" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="58" fill="none" stroke="#38bdf8" stroke-width="1" opacity=".45"/>
+          <circle cx="250" cy="250" r="58" fill="none" stroke="var(--hud-blue)" stroke-width="1" opacity=".35"/>
           <g id="azimuth-ticks"></g>
-          <circle id="core-sphere" cx="250" cy="250" r="52" fill="url(#coreSphere)" filter="url(#coreGlow)" opacity=".94"/>
-          <path d="M 220 220 C 230 208 270 208 280 220 C 265 214 235 214 220 220 Z" fill="url(#glareGrad)" opacity=".85"/>
-          <circle cx="250" cy="250" r="40" fill="none" stroke="#fff" stroke-width=".8" opacity=".25"/>
-          <circle cx="250" cy="250" r="20" fill="#fff" opacity=".5" filter="url(#coreGlow)"/>
+          <circle id="core-sphere" cx="250" cy="250" r="52" fill="url(#coreSphere)" filter="url(#coreGlow)" opacity=".96"/>
+          <circle cx="250" cy="250" r="52" fill="var(--hud-cyan)" filter="url(#stipple)" opacity=".55"/>
+          <path d="M 220 220 C 230 208 270 208 280 220 C 265 214 235 214 220 220 Z" fill="url(#glareGrad)" opacity=".8"/>
+          <circle cx="250" cy="250" r="40" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".25"/>
+          <circle cx="250" cy="250" r="20" fill="#ffffff" opacity=".45" filter="url(#coreGlow)"/>
         </g>
       </svg>
     </div>
@@ -260,67 +240,61 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
   function el(tag,attrs){var e=document.createElementNS(svgNS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
   var root=document.documentElement;
 
-  // Build degree labels (outer ring)
   (function(){
     var g=document.getElementById('outer-labels');
     var labels=[{deg:0,t:'000'},{deg:45,t:'045'},{deg:90,t:'090'},{deg:135,t:'135'},{deg:180,t:'180'},{deg:225,t:'225'},{deg:270,t:'270'},{deg:315,t:'315'}];
     labels.forEach(function(item){
-      var rad=item.deg*Math.PI/180;
       var grp=el('g',{transform:'rotate('+item.deg+' 250 250)'});
-      grp.appendChild(el('line',{x1:250,y1:56,x2:250,y2:64,stroke:'#fff','stroke-width':1.2,opacity:.9}));
-      var tx=el('text',{x:250,y:50,'text-anchor':'middle',fill:'var(--hud-cyan)','font-size':6,'font-family':'monospace','font-weight':'bold',opacity:.75,transform:'rotate(90 250 50)'});
+      grp.appendChild(el('line',{x1:250,y1:56,x2:250,y2:64,stroke:'var(--hud-blue)','stroke-width':1.2,opacity:.7}));
+      var tx=el('text',{x:250,y:50,'text-anchor':'middle',fill:'var(--hud-blue)','font-size':6,'font-family':'monospace','font-weight':'bold',opacity:.6,transform:'rotate(90 250 50)'});
       tx.textContent=item.t+'°';grp.appendChild(tx);g.appendChild(grp);
     });
   })();
-  // Mechanical caliper notches
   (function(){
     var g=document.getElementById('mech-calipers');
     [0,60,120,180,240,300].forEach(function(deg){
       var grp=el('g',{transform:'rotate('+deg+' 250 250)'});
-      grp.appendChild(el('line',{x1:250,y1:134,x2:250,y2:152,stroke:'#fff','stroke-width':1.5,opacity:.9}));
+      grp.appendChild(el('line',{x1:250,y1:134,x2:250,y2:152,stroke:'var(--hud-blue)','stroke-width':1.5,opacity:.7}));
       grp.appendChild(el('polygon',{points:'248,136 252,136 250,140',fill:'var(--hud-cyan)'}));
       g.appendChild(grp);
     });
   })();
-  // 120 precision ticks
   (function(){
     var g=document.getElementById('tick-ring');var card=document.getElementById('tick-cardinals');
     var count=120,baseR=118;
     for(var i=0;i<count;i++){
       var ang=(i*360/count);var rad=ang*Math.PI/180;
-      var card=(i%30===0),major=(i%10===0),semi=(i%5===0);
-      var len=card?10:(major?7:(semi?4.5:2.5));
+      var cardinal=(i%30===0),major=(i%10===0),semi=(i%5===0);
+      var len=cardinal?10:(major?7:(semi?4.5:2.5));
       var x1=250+Math.cos(rad)*baseR,y1=250+Math.sin(rad)*baseR;
       var x2=250+Math.cos(rad)*(baseR+len),y2=250+Math.sin(rad)*(baseR+len);
-      g.appendChild(el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:card?'#fff':(major?'#fff':'var(--hud-cyan)'),'stroke-width':card?1.6:(major?1.2:(semi?.8:.5)),opacity:card?.95:(major?.8:(semi?.5:.28))}));
+      g.appendChild(el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:'var(--hud-blue)','stroke-width':cardinal?1.6:(major?1.2:(semi?.8:.5)),opacity:cardinal?.7:(major?.55:(semi?.4:.25))}));
     }
     [0,90,180,270].forEach(function(deg){
       var grp=el('g',{transform:'rotate('+deg+' 250 250)'});
-      grp.appendChild(el('polygon',{points:'250,114 252.5,116.5 250,119 247.5,116.5',fill:'#fff',opacity:.95}));
+      grp.appendChild(el('polygon',{points:'250,114 252.5,116.5 250,119 247.5,116.5',fill:'var(--hud-cyan)',opacity:.8}));
       card.appendChild(grp);
     });
   })();
-  // Inner chevrons
   (function(){
     var g=document.getElementById('inner-chevrons');
     [0,45,90,135,180,225,270,315].forEach(function(deg){
       var grp=el('g',{transform:'rotate('+deg+' 250 250)'});
-      grp.appendChild(el('polygon',{points:'250,157 246.5,163 253.5,163',fill:(deg%90===0?'#fff':'var(--hud-cyan)'),opacity:.9}));
+      grp.appendChild(el('polygon',{points:'250,157 246.5,163 253.5,163',fill:'var(--hud-cyan)',opacity:.7}));
       g.appendChild(grp);
     });
   })();
-  // 36 azimuth ticks (core)
   (function(){
     var g=document.getElementById('azimuth-ticks');
     for(var i=0;i<36;i++){var deg=i*10;var major=(deg%30===0);
-      g.appendChild(el('line',{x1:250,y1:major?193:195,x2:250,y2:198,stroke:major?'#fff':'var(--hud-cyan)','stroke-width':major?1:.6,opacity:major?.8:.4,transform:'rotate('+deg+' 250 250)'}));
+      g.appendChild(el('line',{x1:250,y1:major?193:195,x2:250,y2:198,stroke:'var(--hud-blue)','stroke-width':major?1:.6,opacity:major?.6:.35,transform:'rotate('+deg+' 250 250)'}));
     }
   })();
 
   var STATES={
     idle:{dot:'var(--hud-cyan)',cap:'SYSTEM ONLINE &bull; TAP TO SPEAK',st:'ONLINE',coreFill:'url(#coreSphere)'},
     listening:{dot:'var(--hud-cyan-bright)',cap:'TRANSCRIBING VOICE INPUT...',st:'LISTENING',coreFill:'url(#coreSphere)'},
-    thinking:{dot:'#a78bfa',cap:'PROCESSING REQUEST...',st:'ANALYZING',coreFill:'url(#coreSphere)'},
+    thinking:{dot:'#65a30d',cap:'PROCESSING REQUEST...',st:'ANALYZING',coreFill:'url(#coreSphere)'},
     speaking:{dot:'var(--hud-cyan-bright)',cap:'JARVIS TRANSMITTING AUDIO',st:'TRANSMITTING',coreFill:'url(#coreSphere)'},
     error:{dot:'#ff2a5f',cap:'DIAGNOSTIC ALERT',st:'ALERT',coreFill:'url(#coreSphereError)'}
   };
@@ -336,7 +310,6 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
   function renderClock(){if(!liveClock)return;var n=new Date(),h=n.getHours(),m=String(n.getMinutes()).padStart(2,'0'),ap=h>=12?'PM':'AM';h=h%12;h=h?h:12;liveClock.textContent=h+':'+m+' '+ap;}
   renderClock();setInterval(renderClock,1000);
 
-  // Core audio-reactive scaling via rAF
   function tickCore(){
     requestAnimationFrame(tickCore);
     var core=document.getElementById('energy-core');
@@ -361,7 +334,6 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
   hdrSettings.addEventListener('click',function(e){e.stopPropagation();fire('onSettingsClicked');});
   coreMark.addEventListener('click',function(e){e.stopPropagation();fire('onSettingsClicked');});
 
-  // ===== Bridge: OrbHelper contract =====
   window.setOrbState=function(state,audio){if(!state)return;applyState(String(state).toLowerCase(),audio);};
   window.updateState=window.setOrbState;
   window.setAudioLevel=function(level){audioLevel=Math.min(level,1);};
@@ -369,11 +341,11 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
   window.setConnectionStatus=function(status){if(status)statusText.textContent=String(status).toUpperCase();};
   window.updateConnectionStatus=window.setConnectionStatus;
   window.setLiveTime=function(){renderClock();};window.updateLiveTime=window.setLiveTime;
-  window.setPowerState=function(isOn){if(isOn){btnPower.classList.add('btn-active');labelPower.textContent='Active';labelPower.style.color='var(--hud-cyan)';}else{btnPower.classList.remove('btn-active');labelPower.textContent='Sleep';labelPower.style.color='';}};
+  window.setPowerState=function(isOn){if(isOn){btnPower.classList.add('btn-active');labelPower.textContent='Active';labelPower.style.color='var(--hud-blue)';}else{btnPower.classList.remove('btn-active');labelPower.textContent='Sleep';labelPower.style.color='';}};
   window.updatePowerState=window.setPowerState;
   window.setMicMuted=function(isMuted){btnMic.style.opacity=isMuted?.55:1;};
   window.updateMicMuted=window.setMicMuted;
-  window.setScreenShareState=function(isSharing){if(isSharing){btnVision.classList.add('btn-active');labelVision.textContent='Vision On';labelVision.style.color='var(--hud-cyan)';}else{btnVision.classList.remove('btn-active');labelVision.textContent='Vision';labelVision.style.color='';}};
+  window.setScreenShareState=function(isSharing){if(isSharing){btnVision.classList.add('btn-active');labelVision.textContent='Vision On';labelVision.style.color='var(--hud-blue)';}else{btnVision.classList.remove('btn-active');labelVision.textContent='Vision';labelVision.style.color='';}};
   window.updateScreenShareState=window.setScreenShareState;
   window.syncChatTurns=function(){};
   window.updateLiveUserTranscript=function(){};
@@ -381,7 +353,6 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
   window.finalizeLiveTurn=function(){};
   window.setOrbTheme=function(theme,hex){window.JarvisOrb.setTheme(theme);if(theme==='custom'&&hex)window.JarvisOrb.setBackground(hex);};
 
-  // ===== Bridge: HomeFragment JarvisOrb contract =====
   var THEMES={
     cyan:{p:'#00f0ff',pb:'#70f7ff',b:'#0066ff',be:'#0284c7'},
     lime:{p:'#a3e635',pb:'#d9f99d',b:'#65a30d',be:'#84cc16'},
@@ -391,10 +362,10 @@ body.embedded .reactor-housing{width:min(100vw,100vh);height:min(100vw,100vh);ma
     gold:{p:'#fbbf24',pb:'#fef08a',b:'#d97706',be:'#f59e0b'},
     red:{p:'#ff2a5f',pb:'#ff7b9f',b:'#990526',be:'#ff2a5f'},
     crimson:{p:'#ff2a5f',pb:'#ff7b9f',b:'#990526',be:'#ff2a5f'},
-    dark:{p:'#00f0ff',pb:'#70f7ff',b:'#0284c7',be:'#0b1f4d'},
-    light:{p:'#00f0ff',pb:'#70f7ff',b:'#0066ff',be:'#0284c7'},
+    dark:{p:'#a3e635',pb:'#d9f99d',b:'#65a30d',be:'#3f6212'},
+    light:{p:'#a3e635',pb:'#d9f99d',b:'#65a30d',be:'#84cc16'},
     sunset:{p:'#ff7b50',pb:'#ffd6a0',b:'#c2410c',be:'#f97316'},
-    mark_85:{p:'#00f0ff',pb:'#70f7ff',b:'#0066ff',be:'#0284c7'},
+    mark_85:{p:'#a3e635',pb:'#d9f99d',b:'#65a30d',be:'#84cc16'},
     veronica:{p:'#fbbf24',pb:'#fef08a',b:'#d97706',be:'#f59e0b'},
     chronos:{p:'#00ff88',pb:'#a7f3d0',b:'#059669',be:'#10b981'}
   };
