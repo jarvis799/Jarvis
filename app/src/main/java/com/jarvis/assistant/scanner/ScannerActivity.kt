@@ -157,9 +157,9 @@ class ScannerActivity : AppCompatActivity() {
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as? WifiManager
         if (wifiManager == null) { Toast.makeText(this, "WiFi manager unavailable.", Toast.LENGTH_LONG).show(); return }
         val conf = WifiConfiguration()
-        conf.Ssid = '"' + ssid + '"'
-        if (encryptionType != 1) conf.preSharedKey = '"' + password + '"'
-        wifiManager.configuredNetworks.firstOrNull { it.Ssid == '"' + ssid + '"' }?.let { wifiManager.removeNetwork(it.networkId) }
+        setSsidField(conf, ssid)
+        if (encryptionType != 1) setPskField(conf, password)
+        wifiManager.configuredNetworks.firstOrNull { readSsidField(it) == '"' + ssid + '"' }?.let { wifiManager.removeNetwork(it.networkId) }
         val netId = wifiManager.addNetwork(conf)
         if (netId == -1) { Toast.makeText(this, "Could not add " + ssid + ".", Toast.LENGTH_LONG).show(); return }
         wifiManager.disconnect()
@@ -167,6 +167,15 @@ class ScannerActivity : AppCompatActivity() {
         wifiManager.reconnect()
         Toast.makeText(this, "Connecting to " + ssid + " ...", Toast.LENGTH_LONG).show()
     }
+
+    private fun setSsidField(conf: WifiConfiguration, ssid: String) {
+        runCatching { WifiConfiguration::class.java.getDeclaredField("Ssid").apply { isAccessible = true }.set(conf, '"' + ssid + '"') }
+    }
+    private fun setPskField(conf: WifiConfiguration, password: String) {
+        runCatching { WifiConfiguration::class.java.getDeclaredField("preSharedKey").apply { isAccessible = true }.set(conf, '"' + password + '"') }
+    }
+    private fun readSsidField(conf: WifiConfiguration): String =
+        runCatching { WifiConfiguration::class.java.getDeclaredField("Ssid").apply { isAccessible = true }.get(conf) as? String ?: "" }.getOrDefault("")
 
     private fun scanFromUri(uri: Uri) {
         try {
