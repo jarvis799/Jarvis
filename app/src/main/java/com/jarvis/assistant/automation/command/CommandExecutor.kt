@@ -52,9 +52,15 @@ class CommandExecutor(
                 youtubeManager.playVideo(resolvedSong)
             }
             is JarvisCommand.SearchYouTube -> youtubeManager.searchYouTube(command.query)
+            is JarvisCommand.StopMedia -> {
+                // DEV STYLE: "stop the song" now REALLY stops it - releases JARVIS's own
+                // player (foreground service + notification gone) AND pauses any external
+                // app (YouTube, Spotify) via the media key.
+                val ctx = com.jarvis.assistant.JarvisApp.instance
+                runCatching { com.jarvis.assistant.media.JarvisMusicPlayer.stopAll(ctx) }
+                youtubeManager.pausePlayback()
+            }
             is JarvisCommand.PauseMedia -> {
-                // DEV STYLE: "stop the song" now really stops it - JARVIS's own
-                // player AND any external app (YouTube, Spotify) via the media key.
                 val ctx = com.jarvis.assistant.JarvisApp.instance
                 runCatching {
                     if (com.jarvis.assistant.media.JarvisMusicPlayer.isPlaying) {

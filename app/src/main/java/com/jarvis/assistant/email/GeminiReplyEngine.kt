@@ -40,7 +40,7 @@ object GeminiReplyEngine {
 
         val payload = JSONObject()
             .put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
-            .put("generationConfig", JSONObject().put("temperature", 0.35).put("maxOutputTokens", 700))
+            .put("generationConfig", JSONObject().put("temperature", 0.7).put("maxOutputTokens", 2048))
         var connection: HttpURLConnection? = null
         return try {
             connection = (URL(ENDPOINT + apiKey).openConnection() as HttpURLConnection).apply {

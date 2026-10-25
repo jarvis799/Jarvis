@@ -19,6 +19,7 @@ sealed class JarvisCommand {
     data class OpenWebUrls(val urls: List<String>) : JarvisCommand()
     data class PhoneCall(val contactOrNumber: String) : JarvisCommand()
     object PauseMedia : JarvisCommand()
+    object StopMedia : JarvisCommand()
     object ResumeMedia : JarvisCommand()
     object NextMedia : JarvisCommand()
     object PreviousMedia : JarvisCommand()

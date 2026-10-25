@@ -223,14 +223,23 @@ object CommandParser {
 
         // 6. Media Playback Controls (Strict Anchoring + DEV STYLE multilingual
         // stop/pause so "gaan band koro" really stops the song)
+        val stopMediaPhrases = setOf(
+            "stop", "stop it", "stop that", "stop playing", "stop the music", "stop music", "stop the song",
+            "stop song", "stop the video", "stop video", "stop the playback", "stop playback", "stop playing music",
+            "stop playing the song", "stop playing the music", "stop playing the video",
+            "music band koro", "music band karo", "music band kardo", "music band kor", "music bondho koro", "music bondho", "music off", "music off koro", "music stop",
+            "gaan band koro", "gaan band karo", "gaan band kardo", "gaan bondho koro", "gaan bondho", "gaan tham jao", "gaan tham",
+            "song band koro", "song band karo", "song band kardo", "song off", "song off koro", "song stop",
+            "bajna band koro", "bajna bondho koro", "music tham jao", "bajna bondho",
+            "gaana band karo", "gaana band koro", "gaana stop", "video band koro", "video band karo",
+            "বাজনা বন্ধ করো", "গান বন্ধ করো", "মিউজিক বন্ধ করো", "এই গান বন্ধ করো", "গান থামাও", "বাজনা থামাও"
+        )
+        if (clean in stopMediaPhrases || clean.matches(Regex("$prefix(?:stop|tham(?:o)?|tham\\s+jao|band|bandho)(?:\\s+(?:music|song|gaan|gaana|video|playback|bajna|bajaana))?(?:\\s+(?:koro|kardo|kar\\s*do|kore\\s*d?ao))?$", RegexOption.IGNORE_CASE))) {
+            return ParsedCommandResult(JarvisCommand.StopMedia, 0.98f, "MEDIA_STOP")
+        }
         val pauseMediaPhrases = setOf(
-            "pause", "pause music", "pause video", "pause playback", "pause the music", "pause the video",
-            "stop playing", "stop the music", "stop music", "stop the song", "stop the video", "stop the playback",
-            "music band koro", "music band karo", "music band kardo", "music band kor", "music bondho koro", "music off", "music off koro",
-            "gaan band koro", "gaan band karo", "gaan band kardo", "gaan bondho koro", "gaan tham jao", "gaan bondho",
-            "song band koro", "song band karo", "song band kardo", "song off", "song off koro",
-            "bajna band koro", "bajna bondho koro", "music tham jao",
-            "বাজনা বন্ধ করো", "গান বন্ধ করো", "মিউজিক বন্ধ করো", "এই গান বন্ধ করো"
+            "pause", "pause music", "pause video", "pause playback", "pause the music", "pause the video", "pause the song",
+            "music pause", "song pause", "gaan pause"
         )
         if (clean in pauseMediaPhrases) {
             return ParsedCommandResult(JarvisCommand.PauseMedia, 0.98f, "MEDIA_PAUSE")
