@@ -8,24 +8,33 @@ class CommandParserMediaTest {
     private fun isPause(text: String) =
         CommandParser.parse(text).command is JarvisCommand.PauseMedia
 
+    private fun isStop(text: String) =
+        CommandParser.parse(text).command is JarvisCommand.StopMedia
+
     @Test
-    fun banglishStopSongParsesAsPause() {
-        assertTrue(isPause("gaan band koro"))
+    fun banglishStopSongParsesAsStop() {
+        assertTrue(isStop("gaan band koro"))
     }
 
     @Test
-    fun hindiStopMusicParsesAsPause() {
-        assertTrue(isPause("music band karo"))
+    fun hindiStopMusicParsesAsStop() {
+        assertTrue(isStop("music band karo"))
     }
 
     @Test
-    fun banglaStopMusicParsesAsPause() {
-        assertTrue(isPause("গান বন্ধ করো"))
+    fun banglaStopMusicParsesAsStop() {
+        assertTrue(isStop("গান বন্ধ করো"))
     }
 
     @Test
-    fun englishStopMusicParsesAsPause() {
-        assertTrue(isPause("stop the music"))
+    fun englishStopMusicParsesAsStop() {
+        assertTrue(isStop("stop the music"))
+    }
+
+    @Test
+    fun pauseParsesAsPause() {
+        assertTrue(isPause("pause music"))
+        assertTrue(isPause("pause the video"))
     }
 
     @Test
