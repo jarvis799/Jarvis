@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/orbDensityRoot"
+    android:id="@+id/orbVisualRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/themeBg">
 
     <LinearLayout
-        android:id="@+id/orbDensityTopBar"
+        android:id="@+id/orbTopBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -30,49 +29,53 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="Orb Density"
+            android:text="Orb Studio"
             android:textColor="?attr/themeTextPrimary"
             android:textSize="18sp"
+            android:fontFamily="sans-serif-medium"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvOrbDensityValue"
+    <LinearLayout
+        android:id="@+id/orbDensityRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="8dp"
-        android:text="33% - 80000 particles"
-        android:textColor="?attr/themeTextPrimary"
-        android:textSize="14sp"
-        app:layout_constraintTop_toBottomOf="@id/orbDensityTopBar" />
-
-    <SeekBar
-        android:id="@+id/seekOrbDensity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        app:layout_constraintTop_toBottomOf="@id/tvOrbDensityValue" />
+        app:layout_constraintTop_toBottomOf="@id/orbTopBar">
 
-    <TextView
-        android:id="@+id/tvOrbDensityHint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="8dp"
-        android:text="Balanced detail and smoothness."
-        android:textColor="?attr/themeTextMuted"
-        android:textSize="12sp"
-        app:layout_constraintTop_toBottomOf="@id/seekOrbDensity" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Density"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <SeekBar
+            android:id="@+id/seekOrbDensity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp" />
+
+        <TextView
+            android:id="@+id/tvOrbDensity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/themeTextMuted"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
 
     <WebView
-        android:id="@+id/orbDensityPreview"
+        android:id="@+id/orbPickerWebView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/tvOrbDensityHint"
+        app:layout_constraintTop_toBottomOf="@id/orbDensityRow"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
