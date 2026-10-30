@@ -104,7 +104,7 @@ class EmailSubAgentActivity : AppCompatActivity() {
                 )
                 true
             }
-        }.also { autoSwitch = it.second })
+        }.also { autoSwitch = it.second }.first)
 
         column.addView(switchCard(
             title = "HTML reply design",
@@ -114,7 +114,7 @@ class EmailSubAgentActivity : AppCompatActivity() {
             GmailStore.setHtmlReplyEnabled(this, checked)
             preview.visibility = if (checked) View.VISIBLE else View.GONE
             true
-        }.also { htmlSwitch = it.second })
+        }.also { htmlSwitch = it.second }.first)
 
         column.addView(ui.title("Reply design", 15f).apply { setPadding(0, ui.dp(22), 0, ui.dp(6)) })
         column.addView(
@@ -126,7 +126,7 @@ class EmailSubAgentActivity : AppCompatActivity() {
         )
 
         templateInput = EditText(this).apply {
-            setText(GmailStore.htmlTemplate(this))
+            setText(GmailStore.htmlTemplate(this@EmailSubAgentActivity))
             textSize = 11.5f
             typeface = Typeface.MONOSPACE
             setTextColor(ui.textPrimary)
