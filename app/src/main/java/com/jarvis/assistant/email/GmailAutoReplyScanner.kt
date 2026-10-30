@@ -26,6 +26,7 @@ object GmailAutoReplyScanner {
                     continue
                 }
                 if (!GmailStore.rateLimitAllows(context)) break
+                val plainTemplate = GmailStore.template(context).replace("{name}", mail.fromName)
                 val replyBody = if (aiEnabled) {
                     try {
                         val ai = GeminiReplyEngine.createReply(apiKey, mail.fromEmail, mail.subject, mail.body, signature)
@@ -35,12 +36,26 @@ object GmailAutoReplyScanner {
                         }
                         ai
                     } catch (e: Exception) {
-                        GmailStore.template(context).replace("{name}", mail.fromName)
+                        plainTemplate
                     }
                 } else {
-                    GmailStore.template(context).replace("{name}", mail.fromName)
+                    plainTemplate
                 }
-                GmailClient.send(context, mail.fromEmail, "Re: " + mail.subject, replyBody, mail.messageId)
+                val replySubject = "Re: " + mail.subject
+                // HTML design is optional: when it is on, the same reply travels as an
+                // HTML card with a plain-text fallback, so every mail client can read it.
+                if (GmailStore.htmlReplyEnabled(context)) {
+                    val html = HtmlReplyTemplate.render(
+                        GmailStore.htmlTemplate(context),
+                        mail.fromName,
+                        mail.fromEmail,
+                        mail.subject,
+                        replyBody
+                    )
+                    GmailClient.sendHtml(context, mail.fromEmail, replySubject, html, mail.messageId)
+                } else {
+                    GmailClient.send(context, mail.fromEmail, replySubject, replyBody, mail.messageId)
+                }
                 GmailStore.markHandled(context, mail.messageId)
                 GmailStore.recordAutoReply(context)
                 sent++

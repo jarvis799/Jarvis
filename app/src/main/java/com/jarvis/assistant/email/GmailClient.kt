@@ -18,7 +18,9 @@ import javax.mail.Session
 import javax.mail.Transport
 import javax.mail.UIDFolder
 import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
+import javax.mail.internet.MimeMultipart
 import javax.mail.search.FlagTerm
 
 data class GmailMessage(
@@ -155,8 +157,25 @@ object GmailClient {
         } finally { runCatching { store.close() } }
     }
 
-    /** Sends one email over SMTP SSL. */
-    suspend fun send(context: Context, to: String, subject: String, body: String, replyToId: String? = null): Unit = withContext(Dispatchers.IO) {
+    /** Sends one plain-text email over SMTP SSL. */
+    suspend fun send(context: Context, to: String, subject: String, body: String, replyToId: String? = null): Unit =
+        sendMessage(context, to, subject, body, replyToId, htmlBody = null)
+
+    /**
+     * Sends a multipart/alternative email: an HTML template plus a generated
+     * plain-text fallback, so clients that block HTML still read the reply.
+     */
+    suspend fun sendHtml(context: Context, to: String, subject: String, html: String, replyToId: String? = null): Unit =
+        sendMessage(context, to, subject, HtmlReplyTemplate.stripToPlainText(html), replyToId, htmlBody = html)
+
+    private suspend fun sendMessage(
+        context: Context,
+        to: String,
+        subject: String,
+        body: String,
+        replyToId: String?,
+        htmlBody: String?
+    ): Unit = withContext(Dispatchers.IO) {
         val email = GmailStore.email(context)
         val password = GmailStore.appPassword(context)
         if (email.isBlank() || password.isBlank()) throw IllegalStateException("Gmail is not connected yet.")
@@ -165,7 +184,14 @@ object GmailClient {
         message.setFrom(InternetAddress(email, "Jarvis for Ayan"))
         message.setRecipient(Message.RecipientType.TO, InternetAddress(to))
         message.subject = subject
-        message.setText(body, "utf-8")
+        if (htmlBody.isNullOrBlank()) {
+            message.setText(body, "utf-8")
+        } else {
+            val multipart = MimeMultipart("alternative")
+            multipart.addBodyPart(MimeBodyPart().apply { setText(body, "utf-8") })
+            multipart.addBodyPart(MimeBodyPart().apply { setContent(htmlBody, "text/html; charset=utf-8") })
+            message.setContent(multipart)
+        }
         message.sentDate = Date()
         if (replyToId != null) {
             message.setHeader("Auto-Submitted", "auto-replied")

@@ -216,6 +216,11 @@ class SettingsFragment : Fragment() {
             startActivity(Intent(requireContext(), RuntimeUpdatesActivity::class.java))
         }
 
+        // Sub Agent Showcase — WhatsApp / Email auto reply agents and every specialist tool
+        binding.rowSubAgent.setOnClickListener {
+            startActivity(Intent(requireContext(), com.jarvis.assistant.subagent.SubAgentActivity::class.java))
+        }
+
         binding.rowMemory.setOnClickListener {
             startActivity(Intent(requireContext(), MemoryActivity::class.java))
         }

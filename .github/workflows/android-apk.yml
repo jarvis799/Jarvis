@@ -119,16 +119,20 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
-          TAG="v1.6.5"
-          NAME="Jarvis-V1.6.5.apk"
-          NOTES="v1.6.5: the New Features button is gone - every new feature now lives inside the screens you already use (Settings, Orb Studio, Screen tools, Control Center). Memory keeps 3000 turns and sends the newest 300 with every request."
+          # Read the single source of truth: versionName in app/build.gradle.kts.
+          VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+          if [ -z "$VERSION" ]; then echo "Could not read versionName"; exit 1; fi
+          TAG="v$VERSION"
+          NAME="Jarvis-V$VERSION.apk"
+          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
+          echo "Publishing $NAME"
           cp "$APK" "$NAME"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           else
             gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt \
               --target "${GITHUB_REF_NAME}" \
-              --title "Jarvis V1.6.5 - No new screens, deeper memory" \
+              --title "Jarvis V$VERSION" \
               --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"

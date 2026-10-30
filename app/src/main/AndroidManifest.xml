@@ -177,6 +177,9 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <activity android:name=".subagent.SubAgentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".subagent.WhatsAppSubAgentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".subagent.EmailSubAgentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".planner.ProjectPlannerActivity" android:exported="false" />
         <activity android:name=".promptlab.PromptLabActivity" android:exported="false" />
         <activity android:name=".personality.PersonalitySettingsActivity" android:exported="false" />

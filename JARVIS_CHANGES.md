@@ -97,3 +97,34 @@ The editor serves these modified sources and includes them in this ZIP. Native A
   "Save voice", and applied on every spoken reply (`HttpSpeechOutput`) and every preview
   (`VoicePreviewPlayer`). The device voice itself is untouched and still chosen from the real engine list.
 - Version 1.6.1 (166) builds through the existing `android-apk.yml` workflow on push.
+## 2.0.1 (201) — Sub Agent architecture + Email HTML auto reply
+
+### New: Sub Agent Showcase (`subagent/`)
+- `SubAgentActivity` — premium glass hub (Professional / Premium pill, status badges, real switches)
+  opened from **Settings → Sub Agent**. Every card either toggles a real background agent or opens the
+  installed Jarvis tool that powers it. No mock cards, no dead buttons.
+- `SubAgentCatalog` / `SubAgentModels` — the agent list, categories, and honest status model.
+- `SubAgentStateResolver` — reads the REAL state (WhatsApp rules + notification access, Gmail connection
+  and switch) and flips the real switch. It never reports an agent as active when it is not configured.
+- `SubAgentRouter` — the conversation layer can answer "whatsapp agent status" or open the right
+  sub agent screen; registered as tools in `ToolOrchestrator`.
+
+### WhatsApp sub agent (`WhatsAppSubAgentActivity`)
+- Master switch for the existing notification-based auto reply engine.
+- Rule editor (contact / keyword / reply text) with delete, notification-access shortcut and an honest
+  "what this cannot do" note. Replies still travel through WhatsApp's own remote-input reply action.
+
+### Email sub agent (`EmailSubAgentActivity`)
+- Gmail connection shortcut (address + Google's 16-character App Password), auto reply switch,
+  HTML-design switch, template editor with a JavaScript-disabled live preview.
+- `HtmlReplyTemplate` — placeholder engine ({name} {email} {subject} {reply}) that HTML-escapes every
+  interpolated value (sender name, subject, AI draft) so page content can never inject markup.
+- `GmailClient.sendHtml` sends multipart/alternative (HTML + generated plain-text fallback);
+  `GmailAutoReplyScanner` uses it when the HTML design is enabled, otherwise the previous plain reply.
+
+### Project
+- Version **2.0.1 (201)**; application id unchanged, all preferences and the encrypted Gmail vault are
+  preserved, so it installs over 1.6.x without touching user data.
+- The release workflow now reads `versionName` from `app/build.gradle.kts`, so the GitHub tag and the APK
+  file name can never drift from the real build again.
+- New unit tests: `SubAgentCatalogTest`, `HtmlReplyTemplateTest`.

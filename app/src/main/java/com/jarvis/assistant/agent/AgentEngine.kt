@@ -57,6 +57,9 @@ object AgentEngine {
             return "Terminal opened, Sir."
         }
 
+        // DEV STYLE 2.0.1 - Sub Agent routing: WhatsApp / Email auto reply agents and the showcase.
+        com.jarvis.assistant.subagent.SubAgentRouter.route(context, request)?.let { return it }
+
         // DEV STYLE: APK Agent - import an APK, truthful analysis, step-by-step changes.
         if (Regex("\\bapk\\b.*(analy|agent|import|modify)|\\b(analy[sz]e|analy[sz]is)\\b.*\\bapk\\b", RegexOption.IGNORE_CASE).containsMatchIn(request)) {
             runCatching {

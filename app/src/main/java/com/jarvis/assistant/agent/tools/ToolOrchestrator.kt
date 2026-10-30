@@ -19,7 +19,10 @@ object ToolOrchestrator {
         Tool("send_email", "Send an email directly from Jarvis through the connected Gmail - no Gmail app or browser is opened", true),
         Tool("read_email", "Read the latest emails directly inside Jarvis", false),
         Tool("calendar_event", "Set a calendar event directly inside Jarvis without opening the Calendar app", true),
-        Tool("list_events", "List upcoming calendar events directly inside Jarvis", false)
+        Tool("list_events", "List upcoming calendar events directly inside Jarvis", false),
+        Tool("sub_agent_showcase", "List and open Jarvis sub agents (WhatsApp auto reply, Email auto reply, web, code, files)", false),
+        Tool("whatsapp_agent", "Report the WhatsApp auto reply agent state or open its rules screen", false),
+        Tool("email_agent", "Report the Gmail HTML auto reply agent state or open its screen", false)
     )
     fun availableTools(): List<Tool> = registry
     fun describe(input: String): String {
