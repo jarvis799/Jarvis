@@ -91,11 +91,6 @@ class HomeFragment : Fragment() {
         createTaskFallbackPanel()
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
 
-        // Features live inside the existing screens now: this pill opens Settings.
-        binding.btnNewFeatures.setOnClickListener {
-            (activity as? MainActivity)?.selectTab(MainActivity.TAB_SETTINGS)
-        }
-
         // Top Navigation
         binding.btnTopChat.setOnClickListener {
             (activity as? MainActivity)?.selectTab(MainActivity.TAB_CHAT)

@@ -387,7 +387,7 @@ class HttpChatSession(
     private fun memoryContext(): String = runCatching {
         val manager = com.jarvis.assistant.JarvisApp.instance.memoryManager
         val summary = manager.getShortTermContextSummary().trim()
-        if (summary.isEmpty()) "" else "\nRecent conversation memory (use only if relevant): " + summary.take(6000) + "\n"
+        if (summary.isEmpty()) "" else "\nRecent conversation memory (use only if relevant): " + summary.take(14000) + "\n"
     }.getOrDefault("")
 
     private fun rememberTurn(userText: String, reply: String) {

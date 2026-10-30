@@ -203,23 +203,8 @@
             layout="@layout/view_gmail_entry"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:layout_marginBottom="0dp" />
-        <Button
-            android:id="@+id/btnNewFeatures"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:minHeight="64dp"
-            android:minWidth="0dp"
-            android:text="New Features"
-            android:textAllCaps="false"
-            android:textSize="12sp"
-            android:textColor="?attr/themeTextPrimary"
-            android:background="@drawable/bg_jarvis_action_card"
-            app:backgroundTint="@null"
-            android:contentDescription="Open Inbox, Local Models, Voice Studio, Personality and Memory" />
+            android:layout_marginBottom="0dp" />
     </LinearLayout>
 
     <!-- Weather Widget Card -->

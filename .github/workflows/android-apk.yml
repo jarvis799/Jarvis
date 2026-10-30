@@ -119,16 +119,16 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
-          TAG="v1.6.4"
-          NAME="Jarvis-V1.6.4.apk"
-          NOTES="v1.6.4: offline replies, orb density and screen actions live inside the existing Settings, Orb Studio and Screen tools - no separate screens. Memory keeps 800 saved turns and the newest 200 turns in every request. Install over the existing app; do not uninstall or clear data."
+          TAG="v1.6.5"
+          NAME="Jarvis-V1.6.5.apk"
+          NOTES="v1.6.5: the New Features button is gone - every new feature now lives inside the screens you already use (Settings, Orb Studio, Screen tools, Control Center). Memory keeps 3000 turns and sends the newest 300 with every request."
           cp "$APK" "$NAME"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           else
             gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt \
               --target "${GITHUB_REF_NAME}" \
-              --title "Jarvis V1.6.4 - Features inside the existing UI, deeper memory" \
+              --title "Jarvis V1.6.5 - No new screens, deeper memory" \
               --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"

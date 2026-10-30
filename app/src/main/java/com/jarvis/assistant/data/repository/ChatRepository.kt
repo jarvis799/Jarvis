@@ -10,7 +10,7 @@ class ChatRepository(private val preferences: AppPreferences) {
 
     companion object {
         /** Memory level HIGH: how many chat turns are kept on disk and reloaded at startup. */
-        const val MAX_TURNS_KEPT = 800
+        const val MAX_TURNS_KEPT = 3000
     }
 
     private val _turns = MutableStateFlow<List<ChatTurn>>(emptyList())
