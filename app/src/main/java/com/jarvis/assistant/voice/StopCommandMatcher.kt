@@ -51,7 +51,9 @@ object StopCommandMatcher {
         val sb = StringBuilder(text.length)
         var lastSpace = false
         for (ch in text.lowercase()) {
-            if (ch.isLetterOrDigit() || ch == '-') {
+            // Bengali and Devanagari vowel signs are combining marks, not letters; keeping them
+            // is what makes "থামো" and "रुको" match instead of being split into bare consonants.
+            if (ch.isLetterOrDigit() || ch == '-' || isCombiningMark(ch)) {
                 sb.append(ch)
                 lastSpace = false
             } else if (!lastSpace) {
@@ -60,5 +62,12 @@ object StopCommandMatcher {
             }
         }
         return sb.toString().trim()
+    }
+
+    private fun isCombiningMark(ch: Char): Boolean {
+        val type = Character.getType(ch)
+        return type == Character.NON_SPACING_MARK.toInt() ||
+            type == Character.COMBINING_SPACING_MARK.toInt() ||
+            type == Character.ENCLOSING_MARK.toInt()
     }
 }

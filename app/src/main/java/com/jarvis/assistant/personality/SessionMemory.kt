@@ -80,7 +80,7 @@ object SessionGreeter {
         val duration = formatDuration(elapsedMs)
         val topicLine = if (topic.isBlank()) "" else topicHint(language, topic)
 
-        return when (language.lowercase().take(2)) {
+        return when (languageCode(language)) {
             "bn" -> "Boss, welcome back! প্রায় $duration পর ফিরলেন। এতক্ষণ কী করছিলেন, $addressName?$topicLine"
             "hi" -> "$addressName, welcome back! लगभग $duration बाद लौटे। इतनी देर में क्या कर रहे थे?$topicLine"
             else -> "Welcome back, $addressName! That was about $duration. What were you up to?$topicLine"
@@ -89,14 +89,14 @@ object SessionGreeter {
 
     /** When no timestamp exists: greet normally, never fabricate a duration. */
     fun defaultGreeting(language: String = "en", addressName: String = "Boss"): String =
-        when (language.lowercase().take(2)) {
+        when (languageCode(language)) {
             "bn" -> "Boss, আমি এখানেই আছি। বলুন, কী করতে হবে?"
             "hi" -> "$addressName, मैं यहीं हूँ। बताइए, क्या करना है?"
             else -> "I'm here, $addressName. What would you like to do?"
         }
 
     private fun topicHint(language: String, topic: String): String =
-        when (language.lowercase().take(2)) {
+        when (languageCode(language)) {
             "bn" -> " গতবার আমরা $topic নিয়ে কাজ করছিলাম — সেটাই চালিয়ে যাব?"
             "hi" -> " पिछली बार हम $topic पर काम कर रहे थे — वहीं से शुरू करें?"
             else -> " Last time we were on $topic — shall we continue?"
@@ -112,9 +112,17 @@ object SessionGreeter {
         val parts = mutableListOf<String>()
         if (days > 0) parts += plural(days, "day")
         if (hours > 0) parts += plural(hours, "hour")
-        if (minutes > 0 && days == 0L) parts += plural(minutes, "minute")
+        if (minutes > 0) parts += plural(minutes, "minute")
         return parts.joinToString(" ")
     }
+
+    /** "Bengali" / "Bangla" / "bn-BD" / "bn" all mean the same language code. */
+    private fun languageCode(language: String): String =
+        when (language.trim().lowercase()) {
+            "bengali", "bangla", "bn", "bn-bd", "bn-in" -> "bn"
+            "hindi", "hi", "hi-in" -> "hi"
+            else -> language.trim().lowercase().take(2)
+        }
 
     private fun plural(value: Long, unit: String): String =
         if (value == 1L) "1 $unit" else "$value ${unit}s"

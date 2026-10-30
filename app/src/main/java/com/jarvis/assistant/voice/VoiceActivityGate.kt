@@ -49,7 +49,8 @@ class VoiceActivityGate(
                 return Event.NONE
             }
             voicedFrames++
-            if (voicedFrames < framesToStart) return Event.NONE
+            // Start only after the full sustained window has elapsed, never on its last frame.
+            if (voicedFrames <= framesToStart) return Event.NONE
             speaking = true
             voicedFrames = 0
             silentFrames = 0
