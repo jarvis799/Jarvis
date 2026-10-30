@@ -32,6 +32,24 @@ class OrbVisualActivity : AppCompatActivity() {
 
         findViewById<android.view.View>(R.id.btnBack).setOnClickListener { finish() }
 
+        // Orb density lives inside the existing Orb Studio screen - no separate page.
+        val densityBar = findViewById<android.widget.SeekBar>(R.id.seekOrbDensity)
+        val densityValue = findViewById<android.widget.TextView>(R.id.tvOrbDensity)
+        densityBar.progress = com.jarvis.assistant.util.OrbDensity.percentFor(preferences.orbParticles)
+        densityValue.text = densityLabel(densityBar.progress)
+        densityBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                densityValue.text = densityLabel(progress)
+            }
+
+            override fun onStartTrackingTouch(bar: android.widget.SeekBar?) = Unit
+
+            override fun onStopTrackingTouch(bar: android.widget.SeekBar?) {
+                preferences.orbParticles = com.jarvis.assistant.util.OrbDensity.particlesFor(bar?.progress ?: 0)
+            }
+        })
+
         webView = findViewById(R.id.orbPickerWebView)
         assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
@@ -52,6 +70,9 @@ class OrbVisualActivity : AppCompatActivity() {
         }
         webView.loadUrl(ASSET_URL)
     }
+
+    private fun densityLabel(percent: Int): String =
+        percent.toString() + "% • " + com.jarvis.assistant.util.OrbDensity.particlesFor(percent) + " particles"
 
     private fun pushSelection() {
         webView.evaluateJavascript("window.setCurrentOrb && window.setCurrentOrb('" + preferences.orbStyle + "')", null)

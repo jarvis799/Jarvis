@@ -72,7 +72,6 @@ class SettingsFragment : Fragment() {
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
 
         loadUserData()
-        com.jarvis.assistant.ui.features.NewFeatures.install(binding.btnGmailSetup.root)
         installVoiceExperienceRow()
         setupClickListeners()
     }
@@ -196,6 +195,12 @@ class SettingsFragment : Fragment() {
             preferences.isSilentExecutionMode = isChecked
             val msg = if (isChecked) "Silent Execution Mode Enabled" else "Silent Execution Mode Disabled"
             Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        }
+
+        // Offline replies: answers with no internet, from the on-device engine (existing Settings row)
+        binding.switchOfflineReplies.isChecked = preferences.offlineReplies
+        binding.switchOfflineReplies.setOnCheckedChangeListener { _, isChecked ->
+            preferences.offlineReplies = isChecked
         }
 
         // Section 2: System & Intelligence Data

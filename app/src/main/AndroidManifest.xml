@@ -198,9 +198,6 @@
         <activity android:name=".email.GmailSettingsActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".email.InboxActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".model.ModelCatalogueActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.offline.OfflineRepliesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.settings.OrbDensityActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".screen.ScreenActionsActivity" android:exported="false" android:screenOrientation="portrait" />
         <service android:name=".email.EmailWatchService" android:exported="false" android:foregroundServiceType="dataSync" />
 
         <service

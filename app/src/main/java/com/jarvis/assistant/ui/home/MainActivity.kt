@@ -130,13 +130,14 @@ class MainActivity : AppCompatActivity() {
 
     fun toggleScreenShare() {
         MaterialAlertDialogBuilder(this).setTitle("Screen tools")
-            .setItems(arrayOf("Screen Vision (existing)", "Screenshot", "Record screen (silent)", "Stop recording and save")) { _, which ->
+            .setItems(arrayOf("Screen Vision (existing)", "Read screen / tap items", "Screenshot", "Record screen (silent)", "Stop recording and save")) { _, which ->
                 when (which) {
                     0 -> if (com.jarvis.assistant.vision.ScreenToolsService.running) {
                         Toast.makeText(this, "Stop the current recording first.", Toast.LENGTH_SHORT).show()
                     } else toggleLiveScreenShare()
-                    1, 2 -> startActivity(Intent(this, com.jarvis.assistant.vision.ScreenToolsActivity::class.java).putExtra("mode", if (which == 1) "screenshot" else "record"))
-                    3 -> if (com.jarvis.assistant.vision.ScreenToolsService.running) startService(Intent(this, com.jarvis.assistant.vision.ScreenToolsService::class.java).setAction(com.jarvis.assistant.vision.ScreenToolsService.STOP))
+                    1 -> com.jarvis.assistant.screen.ScreenActions.show(this)
+                    2, 3 -> startActivity(Intent(this, com.jarvis.assistant.vision.ScreenToolsActivity::class.java).putExtra("mode", if (which == 2) "screenshot" else "record"))
+                    4 -> if (com.jarvis.assistant.vision.ScreenToolsService.running) startService(Intent(this, com.jarvis.assistant.vision.ScreenToolsService::class.java).setAction(com.jarvis.assistant.vision.ScreenToolsService.STOP))
                 }
             }.show()
     }
