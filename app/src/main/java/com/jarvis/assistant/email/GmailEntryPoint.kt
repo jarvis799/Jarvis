@@ -12,9 +12,15 @@ object GmailEntryPoint {
             GmailStore.autoReplyEnabled(context) -> "Background auto reply ON — tap to manage"
             else -> "Auto reply paused — tap to resume"
         }
-        view.text = "GMAIL AUTO REPLY\n$state"
+        val connected = GmailStore.isConnected(context)
+        view.text = if (connected) "GMAIL INBOX\nRead & reply • Hold for auto-reply settings" else "CONNECT GMAIL\n$state"
         view.setOnClickListener {
+            val target = if (GmailStore.isConnected(context)) InboxActivity::class.java else GmailSettingsActivity::class.java
+            context.startActivity(Intent(context, target))
+        }
+        view.setOnLongClickListener {
             context.startActivity(Intent(context, GmailSettingsActivity::class.java))
+            true
         }
     }
 }

@@ -136,8 +136,8 @@ class ModelCatalogueActivity : AppCompatActivity() {
             Toast.makeText(this, "This model is already installed.", Toast.LENGTH_SHORT).show()
             return
         }
-        button.isEnabled = false
-        button.text = "Downloading…"
+        button.isEnabled = true
+        button.text = "Pause"
         note.text = "Starting…"
         downloader.start(
             model = model,
@@ -165,6 +165,7 @@ class ModelCatalogueActivity : AppCompatActivity() {
                             )
                         )
                         button.text = "Installed"
+                        button.isEnabled = false
                         note.text = "Saved. Pick it under Installed."
                         refreshInstalled()
                     } else {

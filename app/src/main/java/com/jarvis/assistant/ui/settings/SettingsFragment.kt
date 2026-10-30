@@ -72,6 +72,7 @@ class SettingsFragment : Fragment() {
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
 
         loadUserData()
+        com.jarvis.assistant.ui.features.NewFeatures.install(binding.btnGmailSetup.root)
         installVoiceExperienceRow()
         setupClickListeners()
     }
@@ -99,6 +100,7 @@ class SettingsFragment : Fragment() {
 
     private fun loadUserData() {
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
+        binding.tvFooterCredit.text = "JARVIS v${com.jarvis.assistant.BuildConfig.VERSION_NAME} • build ${com.jarvis.assistant.BuildConfig.VERSION_CODE}\nEngineered by DEV STYLE"
         val userName = preferences.userName.ifBlank { "Arian" }
         binding.tvProfileName.text = userName
         binding.tvProfileSubtitle.text = "JARVIS OPERATOR • PRIMARY USER"

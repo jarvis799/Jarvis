@@ -32,6 +32,10 @@ class InboxActivity : AppCompatActivity() {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         buildUi()
+    }
+
+    override fun onResume() {
+        super.onResume()
         load()
     }
 
@@ -124,7 +128,7 @@ class InboxActivity : AppCompatActivity() {
             setPadding(0, 0, 0, 12)
         })
         container.addView(TextView(this).apply {
-            text = message.body.take(6000)
+            text = message.body
             textSize = 13f
         })
         container.addView(TextView(this).apply {

@@ -35,7 +35,7 @@ class HudHomeSurface(private val binding: FragmentHomeBinding) {
             clear(R.id.orbContainer, ConstraintSet.TOP)
             clear(R.id.orbContainer, ConstraintSet.BOTTOM)
             connect(R.id.orbContainer, ConstraintSet.TOP, R.id.layoutTitle, ConstraintSet.BOTTOM, 4)
-            connect(R.id.orbContainer, ConstraintSet.BOTTOM, R.id.btnGmailSetup, ConstraintSet.TOP, 8)
+            connect(R.id.orbContainer, ConstraintSet.BOTTOM, R.id.layoutFeatureEntries, ConstraintSet.TOP, 8)
             constrainHeight(R.id.orbContainer, 0)
             constrainDefaultHeight(R.id.orbContainer, ConstraintSet.MATCH_CONSTRAINT_SPREAD)
             applyTo(binding.root)

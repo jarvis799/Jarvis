@@ -91,6 +91,10 @@ class HomeFragment : Fragment() {
         createTaskFallbackPanel()
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
 
+        binding.btnNewFeatures.setOnClickListener {
+            com.jarvis.assistant.ui.features.NewFeatures.show(requireContext())
+        }
+
         // Top Navigation
         binding.btnTopChat.setOnClickListener {
             (activity as? MainActivity)?.selectTab(MainActivity.TAB_CHAT)

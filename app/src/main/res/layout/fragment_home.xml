@@ -144,7 +144,7 @@
         android:orientation="vertical"
         android:gravity="center"
         android:layout_marginBottom="22dp"
-        app:layout_constraintBottom_toTopOf="@id/btnGmailSetup"
+        app:layout_constraintBottom_toTopOf="@id/layoutFeatureEntries"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -188,15 +188,39 @@
             android:layout_marginTop="5dp" />
     </LinearLayout>
 
-    <include
-        android:id="@+id/btnGmailSetup"
-        layout="@layout/view_gmail_entry"
+    <LinearLayout
+        android:id="@+id/layoutFeatureEntries"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:layout_marginBottom="10dp"
         app:layout_constraintBottom_toTopOf="@id/cardWeather"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+        <include
+            android:id="@+id/btnGmailSetup"
+            layout="@layout/view_gmail_entry"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:layout_marginBottom="0dp" />
+        <Button
+            android:id="@+id/btnNewFeatures"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:minHeight="64dp"
+            android:minWidth="0dp"
+            android:text="New Features"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:textColor="?attr/themeTextPrimary"
+            android:background="@drawable/bg_jarvis_action_card"
+            app:backgroundTint="@null"
+            android:contentDescription="Open Inbox, Local Models, Voice Studio, Personality and Memory" />
+    </LinearLayout>
 
     <!-- Weather Widget Card -->
     <LinearLayout

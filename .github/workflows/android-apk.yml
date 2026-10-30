@@ -119,16 +119,16 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
-          TAG="v1.6.1"
-          NAME="Jarvis-V1.6.1.apk"
-          NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
+          TAG="v1.6.2"
+          NAME="Jarvis-V1.6.2.apk"
+          NOTES="v1.6.2: Home New Features button; searchable direct feature access at the top of Settings; Inbox opens from connected Gmail; mail refreshes after setup; working model download pause; real installed version shown. Includes Inbox, Model Downloads, Voice Studio, Personality Studio, Memory and Developer Info. Offline model inference is NOT bundled. Download the signed APK below and update the existing app; do not uninstall or clear data. SHA-256 and certificate attached."
           cp "$APK" "$NAME"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           else
             gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt \
               --target "${GITHUB_REF_NAME}" \
-              --title "Jarvis V1.6.1" \
+              --title "Jarvis V1.6.2 — Visible Feature Access" \
               --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
