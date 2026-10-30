@@ -279,7 +279,7 @@ class HomeFragment : Fragment() {
         val accent = if (theme == "custom") preferences.customThemeColor else ""
         val url = StringBuilder("file:///android_asset/orbs/orb-host.html?embedded=1&theme=").append(theme)
         if (accent.isNotBlank()) url.append("&accent=").append(android.net.Uri.encode(accent))
-        return url.append("&orb=").append(style).toString()
+        return url.append("&orb=").append(style).append("&particles=").append(preferences.orbParticles).toString()
     }
 
     /** Shows Jarvis's own answer on the orb. Nothing else is ever drawn there. */

@@ -20,9 +20,12 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden}
   var boot = query();
   if (boot.theme) theme = boot.theme;
   if (boot.accent) accent = boot.accent;
+  var particles = parseInt(boot.particles, 10);
+  if (!(particles > 0)) particles = 0;
   function urlFor(id) {
     var u = FILES[id] + "?embedded=1&theme=" + encodeURIComponent(theme);
     if (accent) u += "&accent=" + encodeURIComponent(accent);
+    if (particles > 0) u += "&particles=" + particles;
     return u;
   }
   function show(id) {
@@ -38,6 +41,12 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     setExternalAudio: function (amp, bass, high) { post({ type: "jarvis:audio", amp: amp, bass: bass, high: high }); },
     setTheme: function (key) { if (!key || key === theme) return; theme = key; accent = ""; if (current) frame.src = urlFor(current); },
     setBackground: function (hex) { if (!hex || hex === accent) return; accent = hex; if (current) frame.src = urlFor(current); },
+    setParticles: function (n) {
+      var value = parseInt(n, 10);
+      if (!(value > 0)) return;
+      particles = value;
+      post({ type: "jarvis:particles", particles: value });
+    },
     say: function (text) { if (text) post({ type: "jarvis:say", text: String(text) }); },
     answerEnd: function () { post({ type: "jarvis:say-end" }); }
   };

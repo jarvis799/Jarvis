@@ -272,6 +272,15 @@ class JarvisConversationService : Service() {
                     return
                 }
             }
+            val appContext = JarvisApp.instance
+            if (appContext.preferences.offlineReplies && !com.jarvis.assistant.model.LlmRouter.isOnline(appContext)) {
+                Thread {
+                    val offlineAnswer = com.jarvis.assistant.model.OfflineReply.answer(appContext, text)
+                    appContext.chatRepository.addTurn(text, offlineAnswer)
+                    _events.tryEmit(offlineAnswer)
+                }.start()
+                return
+            }
             if (instance?.httpSession != null) {
                 instance.serviceScope.launch(Dispatchers.Main.immediate) { instance.httpSession?.sendText(text) }
                 return

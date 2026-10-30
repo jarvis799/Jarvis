@@ -86,6 +86,8 @@ class AppPreferences(context: Context) {
         private const val KEY_ORB_GLOW = "key_orb_glow"
         private const val KEY_ORB_SCALE = "key_orb_scale"
         private const val KEY_ORB_HUE = "key_orb_hue"
+        private const val KEY_ORB_PARTICLES = "key_orb_particles"
+        private const val KEY_OFFLINE_REPLIES = "key_offline_replies"
         private const val KEY_CUSTOM_ENDPOINT = "key_custom_endpoint"
         private const val KEY_WAKE_WORD = "key_wake_word"
         private const val KEY_THIEF_GUARD = "key_thief_guard"
@@ -393,6 +395,17 @@ class AppPreferences(context: Context) {
     var orbHue: Float
         get() = prefs.getFloat(KEY_ORB_HUE, -1f)
         set(value) = prefs.edit().putFloat(KEY_ORB_HUE, value).apply()
+
+    /** How many particles the orb draws (20,000 - 200,000). */
+    var orbParticles: Int
+        get() = prefs.getInt(KEY_ORB_PARTICLES, com.jarvis.assistant.util.OrbDensity.DEFAULT_PARTICLES)
+            .coerceIn(com.jarvis.assistant.util.OrbDensity.MIN_PARTICLES, com.jarvis.assistant.util.OrbDensity.MAX_PARTICLES)
+        set(value) = prefs.edit().putInt(KEY_ORB_PARTICLES, value.coerceIn(com.jarvis.assistant.util.OrbDensity.MIN_PARTICLES, com.jarvis.assistant.util.OrbDensity.MAX_PARTICLES)).apply()
+
+    /** When the phone has no internet, answer from the on-device engine instead of failing. */
+    var offlineReplies: Boolean
+        get() = prefs.getBoolean(KEY_OFFLINE_REPLIES, true)
+        set(value) = prefs.edit().putBoolean(KEY_OFFLINE_REPLIES, value).apply()
 
     var customEndpoint: String
         get() = prefs.getString(KEY_CUSTOM_ENDPOINT, "")?.trim().orEmpty()

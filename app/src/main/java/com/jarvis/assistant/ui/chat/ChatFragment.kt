@@ -224,6 +224,13 @@ class ChatFragment : Fragment() {
         if (text.isBlank()) return
 
         if (!JarvisConversationService.isServiceRunning()) {
+            val app = JarvisApp.instance
+            if (app.preferences.offlineReplies && !com.jarvis.assistant.model.LlmRouter.isOnline(requireContext())) {
+                binding.etMessageInput.text?.clear()
+                hideKeyboard()
+                Thread { app.chatRepository.addTurn(text, com.jarvis.assistant.model.OfflineReply.answer(app, text)) }.start()
+                return
+            }
             (activity as? MainActivity)?.handleMicOrOrbClick()
         }
 

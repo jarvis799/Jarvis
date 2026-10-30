@@ -52,6 +52,7 @@
         // Theme aware palette: the orb follows the app theme (and a custom accent) so it
     // never reads as a flat, unreadable blob on a light or custom background.
     const themeParams = (function () { try { return new URLSearchParams(location.search || ''); } catch (e) { return new URLSearchParams(''); } })();
+    const bootParticles = (function () { const n = parseInt(themeParams.get('particles') || '', 10); return Number.isFinite(n) ? n : 0; })();
     let themeKey = String(themeParams.get('theme') || 'light').toLowerCase();
     let accentHex = themeParams.get('accent') || '';
     const hexToRgb = function (hex) {
@@ -408,6 +409,7 @@ colors[1] = SPEAK_PINK;
   })();
 
   const orb = document.getElementById('orb');
+  if (bootParticles > 0) orb.setAttribute('particles', String(bootParticles));
   let stopMic = null;
   let recognition = null;
 
@@ -456,6 +458,9 @@ colors[1] = SPEAK_PINK;
       if (data.type === 'jarvis:state' && data.state) {
         orb.state = data.state;
         if (data.state !== 'speaking') { try { speechSynthesis?.cancel(); } catch (e) {} }
+      } else if (data.type === 'jarvis:particles') {
+        const particles = parseInt(data.particles, 10);
+        if (Number.isFinite(particles) && particles >= 200) orb.setAttribute('particles', String(particles));
       } else if (data.type === 'jarvis:say') {
         speakAnswer(data.text);
       } else if (data.type === 'jarvis:audio') {
