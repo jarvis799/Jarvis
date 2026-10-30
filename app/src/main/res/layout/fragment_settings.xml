@@ -152,7 +152,7 @@
                             android:id="@+id/tvProfileName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Dev Ayan"
+                            android:text="Arian"
                             android:textColor="?attr/themeTextPrimary"
                             android:textSize="18sp"
                             android:fontFamily="sans-serif-medium"
@@ -1511,7 +1511,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Creator profile • Ayan Sir (Dev Ayan)"
+                            android:text="Creator profile • Arian Ahamed Ayan"
                             android:textColor="?attr/themeTextMuted"
                             android:textSize="12sp"
                             android:fontFamily="sans-serif"

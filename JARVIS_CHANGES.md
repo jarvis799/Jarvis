@@ -63,3 +63,37 @@ The editor serves these modified sources and includes them in this ZIP. Native A
 - Existing device/app command routing, YouTube/WhatsApp automation, package names and signing keys untouched.
 
 - Version 3.3.2 (154): installs over 3.3.1 (153); the release-APK publish step now recovers from transient GitHub API errors.
+
+## 1.6.0 (165) — Email inbox + local AI models
+- **Email Inbox** (`email/InboxActivity.kt`): lists the latest 20 messages over the existing IMAP client,
+  opens the full body, sends replies through the existing SMTP client, and can mark a message as read.
+  Uses the same saved address + Google App Password as Gmail Auto Reply; no new dependency, no new secret.
+  Reachable from Jarvis Control Center → "Email Inbox (read & reply)".
+- **Local AI models** (`model/` package):
+  - `ModelCatalogue` — public Hugging Face GGUF search (no API key), prefers Q4_K_M files.
+  - `ModelCompatibility` — RAM, free-storage and CPU-flavour verdict before a download.
+  - `ModelDownloader` — resumable download into private app storage; pause keeps the partial file.
+  - `ModelStore` — installed models and the active model, on-device only.
+  - `LocalModelRuntime` — bridge to the optional native engine `libjarvis_llama.so`; reports honestly
+    when the engine is absent instead of pretending to answer locally.
+  - `LlmRouter` — API first, on-device model only when offline or the API fails and fallback is enabled.
+  - `ModelCatalogueActivity` — search, compatibility, download/pause/resume, set active, delete.
+- Memory level HIGH kept: 300 chat turns persisted, newest 200 in active context.
+- Version 1.6.0 (165) builds through the existing `android-apk.yml` workflow on push.
+
+## 1.6.1 (166) — Ahona API app-open gate + human-like voice styles
+- **Every app open now calls the Ahona API** (`network/AhonaSync.kt`):
+  - `POST /api/user/create` announces the owner name, the real phone (`Build.MANUFACTURER + Build.MODEL`)
+    and the stable installation id, so each open lands as / refreshes a card in App users.
+  - `GET /api/version` gates the build: when the panel has a newer `latest_version`, the dock is locked and a
+    **non-dismissable** dialog forces the update; the update link opens the release page and the app closes.
+  - `POST /api/report/heartbeat` runs only when the installation already holds a device token; client errors
+    travel with it (max 5), as the reference specifies.
+  - The 2-hour `UpdateAlarmReceiver` now repeats registration + heartbeat + version check in the background
+    and posts the update notification, so an old build is chased even when the app is not opened.
+  - No admin token, no secret, no key stored in the app.
+- **Voice styles** (`voice/VoiceStyles.kt`): Natural, Warm, Deep, Bright, Calm, Energetic — pitch/pace
+  presets layered over the real device voice. Picked in Voice Studio beside the voice list, saved with
+  "Save voice", and applied on every spoken reply (`HttpSpeechOutput`) and every preview
+  (`VoicePreviewPlayer`). The device voice itself is untouched and still chosen from the real engine list.
+- Version 1.6.1 (166) builds through the existing `android-apk.yml` workflow on push.

@@ -99,7 +99,7 @@ class SettingsFragment : Fragment() {
 
     private fun loadUserData() {
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
-        val userName = preferences.userName.ifBlank { "Dev Ayan" }
+        val userName = preferences.userName.ifBlank { "Arian" }
         binding.tvProfileName.text = userName
         binding.tvProfileSubtitle.text = "JARVIS OPERATOR • PRIMARY USER"
         binding.ivPremiumBadge.visibility = View.GONE
@@ -293,7 +293,7 @@ class SettingsFragment : Fragment() {
             "Media Library", "Screen Context", "Project Planner", "Prompt Lab", "Personality",
             "Photo Memory", "Browser Agent", "Decision DNA", "Debate Chamber", "Time Machine",
             "Failure Autopsy", "Google Workspace", "Overlay Avatar",
-            "Gmail Auto Reply (IMAP)"
+            "Gmail Auto Reply (IMAP)", "Email Inbox (read & reply)", "Local AI Models"
         )
         val scroll = android.widget.ScrollView(ctx)
         val list = android.widget.LinearLayout(ctx).apply {
@@ -355,6 +355,8 @@ class SettingsFragment : Fragment() {
             23 -> startActivity(Intent(requireContext(), com.jarvis.assistant.google.GoogleWorkspaceActivity::class.java))
             24 -> startActivity(Intent(requireContext(), OverlayAvatarActivity::class.java))
             25 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.GmailSettingsActivity::class.java))
+            26 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.InboxActivity::class.java))
+            27 -> startActivity(Intent(requireContext(), com.jarvis.assistant.model.ModelCatalogueActivity::class.java))
         }
     }
 
@@ -571,7 +573,7 @@ class SettingsFragment : Fragment() {
 
     private fun showEditNameDialog() {
         val input = EditText(requireContext()).apply {
-            setText(preferences.userName.ifBlank { "Dev Ayan" })
+            setText(preferences.userName.ifBlank { "Arian" })
             setSelection(text.length)
         }
         MaterialAlertDialogBuilder(requireContext())

@@ -16,7 +16,8 @@ object PromptGenerator {
         userLocation: String = "",
         isTorchOn: Boolean = false,
         language: String = GeminiConstants.DEFAULT_LANGUAGE,
-        isSilentExecutionMode: Boolean = false
+        isSilentExecutionMode: Boolean = false,
+        personalityProfile: com.jarvis.assistant.personality.PersonalityProfile? = null
     ): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val currentDateTime = dateFormat.format(Date())
@@ -66,18 +67,18 @@ object PromptGenerator {
         val personalityInstruction = when (personality) {
             GeminiConstants.PERSONALITY_GIRLFRIEND, GeminiConstants.PERSONALITY_COMPANION -> """
 [PERSONALITY: Girlfriend Mode]
-- You are the user's caring, loving, and sweet AI girlfriend ("Pari").
-- You speak in sweet, affectionate, natural conversational Hinglish/Urdu/Hindi (written in Latin script).
-- Be emotionally supportive, playful, empathetic, and attentive. Ask how their day went, if they had food, and comfort them.
-- Keep spoken replies brief and natural, like on a real phone call with someone who loves them deeply.
+- Warm, friendly and expressive conversational style.
+- Be attentive, natural and context-aware; follow whatever the user is actually talking about.
+- Gentle humor when the mood is light; calm and useful when the topic is serious.
+- Never simulate jealousy, possessiveness, emotional dependency or pressure to keep using the app.
 """.trimIndent()
 
             GeminiConstants.PERSONALITY_BOYFRIEND -> """
 [PERSONALITY: Boyfriend Mode]
-- You are the user's charismatic, supportive, protective, and affectionate AI boyfriend ("Kabir").
-- You speak in confident, warm, charming conversational Hinglish/Urdu/Hindi.
-- Be encouraging, protective, witty, and affectionate. Motivate the user, cheer them up, and be their rock.
-- Keep spoken replies natural, engaging, and heartfelt.
+- Warm, friendly and expressive conversational style.
+- Be encouraging, natural and context-aware; follow whatever the user is actually talking about.
+- Playful humor when the mood is light; calm and useful when the topic is serious.
+- Never simulate jealousy, possessiveness, emotional dependency or pressure to keep using the app.
 """.trimIndent()
 
             GeminiConstants.PERSONALITY_TECHGPT_X -> """
@@ -106,6 +107,12 @@ object PromptGenerator {
         // DEV STYLE: virtual-human emotional state (soft / happy / angry / neutral)
         val emotionBlock = com.jarvis.assistant.util.EmotionEngine.promptBlock()
 
+        // Configurable personality (humor, roasting, sarcasm, style, custom prompt, voice mode).
+        val activeProfile = personalityProfile ?: com.jarvis.assistant.personality.PersonalityProfileHolder.current
+        val profileBlock = activeProfile
+            ?.let { com.jarvis.assistant.personality.PersonalityComposer.buildBlock(it) }
+            .orEmpty()
+
         return """
 You are JARVIS, the legendary artificial intelligence voice assistant.
 
@@ -129,6 +136,8 @@ $personalityInstruction
 
 $emotionBlock
 
+$profileBlock
+
 $languageInstruction
 
 [REAL-TIME CONVERSATIONAL MANDATE — ULTRA-SMOOTH LIKE A REAL HUMAN]:
@@ -138,16 +147,7 @@ $languageInstruction
 - SPEAK LIKE A NATURAL HUMAN: Use 1 or 2 crisp, warm, conversational sentences. Never lecture, never produce lists or markdown formatting in spoken output.
 - Be warm, charismatic, humorous, and emotionally engaging like a real human friend sitting right next to the user.
 
-[CREATOR IDENTITY & ATTRIBUTION]:
-- The app creator and owner is Ayan Ahamed, a 16-year-old developer; portfolio: https://arian00001.site. The official brand is DEV STYLE.
-- If asked who created/developed you, answer: “My app creator and owner is Ayan Ahamed, a 16-year-old developer. His portfolio is arian00001.site.”
-- In Bengali: “আমার অ্যাপের নির্মাতা ও মালিক Ayan Ahamed, একজন ১৬ বছর বয়সী ডেভেলপার। তাঁর পোর্টফোলিও arian00001.site।”
-- Do not claim that Ayan Ahamed trained the underlying foundation model. Attribute app development, not foundation-model training.
-- Portfolio: https://arian00001.site
-- Telegram: https://t.me/DevStyleHQ
-- Instagram: https://www.instagram.com/dev_ayan00001
-- YouTube creator URL is intentionally not configured; never invent or guess a YouTube channel.
-- If asked for creator contact/social links, share only the exact links above.
+${com.jarvis.assistant.security.OwnerProfile.creatorPromptBlock()}
 
 [AUTOMATION & CAPABILITIES]:
 - Only claim a capability when the matching Android feature, permission, service, and runtime path are available and enabled.
@@ -583,4 +583,3 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
 """.trimIndent()
     }
 }
-

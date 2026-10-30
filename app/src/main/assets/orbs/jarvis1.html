@@ -113,7 +113,7 @@ colors[1] = SPEAK_PINK;
       return cache.get(count);
     };
 
-    const autoCount = () => 60000;
+    const autoCount = () => 80000;
     const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
     const ease = p => p * p * (3 - 2 * p);
 
@@ -213,7 +213,7 @@ colors[1] = SPEAK_PINK;
       get state(){const v=this.getAttribute('state');return names.includes(v)?v:'listening';}
       set state(v){this.setAttribute('state',v);}
       get level(){const n=Number(this.getAttribute('level')??'.5');return Number.isFinite(n)?clamp(n):.5;}
-      get particles(){const n=parseInt(this.getAttribute('particles'),10);return Number.isFinite(n)?clamp(n,200,150000):(this.auto??=this.gl?autoCount():1000);}
+      get particles(){const n=parseInt(this.getAttribute('particles'),10);return Number.isFinite(n)?clamp(n,200,220000):(this.auto??=this.gl?autoCount():1000);}
       attributeChangedCallback(){if(this.ctx)this.setAttribute('aria-label',`Assistant Orb`);}
 
       say(text, {words, audio, voice} = {}) {
@@ -358,8 +358,8 @@ colors[1] = SPEAK_PINK;
         const halo=ctx.createRadialGradient(360,360,10,360,360,340+46*env*ws);
         halo.addColorStop(0,`rgba(${color},${glow})`);halo.addColorStop(.57,`rgba(${color},${glow*.47})`);halo.addColorStop(1,`rgba(${color},0)`);
         ctx.fillStyle=halo;ctx.fillRect(0,0,720,720);
-        const count=Math.min(120000,Math.round(this.particles*2)),seeds=seedsFor(count);
-        const fine=Math.max(.62,Math.pow(1000/count,.55)*1.8),light=Math.min(1.35,Math.pow(1000/(count*fine*fine),.3)*2.7);
+        const count=Math.min(200000,Math.round(this.particles*2)),seeds=seedsFor(count);
+        const fine=Math.max(.70,Math.pow(1000/count,.50)*1.7),light=Math.min(1.42,Math.pow(1000/(count*fine*fine),.26)*2.9);
         if(!this.buf||this.buf.length<count*5)this.buf=new Float32Array(count*5);
         const buf=this.buf,[w0,w1]=w,spin=t*.23,cs=Math.cos(spin),sn=Math.sin(spin),wave=8+this.level*22;
         const rings=onsets.map(o=>{const a=t-o;return {h:-1.15+a*2.1,g:Math.pow(1-a/1.2,2)};});
@@ -377,7 +377,7 @@ colors[1] = SPEAK_PINK;
             for(const R of rings){const d=(p.y-R.h)/.15,g=Math.exp(-d*d)*R.g;r+=7*g;lit+=g;}
             vx+=x*r*w1;vy+=p.y*r*w1;vz+=z*r*w1;lit*=w1;
           }
-          const depth=(vz+240)/480,persp=850/(850-vz),alpha=.3+.78*depth+.42*env*ws;
+          const depth=(vz+240)/480,persp=850/(850-vz),alpha=.34+.80*depth+.42*env*ws;
           const r=(.8+depth*1.35)*(.75+.25*Math.sin(p.a+t*1.6))*fine*(1+.5*Math.min(1,lit)),o=i*5;
           buf[o]=(360+vx*persp)*unit;buf[o+1]=(360+vy*persp)*unit;buf[o+2]=r*11*unit;
           buf[o+3]=Math.min(1,(alpha+1.2*lit)*light);buf[o+4]=vz>75||lit>.25?(Math.max(alpha-.5,0)+lit*.8)*.75*light:0;

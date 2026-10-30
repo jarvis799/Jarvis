@@ -119,8 +119,8 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
-          TAG="v1.5.0"
-          NAME="Jarvis-V1.5.0.apk"
+          TAG="v1.6.1"
+          NAME="Jarvis-V1.6.1.apk"
           NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
           cp "$APK" "$NAME"
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -128,7 +128,7 @@ jobs:
           else
             gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt \
               --target "${GITHUB_REF_NAME}" \
-              --title "Jarvis V1.5.0" \
-              --notes "$NOTES"
+              --title "Jarvis V1.6.1" \
+              --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"

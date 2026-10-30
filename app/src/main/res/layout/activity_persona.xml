@@ -203,7 +203,7 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <!-- 2. Girlfriend Mode (Pari) -->
+            <!-- 2. Girlfriend Mode -->
             <LinearLayout
                 android:id="@+id/cardPersonaGirlfriend"
                 android:layout_width="match_parent"
@@ -245,7 +245,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Girlfriend Mode (Pari)"
+                            android:text="Girlfriend Mode"
                             android:textColor="?attr/themeTextPrimary"
                             android:textSize="16sp"
                             android:fontFamily="sans-serif-medium"
@@ -287,7 +287,7 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <!-- 3. Boyfriend Mode (Kabir) -->
+            <!-- 3. Boyfriend Mode -->
             <LinearLayout
                 android:id="@+id/cardPersonaBoyfriend"
                 android:layout_width="match_parent"
@@ -329,7 +329,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Boyfriend Mode (Kabir)"
+                            android:text="Boyfriend Mode"
                             android:textColor="?attr/themeTextPrimary"
                             android:textSize="16sp"
                             android:fontFamily="sans-serif-medium"

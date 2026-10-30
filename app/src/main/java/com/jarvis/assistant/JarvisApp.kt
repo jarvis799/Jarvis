@@ -75,6 +75,7 @@ class JarvisApp : Application() {
         instance = this
         preferences = AppPreferences(this)
         chatRepository = ChatRepository(preferences)
+        com.jarvis.assistant.personality.PersonalityProfileHolder.refresh(this)
         appScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             if (com.jarvis.assistant.email.GmailStore.isConnected(this@JarvisApp) &&
                 com.jarvis.assistant.email.GmailStore.autoReplyEnabled(this@JarvisApp)) {
@@ -205,4 +206,3 @@ class JarvisApp : Application() {
             private set
     }
 }
-

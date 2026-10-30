@@ -63,13 +63,29 @@ class AudioPlayer(
 
     private val isTurnComplete = AtomicBoolean(false)
 
+    /**
+     * Barge-in guard. After the user interrupts, PCM belonging to the cancelled answer keeps
+     * arriving for a short while; without this it re-opens the track and the old answer
+     * restarts. Inbound audio is dropped until the server signals turn completion, and the
+     * window expires on its own so a lost signal can never leave Jarvis permanently mute.
+     */
+    @Volatile private var dropAllUntil = 0L
+
     fun notifyTurnComplete() {
         isTurnComplete.set(true)
+        dropAllUntil = 0L
+    }
+
+    /** User spoke over Jarvis: flush now and refuse the remainder of that response. */
+    fun interruptForBargeIn() {
+        dropAllUntil = System.currentTimeMillis() + 1500L
+        flush()
     }
 
     fun start() {
         if (isRunning.get()) return
         isRunning.set(true)
+        dropAllUntil = 0L
 
         playbackThread = Thread {
             try {
@@ -156,6 +172,7 @@ class AudioPlayer(
     }
 
     fun enqueueAudio(pcmData: ByteArray) {
+        if (System.currentTimeMillis() < dropAllUntil) return
         if (pcmData.size >= 16) {
             val validLen = pcmData.size and 1.inv()
             val aligned = if (validLen == pcmData.size) pcmData else pcmData.copyOf(validLen)

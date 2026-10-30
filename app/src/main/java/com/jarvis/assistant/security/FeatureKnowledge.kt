@@ -16,7 +16,7 @@ object FeatureKnowledge {
     const val APP_VERSION = "6.0"
 
     const val CREATOR_IDENTITY: String =
-        "Amar creator Ayan Sir (Ayan Ahamed), the mind behind DEV STYLE. Portfolio arian00001.site."
+        "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
 
     private val capabilities = listOf(
         "Voice + text chat, 2D animated avatar, Hindi-first replies",

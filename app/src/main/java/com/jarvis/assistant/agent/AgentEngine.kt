@@ -21,7 +21,8 @@ object AgentEngine {
 
     suspend fun process(
         userInput: String, basePrompt: String, endpoint: String,
-        apiKey: String, model: String, context: Context
+        apiKey: String, model: String, context: Context,
+        onDelta: ((String) -> Unit)? = null
     ): String {
         if (!FeatureFlags.engineEnabled) return HttpChatClient().ask(endpoint, basePrompt, apiKey, model)
 
@@ -150,13 +151,25 @@ object AgentEngine {
             sb.toString()
         }
 
-        var reply = if (FeatureFlags.isEnabled(FeatureFlags.errorRecovery))
+        // Voice pipeline: every device-command, plugin, permission and web-search path above
+        // has already returned, so this is the plain conversational answer - the only place
+        // where streaming is safe. Deltas go straight to the speech pipeline.
+        val streamed = if (onDelta != null && !com.jarvis.assistant.network.EndpointConfig.usesGet(endpoint)) {
+            runCatching {
+                HttpChatClient().stream(endpoint, enhancedPrompt, apiKey, model) { delta -> onDelta.invoke(delta) }
+            }.getOrNull()?.takeIf { it.isNotBlank() }
+        } else null
+
+        var reply = if (streamed != null) streamed
+        else if (FeatureFlags.isEnabled(FeatureFlags.errorRecovery))
             ErrorRecovery.execute { HttpChatClient().ask(endpoint, enhancedPrompt, apiKey, model) }
         else HttpChatClient().ask(endpoint, enhancedPrompt, apiKey, model)
 
         // DEV STYLE: some free prompt-URL wrappers answer with a canned "no info" line when
         // the prompt confuses them - retry once with the plain user text.
-        if (isCannedFailure(reply)) {
+        // Skipped after streaming: the first answer has already been spoken and cannot be
+        // taken back, so a second answer would talk over itself.
+        if (streamed == null && isCannedFailure(reply)) {
             val plain = runCatching { ErrorRecovery.execute { HttpChatClient().ask(endpoint, request, apiKey, model) } }.getOrNull()
             if (!plain.isNullOrBlank() && !isCannedFailure(plain)) reply = plain
         }
@@ -178,7 +191,7 @@ object AgentEngine {
             )
         }
 
-        if (FeatureFlags.isEnabled(FeatureFlags.resultVerification)) {
+        if (streamed == null && FeatureFlags.isEnabled(FeatureFlags.resultVerification)) {
             val verification = ResultVerifier.verify(userInput, reply)
             if (!verification.passed) {
                 val retryPrompt = ResultVerifier.issuesBlock(verification) + enhancedPrompt
@@ -215,7 +228,7 @@ object AgentEngine {
 [LANGUAGE + BEHAVIOUR RULES - HIGHEST PRIORITY]:
 1. Reply in Hindi (हिंदी, Devanagari) by default. Use another language only when the user writes in it.
 2. Never reply nonsense, off-topic filler or generic excuses. Always answer exactly what was asked.
-3. You are JARVIS running on the user's Android app. Your creator and owner is Ayan Sir (Ayan Ahamed), 16 years old - brand DEV STYLE, portfolio arian00001.site. Address him as Sir or Ayan Sir. You KNOW the app features and how they work:
+3. You are JARVIS running on the user's Android app. Your creator and owner is Arian Ahamed Ayan, ${com.jarvis.assistant.security.OwnerProfile.CREATOR_TITLE} from Bangladesh - brand DEV STYLE, portfolio arian00001.site. Address the user as Boss or by their name; the creator is the developer, not the user. You KNOW the app features and how they work:
 - Voice + text chat: tap the avatar on Home to talk, type in the Chat tab; images and files can be attached in chat.
 - Background terminal: Jarvis runs shell/package commands silently (python, node, pip, npm, apt/pkg, git, curl, ls...) and returns real output - no terminal window needed.
 - WhatsApp: auto-reply rules and WhatsApp assistant commands.

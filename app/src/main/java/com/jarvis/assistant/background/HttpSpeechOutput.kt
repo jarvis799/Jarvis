@@ -21,6 +21,8 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     private var utteranceId = ""
     private var interrupted = false
     private var closed = false
+    private val appContext = context.applicationContext
+    private var voiceApplied = false
     var isPaused = false
         private set
     private var engine: TextToSpeech? = null
@@ -42,6 +44,17 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
         if (withTimeoutOrNull(8000) { ready.await() } != true) { onError("Android TTS is unavailable; read the reply in chat."); return }
         val result = engine?.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) { onError("Install a TTS voice for " + locale.displayLanguage); return }
+        // Voice Studio selection (applied once per instance, after setLanguage so it wins).
+        if (!voiceApplied) {
+            voiceApplied = true
+            engine?.let { tts ->
+                com.jarvis.assistant.voice.TtsVoiceSelector.applyPreferred(appContext, tts)
+                com.jarvis.assistant.voice.VoiceStyles.current(appContext)?.let { style ->
+                    tts.setPitch(style.pitch)
+                    tts.setSpeechRate(style.rate)
+                }
+            }
+        }
         text = value
         offset = 0
         interrupted = false

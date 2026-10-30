@@ -162,7 +162,7 @@ class JarvisConversationService : Service() {
                 if (_conversationState.value == ConversationState.SPEAKING) {
                     Log.i("JarvisService", "Manual interruption: stopping audio playback")
                     service.serviceScope.launch(Dispatchers.Main.immediate) { service.httpSession?.interrupt() }
-                    service.audioPlayer?.flush()
+                    service.audioPlayer?.interruptForBargeIn()
                     _conversationState.value = ConversationState.LISTENING
                 }
             }
@@ -1531,7 +1531,7 @@ class JarvisConversationService : Service() {
                             consecutiveVoicedFrames++
                             if (consecutiveVoicedFrames >= 4) {
                                 Log.i("JarvisService", "Headset voice barge-in: user spoke over assistant (amp=$amplitude)")
-                                audioPlayer?.flush()
+                                audioPlayer?.interruptForBargeIn()
                                 try { tts?.stop() } catch (_: Exception) {}
                                 setConversationState(ConversationState.LISTENING)
                                 lastUserSpeechDetectedTime = now
@@ -3023,7 +3023,7 @@ class JarvisConversationService : Service() {
                 if (com.jarvis.assistant.security.CreatorAuthenticationService.isCreator(this)) {
                     announce("Boss, tumi to amar creator! Ayan Sir, DEV STYLE - ami tomar-i banano Jarvis.")
                 } else {
-                    announce("Amake amar creator Ayan Ahamed banaishe - brand DEV STYLE. Portfolio arian00001.site, YouTube JARVIS AI, Telegram DevStyleHQ, Instagram dev_ayan00001.")
+                    announce(com.jarvis.assistant.security.OwnerProfile.IDENTITY_ANSWER_BN)
                 }
                 return
             }

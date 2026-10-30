@@ -30,7 +30,13 @@ class MemoryManagementActivity : AppCompatActivity() {
 
     private fun buildUi() {
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 24, 24, 24) }
-        TextView(this).apply { text = "Memory Management"; textSize = 20f; setPadding(0, 0, 0, 16); container.addView(this) }
+        TextView(this).apply { text = "Memory Management"; textSize = 20f; setPadding(0, 0, 0, 4); container.addView(this) }
+        TextView(this).apply {
+            text = "Memory level: HIGH — the last ${com.jarvis.assistant.data.repository.ChatRepository.MAX_TURNS_KEPT} chat turns are saved on this device and the newest ${com.jarvis.assistant.data.memory.MemoryManager.MAX_SHORT_TERM_TURNS} stay in the active context."
+            textSize = 12f
+            setPadding(0, 0, 0, 16)
+            container.addView(this)
+        }
         container.addView(Button(this).apply { text = "Export Memories"; setOnClickListener { exportMemories() } })
         container.addView(Button(this).apply { text = "Import Memories"; setOnClickListener { openImportFile() } })
         container.addView(Button(this).apply { text = "Clear All Memories"; setOnClickListener {

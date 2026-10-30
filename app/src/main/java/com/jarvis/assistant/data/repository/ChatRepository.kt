@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class ChatRepository(private val preferences: AppPreferences) {
 
+    companion object {
+        /** Memory level HIGH: how many chat turns are kept on disk and reloaded at startup. */
+        const val MAX_TURNS_KEPT = 300
+    }
+
     private val _turns = MutableStateFlow<List<ChatTurn>>(emptyList())
     val turns: StateFlow<List<ChatTurn>> = _turns.asStateFlow()
 
@@ -37,7 +42,7 @@ class ChatRepository(private val preferences: AppPreferences) {
         )
 
         currentList.add(newTurn)
-        if (currentList.size > 100) {
+        if (currentList.size > MAX_TURNS_KEPT) {
             currentList.removeAt(0)
         }
 

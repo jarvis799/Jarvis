@@ -46,6 +46,114 @@ class HttpChatClient {
     }
 
     /**
+     * Streaming variant of [ask] for OpenAI-compatible endpoints.
+     *
+     * Returns the complete answer, and reports each text delta through [onDelta] as it
+     * arrives so speech can start on the first sentence. Returns an empty string when the
+     * endpoint does not stream, which tells the caller it is safe to fall back to [ask]
+     * without having already spoken anything.
+     *
+     * GET prompt-URL wrappers cannot stream and are not attempted here.
+     */
+    suspend fun stream(
+        endpoint: String,
+        prompt: String,
+        apiKey: String = "",
+        model: String = "",
+        onDelta: (String) -> Unit
+    ): String {
+        require(endpoint.isNotBlank() && EndpointConfig.validationError(endpoint) == null && endpoint.startsWith("https://", true)) { "Configure your own HTTPS endpoint in Settings." }
+        require(prompt.isNotBlank() && prompt.length <= 8000) { "Please use 1 to 8000 characters." }
+        if (EndpointConfig.usesGet(endpoint)) return ""
+        return requestStream(endpoint, streamBody(prompt, model), apiKey, onDelta)
+    }
+
+    private fun streamBody(prompt: String, model: String): RequestBody {
+        val messages = JSONArray().put(JSONObject().put("role", "user").put("content", prompt))
+        val payload = JSONObject().put("messages", messages).put("stream", true)
+        if (model.isNotBlank()) payload.put("model", model)
+        return payload.toString().toRequestBody("application/json".toMediaType())
+    }
+
+    private suspend fun requestStream(
+        url: String, body: RequestBody, apiKey: String, onDelta: (String) -> Unit
+    ): String = suspendCancellableCoroutine { continuation ->
+        val builder = Request.Builder()
+            .header("Accept", "text/event-stream, application/json")
+            .header("Content-Type", "application/json")
+        if (apiKey.isNotBlank()) builder.header("Authorization", "Bearer " + apiKey)
+        val request = runCatching { builder.url(url).post(body).build() }
+            .getOrElse { continuation.resumeWithException(it); return@suspendCancellableCoroutine }
+        val call = client.newCall(request)
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isActive) continuation.resumeWithException(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    response.use { resp ->
+                        check(resp.isSuccessful) { "Custom endpoint returned HTTP " + resp.code }
+                        val payload = checkNotNull(resp.body) { "Empty endpoint response." }
+                        val streamed = resp.header("Content-Type").orEmpty().contains("event-stream", true)
+
+                        if (!streamed) {
+                            // The endpoint ignored stream=true: hand the whole answer over once.
+                            val whole = decodeReply(payload.source().readUtf8())
+                            if (continuation.isActive) {
+                                onDelta(whole)
+                                continuation.resume(whole)
+                            }
+                        } else {
+                            val source = payload.source()
+                            val text = StringBuilder()
+                            var chars = 0L
+                            while (continuation.isActive && !source.exhausted()) {
+                                val line = source.readUtf8Line() ?: break
+                                chars += line.length
+                                if (chars > MAX_REPLY_BYTES) break
+                                if (!line.startsWith("data:")) continue
+                                val data = line.removePrefix("data:").trim()
+                                if (data == "[DONE]") break
+                                val delta = decodeDelta(data)
+                                if (delta.isEmpty()) continue
+                                text.append(delta)
+                                onDelta(delta)
+                            }
+                            if (continuation.isActive) continuation.resume(text.toString().trim())
+                        }
+                    }
+                } catch (e: Exception) {
+                    if (continuation.isActive) continuation.resumeWithException(e)
+                }
+            }
+        })
+    }
+
+    /** Reads one text delta out of an SSE payload, across the API shapes this app supports. */
+    private fun decodeDelta(payload: String): String {
+        if (payload.isEmpty() || payload.startsWith(":")) return ""
+        val value = runCatching { JSONTokener(payload).nextValue() }.getOrNull() as? JSONObject ?: return ""
+        val choice = value.optJSONArray("choices")?.optJSONObject(0)
+        choice?.optJSONObject("delta")?.let { delta ->
+            val content = delta.optString("content")
+            if (content.isNotEmpty()) return content
+            val parts = delta.optJSONArray("parts")
+            if (parts != null && parts.length() > 0) {
+                val partText = parts.optJSONObject(0)?.optString("text").orEmpty()
+                if (partText.isNotEmpty()) return partText
+            }
+        }
+        choice?.optString("text").orEmpty().let { if (it.isNotEmpty()) return it }
+        val gemini = value.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")
+            ?.optJSONArray("parts")?.optJSONObject(0)?.optString("text").orEmpty()
+        if (gemini.isNotEmpty()) return gemini
+        value.optJSONObject("message")?.optString("content").orEmpty().let { if (it.isNotEmpty()) return it }
+        return ""
+    }
+
+    /**
      * Prompt-URL GET first (the format these wrappers advertise), then
      * OpenAI messages POST, then prompt/input JSON POSTs as fallbacks.
      */

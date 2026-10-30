@@ -19,7 +19,7 @@ class MemoryManager(
 ) {
     companion object {
         private const val TAG = "MemoryManager"
-        private const val MAX_SHORT_TERM_TURNS = 60
+        const val MAX_SHORT_TERM_TURNS = 200
     }
 
     // --- Short-Term Memory (Preloaded with persistent history) ---

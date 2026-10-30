@@ -29,6 +29,14 @@ class PersonalitySettingsActivity : AppCompatActivity() {
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 24, 24, 24) }
         TextView(this).apply { text = "Personality & Memory Settings"; textSize = 20f; setPadding(0, 0, 0, 16); container.addView(this) }
 
+        // Personality Studio: humor, roasting, custom prompt, voice mode, voice studio.
+        container.addView(Button(this).apply {
+            text = "Personality Studio, Voice Studio & Developer Info"
+            setOnClickListener {
+                startActivity(android.content.Intent(this@PersonalitySettingsActivity, PersonalityStudioActivity::class.java))
+            }
+        })
+
         // Long-Term Memory toggle
         container.addView(Button(this).apply {
             text = "Long-Term Memory: " + if (store.isMemoryEnabled()) "ON" else "OFF"

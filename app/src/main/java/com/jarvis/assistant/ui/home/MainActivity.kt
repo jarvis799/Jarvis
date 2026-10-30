@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     val viewModel: MainViewModel by viewModels()
     private var activeSnackbar: Snackbar? = null
+    private val sessionMemory by lazy { com.jarvis.assistant.personality.SessionMemoryStore(this) }
 
     private var currentTab = TAB_HOME
     private val homeFragment by lazy { HomeFragment() }
@@ -240,12 +241,47 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         viewModel.refreshSettings()
         com.jarvis.assistant.background.JarvisConversationService.maybeSendBossGreeting()
+        showWelcomeBackGreeting()
         val prefs = com.jarvis.assistant.JarvisApp.instance.preferences
         if (appliedThemeKey != prefs.appTheme || appliedCustomHex != prefs.customThemeColor) {
             appliedThemeKey = prefs.appTheme
             appliedCustomHex = prefs.customThemeColor
             recreate()
         }
+    }
+
+    /**
+     * Real elapsed-time welcome. Uses the stored exit timestamp only; a missing timestamp
+     * means no duration is mentioned, and a brief app switch is silently skipped.
+     */
+    private fun showWelcomeBackGreeting() {
+        val elapsed = sessionMemory.elapsedSinceLastExit()
+        if (elapsed < 0) return
+        val app = com.jarvis.assistant.JarvisApp.instance
+        if (!com.jarvis.assistant.personality.ConversationMemoryStore(this).isReturnGreetingEnabled()) {
+            sessionMemory.recordSessionEnd()
+            return
+        }
+        val prefs = app.preferences
+        val greeting = com.jarvis.assistant.personality.SessionGreeter.greeting(
+            elapsedMs = elapsed,
+            topic = sessionMemory.lastTopic(),
+            language = prefs.language,
+            addressName = prefs.userName.ifBlank { "Boss" }
+        )
+        if (greeting.isNotBlank()) {
+            app.chatRepository.addTurn("(Session resumed)", greeting)
+        }
+        // Consume the timestamp so changing screens never repeats the greeting.
+        sessionMemory.recordSessionEnd()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        sessionMemory.recordSessionEnd(
+            topic = sessionMemory.lastTopic(),
+            state = com.jarvis.assistant.personality.SessionState.IDLE
+        )
     }
 
     private fun setupNavigationDock() {
@@ -377,7 +413,7 @@ class MainActivity : AppCompatActivity() {
         appPrefs.pendingAdminContactPopup = false
         val o = com.jarvis.assistant.security.OwnerProfile
         val msg = buildString {
-            appendLine("Account created successfully. Contact the admin (Ayan Sir / Dev Ayan) any time:")
+            appendLine("Account created successfully. Contact the developer (Arian Ahamed Ayan) any time:")
             appendLine()
             if (o.WHATSAPP_NUMBER != null) appendLine("WhatsApp: ${o.WHATSAPP_NUMBER}")
             appendLine("Telegram: ${o.TELEGRAM_URL}")
@@ -448,29 +484,52 @@ class MainActivity : AppCompatActivity() {
         viewModel.toggleSession()
     }
 
-    // DEV STYLE: new-version popup — compares the installed version with the backend's min_app_version
-        private fun checkForAppUpdate() {
+    // DEV STYLE: every app open talks to the Ahona API — who opened, from which phone, and which build.
+    private fun checkForAppUpdate() {
         val installed = installedVersion()
         Thread {
-            runCatching {
-                val check = com.jarvis.assistant.network.AhonaApi.versionCheck(installed)
-                if (check.updateAvailable) runOnUiThread {
+            val ownerName = runCatching {
+                com.jarvis.assistant.JarvisApp.instance.preferences.userName
+            }.getOrDefault("")
+            runCatching { com.jarvis.assistant.network.AhonaSync.register(this, ownerName) }
+            val gate = runCatching {
+                com.jarvis.assistant.network.AhonaSync.gate(this, installed)
+            }.getOrNull()
+            if (gate != null && gate.forced) {
+                runOnUiThread {
                     if (isFinishing || isDestroyed) return@runOnUiThread
-                    val url = check.updateUrl.ifBlank { "https://github.com/arian00001/User-jarvis/releases/latest" }
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle("JARVIS " + check.latestVersion + " available")
-                        .setMessage(check.message.ifBlank { "New version " + check.latestVersion + " is live. Update now — the old version will stop working." })
-                        .setCancelable(false)
-                        .setPositiveButton("UPDATE") { _, _ ->
-                            runCatching {
-                                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
-                            }
-                            finishAffinity()
-                        }
-                        .show()
+                    showUpdateGate(gate)
                 }
             }
         }.start()
+    }
+
+    /** Old builds must not be usable: the dock is locked and the dialog cannot be dismissed. */
+    private fun showUpdateGate(gate: com.jarvis.assistant.network.AhonaSync.Gate) {
+        binding.bottomDock.isEnabled = false
+        binding.tabMic.isEnabled = false
+        binding.tabMic.alpha = 0.4f
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Update required — JARVIS " + gate.latestVersion)
+            .setMessage(
+                gate.message.ifBlank {
+                    "This build (" + installedVersion() + ") can no longer be used. Update to JARVIS " +
+                        gate.latestVersion + " to keep using Jarvis."
+                }
+            )
+            .setCancelable(false)
+            .setPositiveButton("UPDATE NOW") { _, _ ->
+                runCatching {
+                    startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(gate.resolvedUrl())
+                        )
+                    )
+                }
+                finishAffinity()
+            }
+            .show()
     }
 
     // DEV STYLE: Jarvis calls the version API every 2 hours in the background too

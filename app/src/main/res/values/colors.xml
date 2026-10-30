@@ -57,4 +57,12 @@
     <color name="naira_avatar_bg">#0A2540</color>
     <color name="naira_input_bg">#051329</color>
     <color name="naira_chip_bg">#0A1A33</color>
+
+    <!-- Personality & Voice Studio palette (white + lime glassmorphism) -->
+    <color name="studio_surface">#FFFFFF</color>
+    <color name="studio_surface_alt">#F4F7F0</color>
+    <color name="studio_accent">#A3E635</color>
+    <color name="studio_text_primary">#111A0D</color>
+    <color name="studio_text_secondary">#5C6B54</color>
+    <color name="studio_border">#E2E8DC</color>
 </resources>
