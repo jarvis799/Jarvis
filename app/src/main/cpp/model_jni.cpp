@@ -44,7 +44,7 @@ std::string generate(const std::string &path, const std::string &system, const s
     std::call_once(backend_once, [] { llama_backend_init(); ggml_backend_load_all(); });
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
-    model_params.use_mmap = true;
+    model_params.load_mode = LLAMA_LOAD_MODE_MMAP;
     model_params.check_tensors = true;
     std::unique_ptr<llama_model, decltype(&llama_model_free)> model(
         llama_model_load_from_file(path.c_str(), model_params), llama_model_free);
@@ -77,7 +77,7 @@ std::string generate(const std::string &path, const std::string &system, const s
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(
         llama_sampler_chain_init(llama_sampler_chain_default_params()), llama_sampler_free);
     if (!sampler) throw std::runtime_error("Could not allocate the local sampler.");
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_penalties(64, 1.1f, 0.0f, 0.0f));
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_penalties(llama_vocab_n_tokens(vocab), 64, 1.1f, 0.0f, 0.0f));
     llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_k(40));
     llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_p(0.9f, 1));
     llama_sampler_chain_add(sampler.get(), llama_sampler_init_temp(0.65f));
