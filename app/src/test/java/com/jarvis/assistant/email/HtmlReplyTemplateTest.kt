@@ -22,7 +22,9 @@ class HtmlReplyTemplateTest {
             subject = "Order",
             reply = "Thanks for your email."
         )
-        assertTrue(html.contains("Hi Ayan,"))
+        // The card greets the sender itself ("Thanks for reaching out, Ayan."), so the
+        // greeting must come from the template - not twice from the AI draft.
+        assertTrue(html.contains("Ayan."))
         assertTrue(html.contains("Thanks for your email."))
         assertFalse(html.contains(HtmlReplyTemplate.PLACEHOLDER_NAME))
         assertFalse(html.contains(HtmlReplyTemplate.PLACEHOLDER_REPLY))
@@ -31,7 +33,7 @@ class HtmlReplyTemplateTest {
     @Test
     fun blankNameFallsBackToThere() {
         val html = HtmlReplyTemplate.render(HtmlReplyTemplate.STARTER, "", "", "", "Hello")
-        assertTrue(html.contains("Hi there,"))
+        assertTrue(html.contains("Thanks for reaching out, there."))
     }
 
     @Test
