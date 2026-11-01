@@ -796,7 +796,7 @@ class JarvisConversationService : Service() {
                 userLocation = preferences.userLocation,
                 isTorchOn = app.phoneControlManager.isTorchOn,
                 language = preferences.language,
-                isSilentExecutionMode = preferences.isSilentExecutionMode
+                isSilentExecutionMode = preferences.isSilentExecutionMode, adultEducationEnabled = preferences.adultEducationEnabled
             ) + FEATURE_LIST_BRIEF + com.jarvis.assistant.security.FeatureKnowledge.capabilitiesText()
         }
     }

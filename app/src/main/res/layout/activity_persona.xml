@@ -119,6 +119,10 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.jarvis.assistant.personality.AdultEducationSettingsView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <!-- 1. Jarvis Pro (Default) -->
             <LinearLayout
                 android:id="@+id/cardPersonaJarvis"

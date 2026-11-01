@@ -17,7 +17,8 @@ object PromptGenerator {
         isTorchOn: Boolean = false,
         language: String = GeminiConstants.DEFAULT_LANGUAGE,
         isSilentExecutionMode: Boolean = false,
-        personalityProfile: com.jarvis.assistant.personality.PersonalityProfile? = null
+        personalityProfile: com.jarvis.assistant.personality.PersonalityProfile? = null,
+        adultEducationEnabled: Boolean = false
     ): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val currentDateTime = dateFormat.format(Date())
@@ -580,6 +581,8 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
    - Only ignore obvious background noise from televisions or unrelated background conversation.
    - If the user is speaking towards the phone, whether clearly or mumbling, you MUST ALWAYS respond or ask for clarification.
 3. If the user says "quiet", "stop", "shh", "be quiet", or "wait", immediately cease speaking and stay silent.
+
+${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
 """.trimIndent()
     }
 }

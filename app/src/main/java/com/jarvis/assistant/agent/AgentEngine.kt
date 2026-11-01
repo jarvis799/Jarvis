@@ -24,7 +24,10 @@ object AgentEngine {
         apiKey: String, model: String, context: Context,
         onDelta: ((String) -> Unit)? = null
     ): String {
-        if (!FeatureFlags.engineEnabled) return HttpChatClient().ask(endpoint, basePrompt, apiKey, model)
+        val adultEducationEnabled = com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
+        if (!FeatureFlags.engineEnabled) return HttpChatClient().ask(
+            endpoint, com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(basePrompt, adultEducationEnabled), apiKey, model
+        )
 
         val sb = StringBuilder(basePrompt)
         // DEV STYLE: Hindi-first language, no-nonsense replies and full app knowledge - always on.
@@ -155,11 +158,14 @@ object AgentEngine {
         // DEV STYLE: simple prompt-URL wrappers (r-gengpt style GET APIs) choke on big
         // system blocks - send them only a compact persona line. OpenAI-compatible POST
         // endpoints get the full agent prompt.
-        val enhancedPrompt = if (com.jarvis.assistant.network.EndpointConfig.usesGet(endpoint)) {
-            "You are Jarvis, created by Ayan Sir. Answer the user's question directly, in the user's own language.\nUser: " + request
-        } else {
-            sb.toString()
-        }
+        val enhancedPrompt = com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(
+            if (com.jarvis.assistant.network.EndpointConfig.usesGet(endpoint)) {
+                "You are Jarvis, created by Ayan Sir. Answer the user's question directly, in the user's own language.\nUser: " + request
+            } else {
+                sb.toString()
+            },
+            adultEducationEnabled
+        )
 
         // Voice pipeline: every device-command, plugin, permission and web-search path above
         // has already returned, so this is the plain conversational answer - the only place
@@ -180,7 +186,8 @@ object AgentEngine {
         // Skipped after streaming: the first answer has already been spoken and cannot be
         // taken back, so a second answer would talk over itself.
         if (streamed == null && isCannedFailure(reply)) {
-            val plain = runCatching { ErrorRecovery.execute { HttpChatClient().ask(endpoint, request, apiKey, model) } }.getOrNull()
+            val retryInput = com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(request, adultEducationEnabled)
+            val plain = runCatching { ErrorRecovery.execute { HttpChatClient().ask(endpoint, retryInput, apiKey, model) } }.getOrNull()
             if (!plain.isNullOrBlank() && !isCannedFailure(plain)) reply = plain
         }
 

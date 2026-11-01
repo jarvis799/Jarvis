@@ -1,63 +1,16 @@
-# JARVIS — IMPLEMENTATION TRACKER (single source of truth)
+# JARVIS — historical implementation inventory
 
-**Status vocabulary:** `[ ]` NOT STARTED · `[~]` IN PROGRESS · `[UI]` UI IMPLEMENTED, LOGIC INCOMPLETE · `[CODE]` CODE IMPLEMENTED, NOT FULLY VERIFIED · `[PASS]` TESTED AND VERIFIED · `[BLOCKED]` REQUIRES EXTERNAL ACTION · `[FAIL]` FAILED VERIFICATION
+**Current tracker: [`../JARVIS_IMPLEMENTATION_TRACKER.md`](../JARVIS_IMPLEMENTATION_TRACKER.md), updated 2026-11-01.** The sections retained below are the earlier inventory, not current verification evidence. The root tracker supersedes historical version, delivery, model and test claims.
 
-`[PASS]` is only used where a build, a device run, or a runtime screenshot proves the behaviour. Nothing in this file is `[PASS]` yet: no APK has been produced in this environment.
+Current inspected remote: `jarvis799/Jarvis`, branch `main`, commit `85c82678e064ff3b710db56b9faa52d2362da99e`; source version 2.0.3 / 203. The existing local checkout retains earlier uncommitted work. No push, build success, install or release is claimed for this repair.
 
-Last updated: 2026-10-30 (audit pass), project root `jarvis-repo/`.
+The new native 18+ Adult Education Mode is wired to a separate persistent flag and both Live and HTTPS response paths. Status: **IMPLEMENTED, NOT FULLY TESTED**. Three XML files and source/resource wiring passed static checks. Build and focused unit-test commands both exited 1 because Java was not available. Nine tests were authored, not successfully executed.
 
----
+The actual UI is native XML/ViewBinding with local WebViews for visuals. The Base44 web preview does not run the Android project. The installed phone version and APK contents have not been inspected, so this document no longer asserts that a particular old APK is installed.
 
-## 1. DELIVERY STATUS (verified, not claimed)
-
-| Operation | Status | Evidence |
-|---|---|---|
-| Source edited | YES | working tree: `git status --short` → **104** changed/untracked files |
-| Source saved to correct directory | YES | `find . -name TtsVoiceCatalog.kt` → `./jarvis-repo/app/src/main/java/com/jarvis/assistant/voice/TtsVoiceCatalog.kt`; single Gradle project at `./jarvis-repo/build.gradle.kts` + `./jarvis-repo/app/build.gradle.kts` |
-| Version metadata updated | NO (intentional) | `app/build.gradle.kts:32` `versionCode = 202`, `:33` `versionName = "2.0.2"` — unchanged, because a version must not be bumped without a successful build |
-| APK built | NO | `find . -name "*.apk"` → empty; no `app/build/` output directory exists |
-| APK installed | NOT VERIFIED / NO | no device or emulator attached to this environment |
-| Frontend deployed | NOT APPLICABLE | the UI is native Android; assets are bundled (`file:///android_asset/...`). There is no remote web frontend for this app |
-| Source pushed to remote | NO | `git log -1` → `7f08b2b Sun Oct 25 2026 ci: name release asset Jarvis-V1.5.0.apk` — no commit after the audit/repair work; no tags |
-| Release published | NO | requires the APK, which does not exist |
-
-**VERSION REPORT**
-
-```
-CURRENT SOURCE VERSION:        2.0.2
-CURRENT BUILD VERSION:         none produced in this environment (last remote build artifact: Jarvis-V1.5.0.apk per commit 7f08b2b)
-CURRENT INSTALLED VERSION:     NOT VERIFIED (no device access)
-LATEST BUILD VERSION:          NOT VERIFIED (GitHub Actions tab of jarvis799/Jarvis is not readable from here)
-VERSION CODE:                  202
-BUILD STATUS:                  NOT RUN (no JDK/Android SDK in this sandbox)
-APK CREATED:                   NO
-APK INSTALLED:                 NOT VERIFIED
-SOURCE PUSHED TO REMOTE:       NO
-FRONTEND DEPLOYED:             NOT APPLICABLE
-```
+The earlier status symbols below describe source inventory only: `[ ]` NOT IMPLEMENTED, `[~]` PARTIALLY IMPLEMENTED, `[UI]` UI ONLY, `[CODE]` IMPLEMENTED BUT UNVERIFIED, `[BLOCKED]` BLOCKED. No feature is VERIFIED merely because its class or UI exists.
 
 ---
-
-## 2. ARCHITECTURE (confirmed from source)
-
-- **Native Android**, Kotlin, `minSdk 26 / targetSdk 28 / compileSdk 34`, ViewBinding + XML layouts, Fragment-based navigation (`MainActivity.setContentView(binding.root)`).
-- **Not** Jetpack Compose. **Not** a remote-URL hybrid.
-- WebView is used only for embedded visual assets and viewers:
-  - `OrbHelper.kt:121` → `file:///android_asset/hud/index.html`
-  - `HomeFragment.kt:273` → `file:///android_asset/hud/index.html?home=1`
-  - `HomeFragment.kt:276` → `file:///android_asset/orbs/orb-host.html?embedded=1&theme=…`
-  - `OrbVisualActivity.kt:53` → orb picker asset
-  - Browser/media viewers load user or remote content by design.
-- Therefore: **editing Kotlin cannot change any web preview of this project**, and only a rebuilt APK can change the running app.
-
-## 3. ROOT CAUSE OF "THE APP LOOKS UNCHANGED"
-
-1. The Base44 preview renders the React project (`src/pages/Home.jsx` — a repository browser). It never executes the Android code in `jarvis-repo/`.
-2. No APK was compiled in this environment — no JDK/Android SDK, no build directory, no artifact (evidence in §1).
-3. The GitHub remote (`https://github.com/jarvis799/Jarvis.git`) received **no commit** for any of this work, so the Actions build never produced a new APK either.
-4. The phone is therefore running the last published artifact (`Jarvis-V1.5.0.apk` per commit `7f08b2b`, 2026-10-25), which predates every change in this audit series.
-
-Nothing about the code "not being saved" applies — the files are saved and in the single correct project. The gap is **build → artifact → install**, which requires either this environment to gain an Android toolchain or a push to the remote.
 
 ## 4. LOCKED DESIGN SYSTEM (direction: premium lime)
 
@@ -97,14 +50,14 @@ Nothing about the code "not being saved" applies — the files are saved and in 
 | HOME-03 | Mic / send / cancel | Home | `VoiceTurnCoordinator.kt`, `VoiceRecognitionService.kt`, `BargeInMonitor.kt` | `[CODE]` | services wired; unit tests for coordinator/chunker exist | device verify |
 | HOME-04 | Model/provider indicator | Home | `HomeFragment` status views | `[CODE]` | reads `preferences.aiModel` | verify no fake online badge |
 | AI-01 | Provider + API key setup | API Connection | `ApiConnectionActivity.kt`, `activity_api_connection.xml` | `[CODE]` | key stored in EncryptedSharedPreferences (`AppPreferences.kt`) | device verify; surface validation errors |
-| AI-02 | Gemini model selection | API Connection | `GeminiLiveModels.kt`, `GeminiLiveWebSocket.kt:48`, radio group in layout | `[CODE]` | invented `gemini-3.1-flash-agent` replaced by `gemini-3.8-live-extended-thinking`; 0 stale refs | device verify against live endpoint |
+| AI-02 | Gemini model selection | API Connection | `GeminiLiveModels.kt`, `GeminiLiveWebSocket.kt`, radio group in layout | `[BLOCKED]` | existing model IDs have NOT been revalidated against current official documentation in this repair | official documentation check and real endpoint tests required; historical replacement claim is not validation |
 | TTS-01 | Engine + voice discovery | Voice Studio | `TtsVoiceCatalog.kt`, `VoiceStudioActivity.kt` | `[CODE]` | voices discovered from installed `TextToSpeech` | device verify |
 | TTS-02 | Pitch / rate persistence | Voice Studio | `VoiceStyles.kt`, `AppPreferences.kt` | `[CODE]` | persisted; `current(context)` returns saved style | device verify |
 | TTS-03 | Preview + test speech | Voice Studio | `VoicePreviewPlayer.kt` | `[CODE]` | preview path uses selected voice | device verify |
 | TTS-04 | Voice applied on service announcements | Home (service TTS) | `JarvisConversationService.kt:655` → `TtsVoiceSelector.applyTo` | `[CODE]` | call present; `applyTo` defined at `TtsVoiceCatalog.kt:102` | device verify |
 | TTS-05 | Bengali/English offline availability | Voice Studio | `EndpointConfig.speechLocale` | `[CODE]` | locale mapping present | device verify; report actual engine coverage |
 | ID-01 | Assistant name + user name | Settings | `SettingsFragment` edit-name dialog, `AppPreferences` | `[CODE]` | persists | device verify |
-| ID-02 | Avatar photo selection | Settings / Home | — | `[ ]` | no picker for profile avatar (only `bgremove` picks images) | implement picker + fallback |
+| ID-02 | Avatar photo selection | Settings / Home | `ProfileAvatarStore.kt`, `SettingsFragment.kt`, `fragment_settings.xml` (`ivProfileAvatar`) | `[CODE]` | photo-picker contract, 512px JPEG in app storage, change/remove dialog, icon fallback | device verify |
 | SCAN-01 | Camera scan / QR / OCR | Scanner | `ScannerActivity.kt`, `activity_scanner.xml`, `BarcodeAnalyzer`, `OcrProcessor` | `[CODE]` | layout↔binding ids match; permission + back handling fixed earlier | device verify |
 | SCAN-02 | Torch + gallery import | Scanner | `ScannerActivity`, `ic_flashlight`, `ic_gallery` | `[CODE]` | controls sized and wired | device verify torch on hardware with flash |
 | SUB-01 | Sub-agent list + live status | Sub Agents | `SubAgentActivity.kt`, `SubAgentRouter.kt`, `SubAgentStateResolver.kt` | `[CODE]` | status resolved from real stores | device verify |
@@ -112,13 +65,13 @@ Nothing about the code "not being saved" applies — the files are saved and in 
 | SUB-03 | Gmail auto-reply agent | Sub Agents | `EmailSubAgentActivity`, `GmailAutoReplyWorker`, `GmailClient` | `[CODE]` | IMAP/SMTP app-password flow; caps enforced | device verify with real mailbox |
 | CONN-01 | Google Workspace OAuth | Connectors | `GoogleWorkspaceActivity`, `GoogleWorkspaceManager` | `[CODE]` | `play-services-auth` AuthorizationClient | device verify consent flow |
 | CONN-02 | Connector grid screen (Google/Gmail/Calendar/WhatsApp/Facebook) | Connectors | — | `[ ]` | no such screen located | implement if required by blueprint |
-| BACKUP-01 | Create/export backup | Backup | — | `[ ]` | grep: no backup implementation (TimeMachine snapshots unrelated) | design safe format (exclude secrets) |
-| BACKUP-02 | Restore with validation | Backup | — | `[ ]` | — | implement validation before write |
+| BACKUP-01 | Create/export backup | Backup | `BackupManager.kt`, `BackupActivity.kt` | `[CODE]` | SAF create-document, versioned JSON, allowlist only — no key/token/password keys | device verify |
+| BACKUP-02 | Restore with validation | Backup | `BackupManager.kt`, `BackupActivity.kt` | `[CODE]` | format+app tag checked, per-key type check, confirm dialog, `commit()` failure reported | device verify |
 | PERM-01 | Permission status list + system intents | Permissions | `PermissionActivity.kt`, `activity_permission.xml` | `[CODE]` | status read from real checks | device verify denied/granted states |
 | SET-01 | Settings main menu | Settings | `fragment_settings.xml`, `SettingsFragment.kt` | `[CODE]` | row set stable after overlay removal | device verify |
 | SET-02 | Control Center sub-menu | Settings | `SettingsFragment.showControlCenterDialog` | `[CODE]` | 27 labels ↔ 27 dispatch cases | device verify |
 | ONB-01 | Onboarding with carousel | Onboarding | — | `[ ]` | no onboarding screen in source | implement |
-| UI-01 | Chat border beam animation | Home/Chat | — | `[ ]` | grep: no beam/glow component | implement |
+| UI-01 | Chat border beam animation | Home/Chat | `ChatBorderBeamView.kt`, `fragment_chat.xml` (`chatBorderBeam`) | `[CODE]` | sweeping gradient border, 3400ms loop, non-clickable overlay over the list | device verify |
 | TYPE-01 | Typing settings (autocorrect, suggestions, vibration) | Typing | — | `[ ]` | not located | implement |
 | TOUCH-01 | Touch Guard toggle | Touch Guard | — | `[ ]` | not located | implement |
 | EVT-01 | Event triggers (charger/battery announcements) | Advanced | — | `[ ]` | not located | implement |
@@ -202,7 +155,7 @@ Nothing about the code "not being saved" applies — the files are saved and in 
 ## 8. RELEASE PROCEDURE (project policy)
 
 1. Build: `./gradlew :app:assembleRelease -PJARVIS_CREATOR_KEY=<key> -PJARVIS_RELEASE_STORE_FILE=…` (signing inputs are mandatory — `verifyReleaseSecurityInputs` fails the build without them).
-2. Version rule: `versionCode` = `major*100 + minor*10 + patch` (current 202 = 2.0.2); bump only in the same commit as a successful build.
+2. Current inspected source is 2.0.3 / 203. This focused repair does not bump the version or claim a successful build.
 3. Artifact: `app/build/outputs/apk/release/app-release.apk`.
 4. Distribution: GitHub Actions `android-apk.yml` builds on push to `main` / `workflow_dispatch`; the APK must be signed with the same key already installed, or Android requires an uninstall.
 5. Never publish or push without the owner explicitly authorizing it.
@@ -211,6 +164,7 @@ Nothing about the code "not being saved" applies — the files are saved and in 
 
 - Overlay/ghost-avatar feature removed (layouts, manifest, settings indices renumbered).
 - Scanner: binding/id mismatches fixed, permission + back handling repaired.
-- Gemini: invented `gemini-3.1-flash-agent` replaced with `gemini-3.8-live-extended-thinking`; labels corrected; selector ⇄ constant mapping fixed.
-- TTS: `TtsVoiceSelector.applyTo()` added; service announcement engine now uses the saved voice, pitch and rate.
-- This pass: delivery audit performed; no code changes made, because the blocker is build/publish, not source.
+- Historical Gemini model replacement was not evidence of provider support. Current model verification remains pending.
+- TTS: earlier source added `TtsVoiceSelector.applyTo()`; actual engine/announcement behavior remains device-unverified.
+- 2026-11-01: implemented the persistent 18+ Adult Education Mode in the real persona screens and Live/HTTPS request paths; see the root tracker for exact files, commands, blocked tests and remaining work.
+- 2026-11-01: added the chat border beam (`ChatBorderBeamView`), the operator profile photo picker (`ProfileAvatarStore` + profile card in Settings) and settings backup/restore (`BackupManager` + `BackupActivity`, secrets excluded). All three are source-implemented and dev-unverified.

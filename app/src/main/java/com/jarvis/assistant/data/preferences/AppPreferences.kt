@@ -316,6 +316,17 @@ class AppPreferences(context: Context) {
         get() = prefs.getInt(KEY_SITE_AGENTS, 8).coerceIn(1, 100)
         set(value) = prefs.edit().putInt(KEY_SITE_AGENTS, value.coerceIn(1, 100)).apply()
 
+    // Independent educational setting: changing a persona never changes this flag.
+    var adultEducationEnabled: Boolean
+        get() = prefs.getBoolean("key_adult_education_enabled", false)
+        set(value) {
+            val previous = adultEducationEnabled
+            if (!prefs.edit().putBoolean("key_adult_education_enabled", value).commit()) {
+                prefs.edit().putBoolean("key_adult_education_enabled", previous).commit()
+                error("Could not save Adult Education Mode.")
+            }
+        }
+
     var personality: String
         get() = prefs.getString(KEY_PERSONALITY, GeminiConstants.PERSONALITY_GIRLFRIEND) ?: GeminiConstants.PERSONALITY_GIRLFRIEND
         set(value) = prefs.edit().putString(KEY_PERSONALITY, value).apply()

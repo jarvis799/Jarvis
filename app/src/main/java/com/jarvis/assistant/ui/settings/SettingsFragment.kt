@@ -48,12 +48,61 @@ import com.jarvis.assistant.timemachine.TimeMachineActivity
 import com.jarvis.assistant.autopsy.FailureAutopsyActivity
 import android.content.ClipData
 import android.content.ClipboardManager
+import com.jarvis.assistant.backup.BackupActivity
+import com.jarvis.assistant.profile.ProfileAvatarStore
 
 class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
     private val preferences by lazy { JarvisApp.instance.preferences }
+
+    private val profileAvatarPicker = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) saveProfileAvatar(uri)
+    }
+
+    private fun saveProfileAvatar(uri: android.net.Uri) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val appContext = requireContext().applicationContext
+            val saved = withContext(Dispatchers.IO) { ProfileAvatarStore.save(appContext, uri) }
+            if (!isAdded) return@launch
+            if (saved) {
+                showProfileAvatar()
+                Toast.makeText(requireContext(), "Profile photo updated", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "That image could not be read", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showProfileAvatar() {
+        val bitmap = ProfileAvatarStore.load(requireContext())
+        val pad = (12 * resources.displayMetrics.density).toInt()
+        if (bitmap != null) {
+            binding.ivProfileAvatar.imageTintList = null
+            binding.ivProfileAvatar.setPadding(0, 0, 0, 0)
+            binding.ivProfileAvatar.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            binding.ivProfileAvatar.setImageBitmap(bitmap)
+        } else {
+            binding.ivProfileAvatar.setImageResource(R.drawable.ic_user_profile)
+            binding.ivProfileAvatar.setPadding(pad, pad, pad, pad)
+            binding.ivProfileAvatar.scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
+            val typed = requireContext().obtainStyledAttributes(intArrayOf(R.attr.themeAccent))
+            val accent = typed.getColor(0, Color.WHITE)
+            typed.recycle()
+            binding.ivProfileAvatar.imageTintList =
+                android.content.res.ColorStateList.valueOf(accent)
+        }
+    }
+
+    private fun pickProfileAvatar() {
+        val request = androidx.activity.result.PickVisualMediaRequest(
+            ActivityResultContracts.PickVisualMedia.ImageOnly
+        )
+        profileAvatarPicker.launch(request)
+    }
 
     private val voiceRowTag = "jarvisVoiceExperienceRow"
     private var voiceExperienceSubtitle: android.widget.TextView? = null
@@ -104,6 +153,7 @@ class SettingsFragment : Fragment() {
         binding.tvProfileName.text = userName
         binding.tvProfileSubtitle.text = "JARVIS OPERATOR • PRIMARY USER"
         binding.ivPremiumBadge.visibility = View.GONE
+        showProfileAvatar()
 
         // Owner Voice Profile Status
         val hasVoiceProfile = preferences.hasOwnerVoiceProfile()
@@ -172,6 +222,30 @@ class SettingsFragment : Fragment() {
         // Profile Card -> Change Name
         binding.cardProfile.setOnClickListener {
             showEditNameDialog()
+        }
+
+        // Profile photo inside the card -> choose or remove the operator's own photo
+        binding.ivProfileAvatar.setOnClickListener {
+            if (ProfileAvatarStore.hasAvatar(requireContext())) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Profile photo")
+                    .setItems(arrayOf("Choose a new photo", "Remove photo")) { _, which ->
+                        if (which == 0) {
+                            pickProfileAvatar()
+                        } else {
+                            ProfileAvatarStore.clear(requireContext())
+                            showProfileAvatar()
+                        }
+                    }
+                    .show()
+            } else {
+                pickProfileAvatar()
+            }
+        }
+
+        // Backup & Restore -> settings only, secrets stay on the device
+        binding.rowBackup.setOnClickListener {
+            startActivity(Intent(requireContext(), BackupActivity::class.java))
         }
 
         // Voice Status Chip on Profile Card -> Opens Voice Enrollment

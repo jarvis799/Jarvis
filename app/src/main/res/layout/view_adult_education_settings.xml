@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    app:cardCornerRadius="18dp" app:cardBackgroundColor="?attr/themeCardBg"
+    app:strokeColor="?attr/themeCardBorder" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchAdultEducation"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="48dp" android:text="@string/adult_education_title"
+            android:textColor="?attr/themeTextPrimary" android:textSize="15sp"
+            android:textStyle="bold" app:useMaterialThemeColors="true" />
+        <TextView android:id="@+id/tvAdultEducationStatus"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:text="@string/adult_education_off"
+            android:textColor="?attr/themeAccent" android:textSize="12sp"
+            android:accessibilityLiveRegion="polite" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/adult_education_description"
+            android:textColor="?attr/themeTextSecondary" android:textSize="13sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/adult_education_notice"
+            android:textColor="?attr/themeTextMuted" android:textSize="12sp" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

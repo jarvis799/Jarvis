@@ -60,6 +60,7 @@ class PersonalityStudioActivity : AppCompatActivity() {
 
         column.addView(title("Personality Studio"))
         column.addView(hint("Shape how Jarvis speaks. These settings apply to the live voice conversation."))
+        column.addView(AdultEducationSettingsView(this))
 
         // ---------- Humor & roasting ----------
         column.addView(sectionHeading("Humor & Roasting"))

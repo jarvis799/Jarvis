@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adult_education_title">18+ Adult Education Mode</string>
+    <string name="adult_education_description">Respectful, non-graphic education about sexual health, marriage, consent, contraception, STI prevention, intimacy and adult relationships. Separate from Girlfriend Persona. No erotic roleplay, pornographic audio or sexual moaning.</string>
+    <string name="adult_education_on">Saved: ON · Educational guidance applies to new replies.</string>
+    <string name="adult_education_off">Saved: OFF · Standard persona settings apply.</string>
+    <string name="adult_education_notice">Saved immediately, separately from Activate Persona. Changing this setting stops the current reply and refreshes an active conversation. Answers use your configured AI provider and existing chat-history settings; this is not private medical care or a diagnosis.</string>
+    <string name="adult_education_save_failed">Could not save this setting. Please try again.</string>
+</resources>

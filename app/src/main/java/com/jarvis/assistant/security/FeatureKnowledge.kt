@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.3"
+    const val APP_VERSION = "2.0.4"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -44,7 +44,10 @@ object FeatureKnowledge {
         "Offline reply: when the network or the API fails, Jarvis answers with the installed local model instead of going dark",
         "Creator console: unlocked by the creator key configured at build time or set on this device - no key ships inside the app",
         "Scanner: camera QR/barcode scan plus gallery import, torch and WiFi/Link handling",
-        "Home header greets you with your display name, live weather and connection status"
+        "Home header greets you with your display name, live weather and connection status",
+        "18+ Adult Education Mode: a separate saved switch in Settings > Persona & Voice for non-graphic health, consent and relationship education; not erotic roleplay or a Girlfriend Persona",
+        "Profile photo: tap the avatar on the Settings profile card to choose your own picture or remove it - it stays on this device",
+        "Backup & Restore in Settings: save your settings and personalisation to a file and restore them later; API keys and passwords are never included"
     )
 
     private val whatsNew = listOf(
@@ -54,6 +57,9 @@ object FeatureKnowledge {
         "Scanner bottom bar now matches the main dock and the torch and gallery buttons are full size",
         "Sub agents answer with their real state and explain their own setup",
         "Jarvis now explains every feature and how to use it, instead of asking the user to do it",
+        "Chat border beam now travels around the conversation area",
+        "Tap your profile photo in Settings to set your own picture, or remove it",
+        "Backup & Restore in Settings saves your settings without keys",
         "Every feature stays free and unlimited for every user"
     )
 
@@ -73,7 +79,10 @@ object FeatureKnowledge {
 
     fun capabilitiesText(): String =
         "Amar sob feature, Sir:\n" + capabilities.withIndex()
-            .joinToString("\n") { "${it.index + 1}. ${it.value}" }
+            .joinToString("\n") { "${it.index + 1}. ${it.value}" } + "\n" +
+            com.jarvis.assistant.personality.AdultEducationPolicy.statusText(
+                com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
+            )
 
     fun whatsNewText(): String =
         "Notun upgrade esheche, Sir! Ei feature gulo notun:\n" + whatsNew.joinToString("\n") { "- $it" }
