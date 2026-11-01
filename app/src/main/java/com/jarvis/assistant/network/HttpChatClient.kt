@@ -70,9 +70,22 @@ class HttpChatClient {
 
     private fun streamBody(prompt: String, model: String): RequestBody {
         val messages = JSONArray().put(JSONObject().put("role", "user").put("content", prompt))
-        val payload = JSONObject().put("messages", messages).put("stream", true)
+        val payload = generation(JSONObject().put("messages", messages).put("stream", true))
         if (model.isNotBlank()) payload.put("model", model)
         return payload.toString().toRequestBody("application/json".toMediaType())
+    }
+
+    /**
+     * DEV STYLE: without these the provider picks its own defaults - very long answers and
+     * no repetition control, which is what made replies slow and loop back on themselves.
+     * Capping the reply length and penalising repeats gives the first sentence sooner and
+     * removes the doubling. Endpoints that ignore unknown fields lose nothing.
+     */
+    private fun generation(payload: JSONObject): JSONObject = payload.apply {
+        put("max_tokens", 400)
+        put("temperature", 0.6)
+        put("frequency_penalty", 0.4)
+        put("presence_penalty", 0.3)
     }
 
     private suspend fun requestStream(
@@ -177,7 +190,7 @@ class HttpChatClient {
 
     private fun openAiBody(prompt: String, model: String): RequestBody {
         val messages = JSONArray().put(JSONObject().put("role", "user").put("content", prompt))
-        val payload = JSONObject().put("messages", messages).put("stream", false)
+        val payload = generation(JSONObject().put("messages", messages).put("stream", false))
         if (model.isNotBlank()) payload.put("model", model)
         return payload.toString().toRequestBody("application/json".toMediaType())
     }

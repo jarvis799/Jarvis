@@ -248,7 +248,8 @@ object AgentEngine {
                 if (ResultVerifier.isAcceptable(userInput, retryReply)) return retryReply
             }
         }
-        return reply
+        // A model that says the same line twice reads as broken and feels slow: collapse it.
+        return com.jarvis.assistant.util.ReplyCleaner.clean(reply)
     }
 
     private fun buildSearchContext(context: Context, userInput: String): String {
@@ -293,6 +294,8 @@ When a request maps to a feature, explain in 1-2 short Hindi lines how it works 
 5. Jis kaam ke liye upar feature already hai, uske liye kabhi "main nahi kar sakta / pari na" mat bolo - seedha feature use karo. Email, calendar, WhatsApp, calls, messages, terminal - sab direct chalte hain; accessibility service sirf screen automation ke liye hai, email padhne ke liye kabhi nahi.
 6. Agar request genuinely unclear ho, sirf EK chhota Hindi sawal pooch ke clarify karo, phir kaam complete karo.
 7. App update ke baad user "what's new / naya kya hai" pooche to latest update ke naye features confidently bata do (niche list diya hai).
+8. Speak ONCE. Never repeat a sentence, a greeting, a status line, a feature list or an answer you already gave. Agar ek baar bol diya, dobara mat bolo - seedha aage badho.
+9. Answer IMMEDIATELY: koi "Thinking...", koi question dohrana, koi plan ya narration nahi. Pehla shabd hi jawab hai. Normally 3 chhote vaakya - detail tabhi jab user maange.
 
 ${com.jarvis.assistant.security.FeatureKnowledge.promptBlock()}
 

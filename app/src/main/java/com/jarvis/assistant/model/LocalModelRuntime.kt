@@ -28,16 +28,20 @@ object LocalModelRuntime {
 
     /** Called on an IO thread. Serialization keeps simultaneous replies from exhausting RAM. */
     @Synchronized
-    fun reply(modelPath: String, system: String, user: String, maxTokens: Int = 128): String {
+    fun reply(modelPath: String, system: String, user: String, maxTokens: Int = 120): String {
         check(isAvailable()) { statusMessage }
         check(java.io.File(modelPath).isFile) { "Active model file is missing. Open Settings > Offline AI Models and download it again." }
         require(user.isNotBlank() && user.length <= 7000) { "Use a non-empty message of at most 7000 characters." }
-        val bytes = generateNative(modelPath, system.toByteArray(Charsets.UTF_8), user.toByteArray(Charsets.UTF_8), maxTokens.coerceIn(1, 192))
-        return String(bytes, Charsets.UTF_8).trim().also {
+        // A short cap is what keeps an offline answer snappy on a phone CPU: every extra
+        // generated token costs real milliseconds, and long local answers start looping.
+        val bytes = generateNative(modelPath, system.toByteArray(Charsets.UTF_8), user.toByteArray(Charsets.UTF_8), maxTokens.coerceIn(1, 160))
+        val raw = String(bytes, Charsets.UTF_8).trim()
+        val text = com.jarvis.assistant.util.ReplyCleaner.clean(raw)
+        return text.also {
             check(it.isNotBlank()) { "The local model returned no answer. Try a shorter question or another model." }
         }
     }
 
-    fun generate(modelPath: String, prompt: String, maxTokens: Int = 128): String? =
+    fun generate(modelPath: String, prompt: String, maxTokens: Int = 120): String? =
         if (!isAvailable()) null else reply(modelPath, "You are JARVIS. Be concise and honest; do not invent tool results.", prompt, maxTokens)
 }

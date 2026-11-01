@@ -69,7 +69,7 @@ std::string generate(const std::string &path, const std::string &system, const s
     const auto *vocab = llama_model_get_vocab(model);
     const auto prompt = format_chat(model, system, user);
     const int count = -llama_tokenize(vocab, prompt.data(), prompt.size(), nullptr, 0, true, true);
-    if (count <= 0 || count + max_tokens > 2048) {
+    if (count <= 0 || count + max_tokens > 1536) {
         throw std::runtime_error("Message exceeds the local model's context. Please send a shorter question.");
     }
     std::vector<llama_token> tokens(count);
@@ -78,17 +78,21 @@ std::string generate(const std::string &path, const std::string &system, const s
     }
     auto deadline = Clock::now() + std::chrono::seconds(120);
     auto params = llama_context_default_params();
-    params.n_ctx = 2048;
-    params.n_batch = 256;
-    params.n_ubatch = 128;
-    params.n_threads = std::max(1u, std::min(6u, std::thread::hardware_concurrency()));
+    // A smaller window allocates faster and leaves more free RAM for the weights, and a
+    // larger batch ingests the prompt in fewer passes - both cut the wait before the first
+    // token. Four threads is the phone sweet spot: more threads contend on big.LITTLE cores
+    // and end up slower than a clean four.
+    params.n_ctx = 1536;
+    params.n_batch = 512;
+    params.n_ubatch = 256;
+    params.n_threads = std::max(1u, std::min(4u, std::thread::hardware_concurrency()));
     params.n_threads_batch = params.n_threads;
     params.abort_callback = expired;
     params.abort_callback_data = &deadline;
     std::unique_ptr<llama_context, decltype(&llama_free)> ctx(llama_init_from_model(model, params), llama_free);
     if (!ctx) throw std::runtime_error("Not enough free memory for the model context. Close other apps and retry.");
-    for (int offset = 0; offset < count; offset += 256) {
-        auto batch = llama_batch_get_one(tokens.data() + offset, std::min(256, count - offset));
+    for (int offset = 0; offset < count; offset += 512) {
+        auto batch = llama_batch_get_one(tokens.data() + offset, std::min(512, count - offset));
         if (llama_decode(ctx.get(), batch) != 0) throw std::runtime_error("Local prompt evaluation stopped. Free some memory and retry.");
     }
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(
@@ -157,7 +161,7 @@ Java_com_jarvis_assistant_model_LocalModelRuntime_generateNative(
         if (!raw) return nullptr;
         std::string model_path(raw);
         env->ReleaseStringUTFChars(path, raw);
-        const auto result = generate(model_path, utf8(env, system), utf8(env, user), std::max(1, std::min(256, static_cast<int>(max_tokens))));
+        const auto result = generate(model_path, utf8(env, system), utf8(env, user), std::max(1, std::min(160, static_cast<int>(max_tokens))));
         auto bytes = env->NewByteArray(result.size());
         if (bytes) env->SetByteArrayRegion(bytes, 0, result.size(), reinterpret_cast<const jbyte *>(result.data()));
         return bytes;
