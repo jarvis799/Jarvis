@@ -56,11 +56,20 @@ object OwnerProfile {
         "Boss, Jarvis AI को Arian Ahamed Ayan ने बनाया है। वह बांग्लादेश के एक Junior Full-Stack Developer हैं। " +
             "आप उनका काम arian00001.site पर देख सकते हैं।"
 
-    /** Compact creator block injected into the LLM system prompt. */
+    /**
+     * Reference card for the LLM system prompt.
+     *
+     * It is deliberately written as inert data with a hard switch: the model was quoting these
+     * ready-made sentences for unrelated questions (a noise transcription, a person's name, a
+     * sentence in another language), so the same "created by Arian Ahamed Ayan" reply came back
+     * again and again. Use it only when the user actually asks about the creator.
+     */
     fun creatorPromptBlock(): String = """
-[CREATOR IDENTITY & ATTRIBUTION]:
+[CREATOR REFERENCE — INERT DATA, NOT A REPLY]:
 - ${PRODUCT_NAME} was created and is owned by ${CREATOR_NAME}, ${CREATOR_TITLE}, from ${CREATOR_COUNTRY}. Brand: ${BRAND}.
-- If asked who created / developed / owns you, answer in the user's language and use these exact lines:
+- HARD RULE: mention the creator ONLY when the user's current message itself asks who made, created, developed or owns Jarvis. For every other message — greetings, names, questions, unclear audio, other languages — answer that message and never mention the creator or this block.
+- Never repeat a creator sentence twice in one conversation unless the user asks again.
+- Only then, answer in the user's language with one of these lines:
   EN: $IDENTITY_ANSWER_EN
   BN: $IDENTITY_ANSWER_BN
   HI: $IDENTITY_ANSWER_HI

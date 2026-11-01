@@ -40,17 +40,34 @@ std::string format_chat(llama_model *model, const std::string &system, const std
     if (size <= 0) throw std::runtime_error("Could not prepare the local conversation.");
     return std::string(formatted.data(), size);
 }
-std::string generate(const std::string &path, const std::string &system, const std::string &user, int max_tokens) {
-    std::call_once(backend_once, [] { llama_backend_init(); ggml_backend_load_all(); });
+// The weights stay resident after the first reply. Re-reading a 1B GGUF from storage on
+// every message was the reason an offline answer took so long to appear.
+std::mutex inference_mutex;
+std::unique_ptr<llama_model, decltype(&llama_model_free)> resident_model(nullptr, llama_model_free);
+std::string resident_path;
+
+llama_model *resident(const std::string &path) {
+    if (resident_model && resident_path == path) return resident_model.get();
+    if (resident_model) {
+        resident_model.reset();
+        resident_path.clear();
+    }
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
     model_params.load_mode = LLAMA_LOAD_MODE_MMAP;
-    model_params.check_tensors = true;
-    std::unique_ptr<llama_model, decltype(&llama_model_free)> model(
-        llama_model_load_from_file(path.c_str(), model_params), llama_model_free);
-    if (!model) throw std::runtime_error("Model could not load. Check available RAM or choose the smaller 1.1B model.");
-    const auto *vocab = llama_model_get_vocab(model.get());
-    const auto prompt = format_chat(model.get(), system, user);
+    model_params.check_tensors = false;
+    resident_model.reset(llama_model_load_from_file(path.c_str(), model_params));
+    if (!resident_model) throw std::runtime_error("Model could not load. Check available RAM or choose the smaller 1.1B model.");
+    resident_path = path;
+    return resident_model.get();
+}
+
+std::string generate(const std::string &path, const std::string &system, const std::string &user, int max_tokens) {
+    std::call_once(backend_once, [] { llama_backend_init(); ggml_backend_load_all(); });
+    std::lock_guard<std::mutex> guard(inference_mutex);
+    llama_model *model = resident(path);
+    const auto *vocab = llama_model_get_vocab(model);
+    const auto prompt = format_chat(model, system, user);
     const int count = -llama_tokenize(vocab, prompt.data(), prompt.size(), nullptr, 0, true, true);
     if (count <= 0 || count + max_tokens > 2048) {
         throw std::runtime_error("Message exceeds the local model's context. Please send a shorter question.");
@@ -64,11 +81,11 @@ std::string generate(const std::string &path, const std::string &system, const s
     params.n_ctx = 2048;
     params.n_batch = 256;
     params.n_ubatch = 128;
-    params.n_threads = std::max(1u, std::min(4u, std::thread::hardware_concurrency()));
+    params.n_threads = std::max(1u, std::min(6u, std::thread::hardware_concurrency()));
     params.n_threads_batch = params.n_threads;
     params.abort_callback = expired;
     params.abort_callback_data = &deadline;
-    std::unique_ptr<llama_context, decltype(&llama_free)> ctx(llama_init_from_model(model.get(), params), llama_free);
+    std::unique_ptr<llama_context, decltype(&llama_free)> ctx(llama_init_from_model(model, params), llama_free);
     if (!ctx) throw std::runtime_error("Not enough free memory for the model context. Close other apps and retry.");
     for (int offset = 0; offset < count; offset += 256) {
         auto batch = llama_batch_get_one(tokens.data() + offset, std::min(256, count - offset));
@@ -102,6 +119,22 @@ std::string generate(const std::string &path, const std::string &system, const s
     }
     return output;
 }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_jarvis_assistant_model_LocalModelRuntime_warmUpNative(
+        JNIEnv *env, jobject, jstring path) {
+    try {
+        const char *raw = env->GetStringUTFChars(path, nullptr);
+        if (!raw) return;
+        std::string model_path(raw);
+        env->ReleaseStringUTFChars(path, raw);
+        std::call_once(backend_once, [] { llama_backend_init(); ggml_backend_load_all(); });
+        std::lock_guard<std::mutex> guard(inference_mutex);
+        resident(model_path);
+    } catch (...) {
+        // A warm-up failure is not an error: the next real reply reports it properly.
+    }
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL

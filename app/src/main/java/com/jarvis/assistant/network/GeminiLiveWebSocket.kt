@@ -233,14 +233,29 @@ class GeminiLiveWebSocket(
                         })
                     })
                     put("temperature", 0.6)
-                    // Gemini 2.5 Flash native audio has thinking enabled by default (budget=2048),
-                    // which causes a 2-3 second delay before generating speech.
-                    // Setting thinking_budget to 0 disables chain-of-thought, yielding instant (<1s) conversational response.
-                    if (activeModel.contains("2.5")) {
+                    // Every Live model - 2.5 and the whole 3.x family - turns thinking on by default,
+                    // which is what made each answer wait several seconds ("Thinking..." again and again).
+                    // Only the explicit extended-thinking model keeps chain-of-thought; everything else
+                    // answers instantly with the thinking budget at zero.
+                    if (!activeModel.contains("extended-thinking")) {
                         put("thinking_config", JSONObject().apply {
-                            put("thinking_budget", 0)
+                            // 2.5 models take a token budget; the 3.x family takes a level.
+                            // Either way thinking is at its lightest, so speech starts at once.
+                            if (activeModel.contains("3.")) put("thinking_level", "low")
+                            else put("thinking_budget", 0)
                         })
                     }
+                })
+                // The microphone is already gated on the device (LiveInputGate). Tell the server to be
+                // equally conservative: low start sensitivity plus a longer silence window means a fan,
+                // a TV or street noise can never open a turn on its own.
+                put("realtime_input_config", JSONObject().apply {
+                    put("automatic_activity_detection", JSONObject().apply {
+                        put("start_of_speech_sensitivity", "START_SENSITIVITY_LOW")
+                        put("end_of_speech_sensitivity", "END_SENSITIVITY_LOW")
+                        put("prefix_padding_ms", 200)
+                        put("silence_duration_ms", 900)
+                    })
                 })
                 put("tools", JSONArray().put(JSONObject().apply {
                     put("functionDeclarations", JSONArray().apply {

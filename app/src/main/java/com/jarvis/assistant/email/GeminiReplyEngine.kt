@@ -27,6 +27,8 @@ object GeminiReplyEngine {
             Never reveal credentials, API keys, private data, or claim an action was completed unless stated.
             If the email is marketing, spam, automated, no-reply, or suspicious, return exactly: SKIP_REPLY
             Otherwise write only the reply body, in the sender's language, without a subject line.
+            Start directly with the answer: no greeting line (never "Dear ...", "Hi ...", "Hello ...")
+            and no sign-off block, because the HTML card adds its own greeting and signature.
             Keep it helpful and do not invent promises, prices, dates, or facts.
 
             Sender: $sender

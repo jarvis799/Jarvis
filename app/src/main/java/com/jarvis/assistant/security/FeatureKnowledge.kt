@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.9"
+    const val APP_VERSION = "2.1.0"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -52,6 +52,11 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Background noise is now ignored: a fan, TV or street sound no longer opens a turn or gets answered",
+        "The same creator line is no longer repeated - Jarvis answers the actual question",
+        "Answers start much faster: thinking is at its lightest for every Live model",
+        "Email auto reply sends a redesigned HTML card with no double greeting",
+        "Offline AI replies are much faster: the model now stays loaded instead of reloading every message",
         "Offline AI Models: 1.1B / 1.5B verified downloads, automatic setup and a bundled llama.cpp CPU inference engine",
         "Offline readiness is reported only after this phone actually loads the model and generates a test reply; setup errors appear directly on the download page",
         "Sub agent banano ekhon kaj kore: bolo ar sathe sathe real WhatsApp/Email agent toiri hoy",

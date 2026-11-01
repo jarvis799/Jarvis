@@ -82,6 +82,13 @@ class JarvisApp : Application() {
                 com.jarvis.assistant.email.GmailStore.autoReplyEnabled(this@JarvisApp)) {
                 com.jarvis.assistant.email.EmailWatchService.start(this@JarvisApp)
             }
+            // DEV STYLE: keep the offline model ready so the first offline reply is not slow.
+            runCatching {
+                val store = com.jarvis.assistant.model.ModelStore(this@JarvisApp)
+                if (store.offlineFallback()) store.activeModel()?.let { model ->
+                    com.jarvis.assistant.model.LocalModelRuntime.warmUp(model.filePath)
+                }
+            }
         }
 
         // Memory System

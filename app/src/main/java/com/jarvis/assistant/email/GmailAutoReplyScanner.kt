@@ -34,7 +34,7 @@ object GmailAutoReplyScanner {
                             GmailStore.markHandled(context, mail.messageId)
                             continue
                         }
-                        ai
+                        HtmlReplyTemplate.stripGreeting(ai)
                     } catch (e: Exception) {
                         plainTemplate
                     }
