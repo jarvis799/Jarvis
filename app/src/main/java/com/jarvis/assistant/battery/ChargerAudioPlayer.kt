@@ -14,6 +14,8 @@ object ChargerAudioPlayer {
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
     @Volatile var isPlaying = false
         private set
+    @Volatile private var silenceUntil = 0L
+    val ignoreRecognition: Boolean get() = isPlaying || android.os.SystemClock.elapsedRealtime() < silenceUntil
     fun play(context: Context, file: File) {
         val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         stop(manager)
@@ -34,6 +36,7 @@ object ChargerAudioPlayer {
         } catch (_: Exception) { stop(manager) }
     }
     private fun stop(manager: AudioManager) {
+        if (isPlaying) silenceUntil = android.os.SystemClock.elapsedRealtime() + 2000
         player?.release(); player = null; isPlaying = false
         focus?.let { manager.abandonAudioFocusRequest(it) }; focus = null
     }

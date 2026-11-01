@@ -319,7 +319,7 @@ class HttpChatSession(
         when (confidence.evaluate(best, scores?.firstOrNull(), alternatives.drop(1))) {
             SpeechConfidencePolicy.Verdict.CLEAR -> {
                 confidence.reset()
-                if (com.jarvis.assistant.battery.ChargerAudioPlayer.isPlaying) { listen(); return }
+                if (com.jarvis.assistant.battery.ChargerAudioPlayer.ignoreRecognition) { listen(); return }
                 if (best.isNotBlank()) {
                     com.jarvis.assistant.battery.ConversationLanguage.observe(context, best)
                     sendText(best)

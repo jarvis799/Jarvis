@@ -30,8 +30,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Android SDK and command-line tools
+        uses: android-actions/setup-android@v3
+
       - name: Install pinned offline inference build tools
-        run: sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1"
+        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
 
       # Android SDK 34 is preinstalled on ubuntu-latest runners; ANDROID_HOME is set automatically.
       - name: Set up Gradle caching (wrapper 8.9)

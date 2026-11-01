@@ -42,6 +42,7 @@ class GeminiLiveWebSocket(
     }
 
     private val client = sharedClient
+    private val spokenLanguageTurn = StringBuilder()
 
     private var activeModel: String = when (model) {
         GeminiConstants.MODEL_3_8_LIVE -> GeminiConstants.MODEL_3_8_LIVE
@@ -849,8 +850,8 @@ class GeminiLiveWebSocket(
                             userText = sb.toString().trim()
                         }
                     }
-                    if (userText.isNotBlank() && !com.jarvis.assistant.battery.ChargerAudioPlayer.isPlaying) {
-                        com.jarvis.assistant.battery.ConversationLanguage.observe(com.jarvis.assistant.JarvisApp.instance, userText)
+                    if (userText.isNotBlank() && !com.jarvis.assistant.battery.ChargerAudioPlayer.ignoreRecognition) {
+                        if (spokenLanguageTurn.length < 1000) spokenLanguageTurn.append(userText).append(' ')
                         listener.onUserTextReceived(userText)
                     }
                 }
@@ -926,6 +927,8 @@ class GeminiLiveWebSocket(
                                  serverContent.optBoolean("generationComplete", false) ||
                                  serverContent.optBoolean("endOfTurn", false)
                 if (isTurnDone) {
+                    com.jarvis.assistant.battery.ConversationLanguage.observe(com.jarvis.assistant.JarvisApp.instance, spokenLanguageTurn.toString())
+                    spokenLanguageTurn.clear()
                     Log.d(TAG, "Server signaled turnComplete/generationComplete")
                     listener.onTurnCompleted()
                 }
@@ -954,6 +957,7 @@ class GeminiLiveWebSocket(
     }
 
     fun sendAudioChunk(pcm16k: ByteArray) {
+        if (com.jarvis.assistant.battery.ChargerAudioPlayer.ignoreRecognition) return
         if (!isConnected.get() || !isSetupComplete.get() || pcm16k.isEmpty()) return
 
         try {

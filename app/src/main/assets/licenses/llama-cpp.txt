@@ -1,4 +1,4 @@
-llama.cpp b5046 — https://github.com/ggml-org/llama.cpp
+llama.cpp 8642541b255bfb5dc39cd351a178be09013a55d6 — https://github.com/ggml-org/llama.cpp
 
 MIT License
 
