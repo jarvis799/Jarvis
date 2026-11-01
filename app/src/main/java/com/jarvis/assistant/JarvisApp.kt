@@ -205,5 +205,8 @@ class JarvisApp : Application() {
 
         lateinit var instance: JarvisApp
             private set
+
+        val instanceOrNull: JarvisApp?
+            get() = if (::instance.isInitialized) instance else null
     }
 }

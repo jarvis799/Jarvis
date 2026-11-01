@@ -587,8 +587,8 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
 - create_sub_agent saves a reply rule; missing trigger/reply means ask one question, not invent values. Saved is not the same as running or delivered.
 - Before claiming Gmail is disconnected, call get_email_status. Saved App Password credentials are separate from Google Workspace OAuth. Use run_native_command(command="read my email") to read saved Gmail directly.
 - Ignore noise; never infer a user command from your own response. A call must be explicitly requested by the user.
-- Local inference uses the bundled llama.cpp engine and a separately downloaded model. Downloading alone is not readiness: setup verifies the file, generates a real test reply and then activates it. Never claim one billion facts or newly trained Jarvis weights; 1.1B / 1.5B refer to existing model parameters.
-- Current on-device status: ${com.jarvis.assistant.model.OfflineModelStatus.describe(com.jarvis.assistant.JarvisApp.instance)}
+- Local inference uses the bundled llama.cpp engine and a separately downloaded model. Downloading alone is not readiness: setup verifies the file, generates a real test reply and then activates it. Never claim one billion facts or newly trained Jarvis weights; 1.1B / 1.5B / effective 2.3B refer to existing model parameters.
+- Current on-device status: ${com.jarvis.assistant.model.OfflineModelStatus.promptDescription()}
 
 ${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
 """.trimIndent()
