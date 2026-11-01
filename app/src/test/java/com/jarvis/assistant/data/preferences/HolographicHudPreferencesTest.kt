@@ -21,7 +21,7 @@ class HolographicHudPreferencesTest {
     @Test fun freshInstallSelectsTheActualHudPage() {
         val preferences = AppPreferences(context)
         assertEquals("light", preferences.appTheme)
-        assertEquals(AppPreferences.ORB_NEURAL, preferences.orbStyle)
+        assertEquals(AppPreferences.ORB_HUD_TARGET, preferences.orbStyle)
     }
 
     @Test fun upgradeFromOldLightMigrationActivatesHudWithoutClearingUserData() {
@@ -31,7 +31,7 @@ class HolographicHudPreferencesTest {
         val preferences = AppPreferences(context)
         preferences.activateLiquidGlassUi()
         assertEquals("light", preferences.appTheme)
-        assertEquals(AppPreferences.ORB_NEURAL, preferences.orbStyle)
+        assertEquals(AppPreferences.ORB_HUD_TARGET, preferences.orbStyle)
         assertEquals("Saved owner", storage.getString("key_user_name", null))
         assertEquals("[]", storage.getString("key_chat_history", null))
         assertTrue(storage.getBoolean("holographic_hud_ui_v4", false))
