@@ -33,7 +33,7 @@ class CurvedDockLineView @JvmOverloads constructor(
         strokeJoin = Paint.Join.ROUND
     }
 
-    private var accentColor: Int = Color.parseColor("#4FE3FF")
+    private var accentColor: Int = Color.parseColor("#BABABA")
 
     init {
         resolveThemeColor()
@@ -42,7 +42,7 @@ class CurvedDockLineView @JvmOverloads constructor(
     fun resolveThemeColor() {
         val typedValue = TypedValue()
         context.theme.resolveAttribute(R.attr.themeAccent, typedValue, true)
-        accentColor = if (typedValue.data != 0) typedValue.data else Color.parseColor("#4FE3FF")
+        accentColor = if (typedValue.data != 0) typedValue.data else Color.parseColor("#BABABA")
         updateShaders(width, height)
         invalidate()
     }

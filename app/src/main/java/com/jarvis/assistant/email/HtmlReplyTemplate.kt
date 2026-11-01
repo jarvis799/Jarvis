@@ -31,17 +31,17 @@ object HtmlReplyTemplate {
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#FFFFFF;border-radius:24px;overflow:hidden;box-shadow:0 18px 48px rgba(22,54,24,0.14);font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
           <tr>
-            <td style="background:linear-gradient(135deg,#0F2417 0%,#1C4630 55%,#2E7D32 100%);padding:34px 34px 30px 34px;">
-              <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A5F3A8;font-weight:700;">DEV STYLE &middot; Jarvis AI</div>
+            <td style="background:linear-gradient(135deg,#1C1C1C 0%,#373737 55%,#5D5D5D 100%);padding:34px 34px 30px 34px;">
+              <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D3D3D3;font-weight:700;">DEV STYLE &middot; Jarvis AI</div>
               <div style="margin-top:12px;font-size:25px;line-height:1.25;color:#FFFFFF;font-weight:700;">Thanks for reaching out, {name}.</div>
-              <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#CDEBD2;">Your message &ldquo;{subject}&rdquo; reached us &mdash; here is my reply.</div>
+              <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#DFDFDF;">Your message &ldquo;{subject}&rdquo; reached us &mdash; here is my reply.</div>
             </td>
           </tr>
           <tr>
             <td style="padding:30px 34px 6px 34px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid #34C759;background:#F6FBF5;border-radius:0 16px 16px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid #8F8F8F;background:#F6FBF5;border-radius:0 16px 16px 0;">
                 <tr>
-                  <td style="padding:20px 22px;font-size:15px;line-height:1.68;color:#22322A;">{reply}</td>
+                  <td style="padding:20px 22px;font-size:15px;line-height:1.68;color:#2C2C2C;">{reply}</td>
                 </tr>
               </table>
             </td>
@@ -50,10 +50,10 @@ object HtmlReplyTemplate {
             <td style="padding:26px 34px 8px 34px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E4EFE3;">
                 <tr>
-                  <td style="padding-top:22px;font-size:14px;line-height:1.6;color:#3B4A40;">
+                  <td style="padding-top:22px;font-size:14px;line-height:1.6;color:#444444;">
                     Warm regards,<br/>
-                    <span style="font-size:16px;font-weight:700;color:#16361F;">Jarvis AI</span><br/>
-                    <span style="font-size:12px;color:#7A8B80;">Personal assistant &middot; DEV STYLE</span>
+                    <span style="font-size:16px;font-weight:700;color:#2A2A2A;">Jarvis AI</span><br/>
+                    <span style="font-size:12px;color:#858585;">Personal assistant &middot; DEV STYLE</span>
                   </td>
                 </tr>
               </table>
@@ -61,11 +61,11 @@ object HtmlReplyTemplate {
           </tr>
           <tr>
             <td style="padding:24px 34px 30px 34px;">
-              <a href="https://arian00001.site" style="display:inline-block;background:#16361F;color:#A5F3A8;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:0.6px;padding:12px 20px;border-radius:999px;">arian00001.site</a>
+              <a href="https://arian00001.site" style="display:inline-block;background:#2A2A2A;color:#D3D3D3;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:0.6px;padding:12px 20px;border-radius:999px;">arian00001.site</a>
             </td>
           </tr>
           <tr>
-            <td style="background:#F4FAF3;padding:20px 34px;font-size:11px;line-height:1.6;color:#8A9A8F;border-top:1px solid #E4EFE3;">
+            <td style="background:#F4FAF3;padding:20px 34px;font-size:11px;line-height:1.6;color:#949494;border-top:1px solid #E4EFE3;">
               This reply was sent automatically by Jarvis on behalf of the account owner. Reply to this email and a human will read it.<br/>
               &copy; 2026 DEV STYLE &mdash; Arian Ahamed Ayan.
             </td>

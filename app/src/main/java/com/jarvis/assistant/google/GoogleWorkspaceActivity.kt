@@ -219,17 +219,17 @@ class GoogleWorkspaceActivity : AppCompatActivity() {
     private fun refreshUi() {
         val prefs = GoogleWorkspaceManager.preferences(this)
         if (prefs.connected) {
-            statusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#10B981"))
+            statusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#808080"))
             statusText.text = "CONNECTED"
-            statusText.setTextColor(Color.parseColor("#10B981"))
+            statusText.setTextColor(Color.parseColor("#808080"))
             val time = if (prefs.connectedAtMs > 0) SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault()).format(Date(prefs.connectedAtMs)) else "unknown"
             accountText.text = prefs.accountEmail + "\nConnected " + time + " - tokens are requested fresh whenever needed"
             connectButton.text = "Re-authorize"
             disconnectButton.isEnabled = true
         } else {
-            statusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EF4444"))
+            statusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#777777"))
             statusText.text = "NOT CONNECTED"
-            statusText.setTextColor(Color.parseColor("#EF4444"))
+            statusText.setTextColor(Color.parseColor("#777777"))
             accountText.text = "Connect to let Jarvis read your Gmail, Calendar and Drive."
             connectButton.text = "Connect Google Workspace"
             disconnectButton.isEnabled = false

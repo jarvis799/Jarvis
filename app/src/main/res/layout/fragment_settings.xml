@@ -899,7 +899,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="NEW"
-                    android:textColor="#16A34A"
+                    android:textColor="#6F6F6F"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:background="@drawable/bg_jarvis_status_badge_green"

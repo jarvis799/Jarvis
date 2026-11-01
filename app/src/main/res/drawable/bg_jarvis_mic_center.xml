@@ -9,9 +9,9 @@
                     <gradient
                         android:type="radial"
                         android:gradientRadius="36dp"
-                        android:startColor="#60A5FA"
-                        android:centerColor="#2563EB"
-                        android:endColor="#1E40AF" />
+                        android:startColor="#9A9A9A"
+                        android:centerColor="#606060"
+                        android:endColor="#424242" />
                     <stroke
                         android:width="2dp"
                         android:color="#E6FFFFFF" />

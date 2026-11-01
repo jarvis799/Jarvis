@@ -66,11 +66,11 @@ class HomeFragment : Fragment() {
         val remaining = com.jarvis.assistant.backend.FreeUsageManager.remainingMs(requireContext())
         if (remaining == Long.MAX_VALUE) {
             b.tvFreeUsage.text = "FREE • Unlimited for everyone"
-            b.tvFreeUsage.setTextColor(android.graphics.Color.parseColor("#F5B301"))
+            b.tvFreeUsage.setTextColor(android.graphics.Color.parseColor("#B2B2B2"))
         } else {
             val mins = (remaining / 60000L).coerceAtLeast(0)
             b.tvFreeUsage.text = "FREE • Unlimited for everyone"
-            b.tvFreeUsage.setTextColor(android.graphics.Color.parseColor("#6B7280"))
+            b.tvFreeUsage.setTextColor(android.graphics.Color.parseColor("#727272"))
         }
     }
 
@@ -422,7 +422,7 @@ class HomeFragment : Fragment() {
                             else -> "Stop sharing"
                         }
                         binding.tvQuickScreenShareStatus.setTextColor(
-                            if (sharing && hasFrame) Color.parseColor("#10B981")
+                            if (sharing && hasFrame) Color.parseColor("#808080")
                             else ContextCompat.getColor(requireContext(), R.color.text_subtle)
                         )
                     }
@@ -454,25 +454,25 @@ class HomeFragment : Fragment() {
                             binding.tvHoldHint.text = "Tap mic or orb to power on"
                             binding.tvHoldHint.visibility = View.VISIBLE
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                Color.parseColor("#64748B")
+                                Color.parseColor("#727272")
                             )
                         } else if (status.isMuted) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = "MIC MUTED (OFF) • TAP TO TALK"
-                            binding.tvListeningStatus.setTextColor(Color.parseColor("#EF4444"))
+                            binding.tvListeningStatus.setTextColor(Color.parseColor("#777777"))
                             binding.tvHoldHint.text = "Microphone is muted • Tap mic to unmute"
                             binding.tvHoldHint.visibility = View.VISIBLE
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                Color.parseColor("#EF4444")
+                                Color.parseColor("#777777")
                             )
                         } else if (status.isStandby) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = "STANDBY • SAY 'HEY JARVIS'"
-                            binding.tvListeningStatus.setTextColor(Color.parseColor("#3B82F6"))
+                            binding.tvListeningStatus.setTextColor(Color.parseColor("#7A7A7A"))
                             binding.tvHoldHint.text = "Listening for wake word • Hold mic to power off"
                             binding.tvHoldHint.visibility = View.VISIBLE
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                Color.parseColor("#3B82F6")
+                                Color.parseColor("#7A7A7A")
                             )
                         } else {
                             binding.tvHoldHint.visibility = View.VISIBLE
@@ -480,37 +480,37 @@ class HomeFragment : Fragment() {
                                 ConversationState.LISTENING -> {
                                     setOrbState("listening")
                                     binding.tvListeningStatus.text = "MIC ON • LISTENING..."
-                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#10B981"))
+                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#808080"))
                                     binding.tvHoldHint.text = "Speak now • Tap to mute • Hold to power off"
                                     binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                        Color.parseColor("#10B981")
+                                        Color.parseColor("#808080")
                                     )
                                 }
                                 ConversationState.SPEAKING -> {
                                     setOrbState("speaking")
                                     binding.tvListeningStatus.text = "JARVIS SPEAKING..."
-                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#06B6D4"))
+                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#858585"))
                                     binding.tvHoldHint.text = "Tap mic to interrupt"
                                     binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                        Color.parseColor("#06B6D4")
+                                        Color.parseColor("#858585")
                                     )
                                 }
                                 ConversationState.THINKING -> {
                                     setOrbState("thinking")
                                     binding.tvListeningStatus.text = "THINKING..."
-                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#F59E0B"))
+                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#A7A7A7"))
                                     binding.tvHoldHint.text = "Processing request..."
                                     binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                        Color.parseColor("#F59E0B")
+                                        Color.parseColor("#A7A7A7")
                                     )
                                 }
                                 ConversationState.IDLE -> {
                                     setOrbState("idle")
                                     binding.tvListeningStatus.text = "MIC ON • READY"
-                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#10B981"))
+                                    binding.tvListeningStatus.setTextColor(Color.parseColor("#808080"))
                                     binding.tvHoldHint.text = "Tap to mute • Hold to power off"
                                     binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                        Color.parseColor("#10B981")
+                                        Color.parseColor("#808080")
                                     )
                                 }
                             }
@@ -540,40 +540,40 @@ class HomeFragment : Fragment() {
                             when (error.errorCode) {
                                 "API_KEY_INVALID", "API_KEY_MISSING" -> {
                                     binding.ivLiveErrorIcon.setImageResource(R.drawable.ic_warning)
-                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#EF4444"))
-                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#EF4444"))
+                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#777777"))
+                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#777777"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         startActivity(Intent(requireContext(), com.jarvis.assistant.ui.settings.ApiConnectionActivity::class.java))
                                     }
                                 }
                                 "ACCESSIBILITY_DISABLED" -> {
                                     binding.ivLiveErrorIcon.setImageResource(R.drawable.ic_settings_shield)
-                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#F59E0B"))
-                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#F59E0B"))
+                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#A7A7A7"))
+                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#A7A7A7"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         PermissionHelper.openAccessibilitySettings(requireContext())
                                     }
                                 }
                                 "PERMISSIONS_MISSING" -> {
                                     binding.ivLiveErrorIcon.setImageResource(R.drawable.ic_settings_shield)
-                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#F59E0B"))
-                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#F59E0B"))
+                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#A7A7A7"))
+                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#A7A7A7"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         startActivity(Intent(requireContext(), com.jarvis.assistant.ui.permission.PermissionActivity::class.java))
                                     }
                                 }
                                 "FREE_LIMIT_REACHED" -> {
                                     binding.ivLiveErrorIcon.setImageResource(R.drawable.ic_warning)
-                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#F59E0B"))
-                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#F59E0B"))
+                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#A7A7A7"))
+                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#A7A7A7"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         startActivity(Intent(requireContext(), com.jarvis.assistant.ui.settings.SettingsActivity::class.java))
                                     }
                                 }
                                 else -> {
                                     binding.ivLiveErrorIcon.setImageResource(R.drawable.ic_warning)
-                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#EF4444"))
-                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#EF4444"))
+                                    binding.ivLiveErrorIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#777777"))
+                                    binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#777777"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         (activity as? MainActivity)?.handleMicOrOrbClick()
                                     }
@@ -588,7 +588,7 @@ class HomeFragment : Fragment() {
                         if (status.startsWith("ERROR")) {
                             binding.tvListeningStatus.text = status
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
-                                Color.parseColor("#EF4444")
+                                Color.parseColor("#777777")
                             )
                         }
                     }

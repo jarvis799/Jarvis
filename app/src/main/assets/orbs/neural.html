@@ -7,7 +7,7 @@
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;user-select:none;-webkit-user-select:none}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;background:transparent}
-.cap{position:fixed;left:0;right:0;bottom:calc(7% + env(safe-area-inset-bottom,0px));text-align:center;font-family:ui-monospace,"Roboto Mono",monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:#4d7c0f;text-shadow:0 0 12px rgba(77,124,15,.5);transition:color .3s;pointer-events:none}
+.cap{position:fixed;left:0;right:0;bottom:calc(7% + env(safe-area-inset-bottom,0px));text-align:center;font-family:ui-monospace,"Roboto Mono",monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:#626262;text-shadow:0 0 12px rgba(77,124,15,.5);transition:color .3s;pointer-events:none}
 </style>
 </head>
 <body>
@@ -19,13 +19,13 @@ var c=document.getElementById('c'),ctx=c.getContext('2d'),cap=document.getElemen
 var W,H,cx,cy,R,dp=window.devicePixelRatio||1;
 function resize(){W=c.width=innerWidth*dp;H=c.height=innerHeight*dp;c.style.width=innerWidth+'px';c.style.height=innerHeight+'px';cx=W/2;cy=H/2;R=Math.min(W,H)*0.34;}
 addEventListener('resize',resize);resize();
-var LIME='#4d7c0f',BRIGHT='#a3e635',ERR='#dc2626';
+var LIME='#626262',BRIGHT='#BEBEBE',ERR='#5C5C5C';
 var N=200,nodes=[],seed=987654321;
 function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
 for(var i=0;i<N;i++){var shell=rnd()<0.5;var r=shell?(0.80+rnd()*0.18):(0.20+rnd()*0.50);var th=Math.acos(2*rnd()-1),ph=rnd()*6.283;nodes.push({x:Math.sin(th)*Math.cos(ph)*r,y:Math.sin(th)*Math.sin(ph)*r,z:Math.cos(th)*r});}
 var edges=[];for(var i=0;i<N;i++){var cand=[];for(var j=0;j<N;j++){if(i===j)continue;var dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,dz=nodes[i].z-nodes[j].z;cand.push([j,dx*dx+dy*dy+dz*dz]);}cand.sort(function(a,b){return a[1]-b[1];});for(var k=0;k<Math.min(5,cand.length);k++){var j=cand[k][0];if(j>i&&edges.length<600)edges.push([i,j]);}}
 var state='idle',audio=0,rotY=0,rotX=0,t=0;
-var ST={idle:{m:'SYSTEM ONLINE &bull; TAP TO SPEAK',c:LIME},listening:{m:'TRANSCRIBING VOICE INPUT...',c:BRIGHT},thinking:{m:'PROCESSING REQUEST...',c:'#65a30d'},speaking:{m:'JARVIS TRANSMITTING AUDIO',c:BRIGHT},error:{m:'DIAGNOSTIC ALERT',c:ERR}};
+var ST={idle:{m:'SYSTEM ONLINE &bull; TAP TO SPEAK',c:LIME},listening:{m:'TRANSCRIBING VOICE INPUT...',c:BRIGHT},thinking:{m:'PROCESSING REQUEST...',c:'#7F7F7F'},speaking:{m:'JARVIS TRANSMITTING AUDIO',c:BRIGHT},error:{m:'DIAGNOSTIC ALERT',c:ERR}};
 function setS(s){state=s;var v=ST[s]||ST.idle;cap.innerHTML=v.m;cap.style.color=v.c;}
 function proj(p){var x=p.x,y=p.y,z=p.z;var cy0=Math.cos(rotY),sy0=Math.sin(rotY);var x1=x*cy0-z*sy0,z1=x*sy0+z*cy0;var cx0=Math.cos(rotX),sx0=Math.sin(rotX);var y1=y*cx0-z1*sx0,z2=y*sx0+z1*cx0;var pe=1.7/(1.7+z2);return{x:cx+x1*R*pe,y:cy+y1*R*pe,s:pe,z:z2};}
 function frame(){

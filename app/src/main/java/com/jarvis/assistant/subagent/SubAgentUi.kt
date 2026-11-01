@@ -24,13 +24,13 @@ class SubAgentUi(private val activity: Activity) {
         return if (activity.theme.resolveAttribute(attr, tv, true) && tv.data != 0) tv.data else fallback
     }
 
-    val accent: Int get() = color(R.attr.themeAccent, Color.parseColor("#22C55E"))
-    val accentLight: Int get() = color(R.attr.themeAccentLight, Color.parseColor("#DCFCE7"))
+    val accent: Int get() = color(R.attr.themeAccent, Color.parseColor("#898989"))
+    val accentLight: Int get() = color(R.attr.themeAccentLight, Color.parseColor("#E8E8E8"))
     val textPrimary: Int get() = color(R.attr.themeTextPrimary, Color.parseColor("#1A1A1A"))
     val textSecondary: Int get() = color(R.attr.themeTextSecondary, Color.parseColor("#444444"))
     val textMuted: Int get() = color(R.attr.themeTextMuted, Color.parseColor("#777777"))
     val cardBg: Int get() = color(R.attr.themeCardBg, Color.parseColor("#CCFFFFFF"))
-    val cardBorder: Int get() = color(R.attr.themeCardBorder, Color.parseColor("#3322C55E"))
+    val cardBorder: Int get() = color(R.attr.themeCardBorder, Color.parseColor("#33898989"))
 
     fun alpha(source: Int, factor: Float): Int =
         Color.argb((255 * factor).coerceIn(0f, 1f).toInt(), Color.red(source), Color.green(source), Color.blue(source))
@@ -96,7 +96,7 @@ class SubAgentUi(private val activity: Activity) {
         isFocusable = true
         if (filled) {
             background = rounded(accent, 16)
-            setTextColor(Color.parseColor("#0B1F10"))
+            setTextColor(Color.parseColor("#171717"))
         } else {
             background = rounded(alpha(cardBg, 0.6f), 16, alpha(accent, 0.45f))
             setTextColor(accent)

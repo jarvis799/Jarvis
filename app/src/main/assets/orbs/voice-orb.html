@@ -8,8 +8,8 @@
   :root {
     color-scheme: dark;
     --bg: transparent;
-    --ink: #eaffd6;
-    --mute: #c3e39a;
+    --ink: #E8E8E8;
+    --mute: #D1D1D1;
   }
   body {
       background-color: transparent;
@@ -346,14 +346,14 @@
     var light = theme === 'light' || theme === 'sunset' || (theme === 'custom' && (accentLum === null || accentLum > 0.55));
     var host = document.getElementById('voice-orb-canvas');
     if (!light) {
-      if (host) host.style.setProperty('--cap-user', '#ffd6a8');
+      if (host) host.style.setProperty('--cap-user', '#DDDDDD');
       return;
     }
     document.documentElement.style.setProperty('--ink', '#16241c');
-    document.documentElement.style.setProperty('--mute', '#4b5a50');
+    document.documentElement.style.setProperty('--mute', '#545454');
     if (host) {
       host.style.setProperty('--cap', '#16241c');
-      host.style.setProperty('--cap-user', '#8a4b12');
+      host.style.setProperty('--cap-user', '#575757');
       host.style.setProperty('--cap-dim', 'rgba(22, 36, 28, .55)');
     }
   })();

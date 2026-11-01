@@ -74,7 +74,7 @@ class WhatsAppPopupService : NotificationListenerService() {
         }
         val title = TextView(this).apply {
             text = "WhatsApp - " + sender
-            setTextColor(Color.parseColor("#1A2E05"))
+            setTextColor(Color.parseColor("#232323"))
             textSize = 13f
         }
         val body = TextView(this).apply {

@@ -31,11 +31,11 @@ object WebsiteBuilder {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>$title</title>
 <style>
-  body { margin: 0; font-family: system-ui, sans-serif; background: #ffffff; color: #1A2E05; }
-  header { background: #84CC16; padding: 48px 24px; text-align: center; }
-  header h1 { margin: 0; font-size: 32px; color: #1A2E05; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #ffffff; color: #232323; }
+  header { background: #A2A2A2; padding: 48px 24px; text-align: center; }
+  header h1 { margin: 0; font-size: 32px; color: #232323; }
   main { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
-  footer { text-align: center; padding: 24px; font-size: 12px; color: #6B7280; }
+  footer { text-align: center; padding: 24px; font-size: 12px; color: #727272; }
 </style>
 </head>
 <body>

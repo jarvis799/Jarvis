@@ -159,15 +159,15 @@ class SettingsFragment : Fragment() {
         val hasVoiceProfile = preferences.hasOwnerVoiceProfile()
         if (hasVoiceProfile) {
             binding.tvOwnerVoiceBadge.text = "ACTIVE"
-            binding.tvOwnerVoiceBadge.setTextColor(Color.parseColor("#10B981"))
+            binding.tvOwnerVoiceBadge.setTextColor(Color.parseColor("#808080"))
             binding.tvOwnerVoiceBadge.setBackgroundResource(R.drawable.bg_jarvis_status_badge_green)
             binding.tvOwnerVoiceSubtitle.text = "Voice Profile Active • Only you can speak"
 
             binding.tvProfileVoiceStatus.text = "VOICE ENROLLED"
-            binding.tvProfileVoiceStatus.setTextColor(Color.parseColor("#10B981"))
+            binding.tvProfileVoiceStatus.setTextColor(Color.parseColor("#808080"))
             binding.chipProfileVoiceStatus.setBackgroundResource(R.drawable.bg_jarvis_status_badge_green)
             binding.ivProfileVoiceBadgeIcon.setImageResource(R.drawable.ic_verified_badge)
-            binding.ivProfileVoiceBadgeIcon.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#10B981"))
+            binding.ivProfileVoiceBadgeIcon.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#808080"))
         } else {
             binding.tvOwnerVoiceBadge.text = "SETUP"
             binding.tvOwnerVoiceBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent_sapphire))

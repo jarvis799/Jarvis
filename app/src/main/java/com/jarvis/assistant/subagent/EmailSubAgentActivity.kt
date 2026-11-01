@@ -242,11 +242,11 @@ class EmailSubAgentActivity : AppCompatActivity() {
         when {
             !connected -> {
                 headline = "SETUP · Gmail not connected"
-                tone = Color.parseColor("#D97706")
+                tone = Color.parseColor("#878787")
             }
             enabled -> {
                 headline = "ACTIVE · auto replying"
-                tone = Color.parseColor("#16A34A")
+                tone = Color.parseColor("#6F6F6F")
             }
             else -> {
                 headline = "PAUSED · switch is off"

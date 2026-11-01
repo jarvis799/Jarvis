@@ -131,7 +131,7 @@ class GmailSettingsActivity : AppCompatActivity() {
         })
         column.addView(hint("Gmail address + Google's 16-character App Password (not an access token). Save tests both inbox and sending, then enables background replies. Credentials stay encrypted on this phone. Scans run about every 15 minutes; Android may delay them. Phone off, no internet or Force stop means no replies.").apply { setPadding(0, px(8), 0, px(4)) })
 
-        statusText = TextView(this).apply { text = ""; setTextColor(Color.parseColor("#16A34A")); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        statusText = TextView(this).apply { text = ""; setTextColor(Color.parseColor("#6F6F6F")); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
         accountText = hint("")
         val statusCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setPadding(px(16), px(14), px(16), px(14))
@@ -203,8 +203,8 @@ class GmailSettingsActivity : AppCompatActivity() {
         column.addView(signatureInput, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(10) })
 
         disconnectButton = limeButton("Disconnect Gmail", false)
-        disconnectButton.setTextColor(Color.parseColor("#EF4444"))
-        disconnectButton.strokeColor = ColorStateList.valueOf(Color.parseColor("#EF4444"))
+        disconnectButton.setTextColor(Color.parseColor("#777777"))
+        disconnectButton.strokeColor = ColorStateList.valueOf(Color.parseColor("#777777"))
         column.addView(disconnectButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = px(22) })
         disconnectButton.setOnClickListener {
             GmailStore.clear(this)
@@ -302,14 +302,14 @@ class GmailSettingsActivity : AppCompatActivity() {
         if (connected) {
             statusText.text = if (!GmailStore.connectionVerified(this)) "SAVED — TEST CONNECTION" else
                 "GMAIL VERIFIED — AUTO REPLY " + (if (enabled) "ON" else "PAUSED")
-            statusText.setTextColor(if (enabled) Color.parseColor("#16A34A") else Color.parseColor("#D97706"))
+            statusText.setTextColor(if (enabled) Color.parseColor("#6F6F6F") else Color.parseColor("#878787"))
             accountText.text = GmailStore.email(this) + "\n" + GmailStore.scanStatus(this)
             toggleButton.text = if (enabled) "Pause 24/7" else "Resume 24/7"
             toggleButton.isEnabled = GmailStore.connectionVerified(this)
             disconnectButton.isEnabled = true
         } else {
             statusText.text = "NOT CONNECTED"
-            statusText.setTextColor(Color.parseColor("#EF4444"))
+            statusText.setTextColor(Color.parseColor("#777777"))
             accountText.text = "Enter your Gmail address and 16-character Google App Password below, then tap Save & Test."
             toggleButton.isEnabled = false
             disconnectButton.isEnabled = false

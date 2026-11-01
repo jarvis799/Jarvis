@@ -28,7 +28,7 @@
                 android:backgroundTint="#F1F5F9"
                 android:minWidth="0dp"
                 android:text="Back"
-                android:textColor="#0F172A" />
+                android:textColor="#171717" />
 
             <TextView
                 android:layout_width="0dp"
@@ -37,7 +37,7 @@
                 android:layout_weight="1"
                 android:letterSpacing="0.02"
                 android:text="AI Background Remover"
-                android:textColor="#0F172A"
+                android:textColor="#171717"
                 android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -48,7 +48,7 @@
             android:layout_marginTop="10dp"
             android:lineSpacingExtra="3dp"
             android:text="Keeps the subject, drops the background, saves a transparent PNG. The original photo is never modified."
-            android:textColor="#475569"
+            android:textColor="#535353"
             android:textSize="13sp" />
 
         <TextView
@@ -56,7 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="TERMINAL PYTHON CHECK"
-            android:textColor="#4D7C0F"
+            android:textColor="#626262"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -65,11 +65,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:background="#F7FEE7"
+            android:background="#E8E8E8"
             android:lineSpacingExtra="2dp"
             android:padding="12dp"
             android:text="Checking the terminal Python runtime..."
-            android:textColor="#334155"
+            android:textColor="#3F3F3F"
             android:textSize="12sp" />
 
         <TextView
@@ -77,7 +77,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="HOST (POST /remove-bg)"
-            android:textColor="#4D7C0F"
+            android:textColor="#626262"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -97,8 +97,8 @@
                 android:importantForAutofill="no"
                 android:inputType="textUri"
                 android:maxLines="1"
-                android:textColor="#0F172A"
-                android:textColorHint="#94A3B8"
+                android:textColor="#171717"
+                android:textColorHint="#A1A1A1"
                 android:textSize="13sp" />
 
             <Button
@@ -106,9 +106,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:backgroundTint="#ECFCCB"
+                android:backgroundTint="#E8E8E8"
                 android:text="Test"
-                android:textColor="#3F6212" />
+                android:textColor="#4E4E4E" />
         </LinearLayout>
 
         <Button
@@ -118,7 +118,7 @@
             android:layout_marginTop="16dp"
             android:backgroundTint="#F1F5F9"
             android:text="Select image"
-            android:textColor="#0F172A" />
+            android:textColor="#171717" />
 
         <TextView
             android:id="@+id/bgSelection"
@@ -126,7 +126,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="No image selected."
-            android:textColor="#64748B"
+            android:textColor="#727272"
             android:textSize="12sp" />
 
         <LinearLayout
@@ -171,7 +171,7 @@
             android:layout_marginTop="12dp"
             android:lineSpacingExtra="2dp"
             android:text="Select an image to begin."
-            android:textColor="#0F172A"
+            android:textColor="#171717"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -181,7 +181,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:text="Where this runs: not decided yet."
-            android:textColor="#4D7C0F"
+            android:textColor="#626262"
             android:textSize="12sp" />
 
         <TextView
@@ -189,7 +189,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="#475569"
+            android:textColor="#535353"
             android:textSize="12sp" />
 
         <Button
@@ -197,9 +197,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:backgroundTint="#A3E635"
+            android:backgroundTint="#BEBEBE"
             android:text="Remove background"
-            android:textColor="#1A2E05"
+            android:textColor="#232323"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -214,9 +214,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
-                android:backgroundTint="#ECFCCB"
+                android:backgroundTint="#E8E8E8"
                 android:text="Preview: original"
-                android:textColor="#3F6212" />
+                android:textColor="#4E4E4E" />
 
             <Button
                 android:id="@+id/btnBgSave"
@@ -224,9 +224,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
-                android:backgroundTint="#ECFCCB"
+                android:backgroundTint="#E8E8E8"
                 android:text="Save PNG"
-                android:textColor="#3F6212" />
+                android:textColor="#4E4E4E" />
         </LinearLayout>
 
         <LinearLayout
@@ -243,7 +243,7 @@
                 android:layout_weight="1"
                 android:backgroundTint="#F1F5F9"
                 android:text="Retry"
-                android:textColor="#0F172A" />
+                android:textColor="#171717" />
 
             <Button
                 android:id="@+id/btnBgCancel"
@@ -253,7 +253,7 @@
                 android:layout_weight="1"
                 android:backgroundTint="#F1F5F9"
                 android:text="Cancel"
-                android:textColor="#0F172A" />
+                android:textColor="#171717" />
         </LinearLayout>
 
         <TextView
@@ -262,7 +262,7 @@
             android:layout_marginTop="20dp"
             android:lineSpacingExtra="2dp"
             android:text="Privacy: the photo is read only for this run and is not stored by Jarvis unless you tap Save PNG. Plain http is allowed only for 127.0.0.1 on this phone; any remote host must use https."
-            android:textColor="#94A3B8"
+            android:textColor="#A1A1A1"
             android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>

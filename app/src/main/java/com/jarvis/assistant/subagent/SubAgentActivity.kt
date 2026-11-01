@@ -163,8 +163,8 @@ class SubAgentActivity : AppCompatActivity() {
         val professionalSelected = category == SubAgentCategory.PROFESSIONAL
         professionalTab.background = if (professionalSelected) selectedBg else unselectedBg
         premiumTab.background = if (professionalSelected) unselectedBg else selectedBg
-        professionalLabel.setTextColor(if (professionalSelected) Color.parseColor("#0B1F10") else ui.textSecondary)
-        premiumLabel.setTextColor(if (professionalSelected) Color.parseColor("#0B1F10") else ui.textSecondary)
+        professionalLabel.setTextColor(if (professionalSelected) Color.parseColor("#171717") else ui.textSecondary)
+        premiumLabel.setTextColor(if (professionalSelected) Color.parseColor("#171717") else ui.textSecondary)
     }
 
     private fun agentCard(agent: SubAgent): LinearLayout {
@@ -306,9 +306,9 @@ class SubAgentActivity : AppCompatActivity() {
     }
 
     private fun toneFor(state: SubAgentState): Int = when (state) {
-        SubAgentState.RUNNING -> Color.parseColor("#16A34A")
+        SubAgentState.RUNNING -> Color.parseColor("#6F6F6F")
         SubAgentState.READY -> ui.accent
-        SubAgentState.SETUP -> Color.parseColor("#D97706")
+        SubAgentState.SETUP -> Color.parseColor("#878787")
         SubAgentState.PAUSED -> ui.textMuted
     }
 

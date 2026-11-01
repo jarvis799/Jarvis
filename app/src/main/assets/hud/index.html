@@ -6,13 +6,13 @@
 <title>JARVIS — Holographic HUD</title>
 <style>
 :root{
-  --hud-cyan:#00f0ff; --hud-cyan-bright:#70f7ff; --hud-cyan-dim:rgba(0,240,255,.22); --hud-cyan-border:rgba(0,240,255,.4); --hud-cyan-faint:rgba(0,240,255,.08);
-  --hud-blue:#0066ff; --hud-blue-electric:#0284c7; --hud-blue-deep:#0b1f4d;
-  --hud-bg:#020713; --hud-bg-elev:#051329; --hud-warning:#ff2a5f;
+  --hud-cyan:#AAAAAA; --hud-cyan-bright:#D0D0D0; --hud-cyan-dim:rgba(0,240,255,.22); --hud-cyan-border:rgba(0,240,255,.4); --hud-cyan-faint:rgba(0,240,255,.08);
+  --hud-blue:#595959; --hud-blue-electric:#656565; --hud-blue-deep:#1E1E1E;
+  --hud-bg:#111111; --hud-bg-elev:#111111; --hud-warning:#707070;
   --font-mono:"Orbitron","Rajdhani",ui-monospace,"Roboto Mono",monospace;
   --font-ui:system-ui,-apple-system,"Segoe UI",sans-serif;
   --accent:var(--hud-cyan);
-  --ink:#e8f9ff; --ink-soft:rgba(232,249,255,.66); --ink-faint:rgba(232,249,255,.38);
+  --ink:#E8E8E8; --ink-soft:rgba(232,249,255,.66); --ink-faint:rgba(232,249,255,.38);
   --spin-outer:24s; --spin-seg:15s; --spin-mech:32s; --spin-tick:72s; --spin-inner:18s; --spin-scan:7s;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -134,12 +134,12 @@ body.home .orb-caption{font-size:.5rem;margin-top:4px}
         <defs>
           <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <filter id="coreGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b1"/><feGaussianBlur stdDeviation="14" result="b2"/><feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <radialGradient id="coreSphere" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="16%" stop-color="#e0faff" stop-opacity=".98"/><stop offset="34%" stop-color="#38bdf8" stop-opacity=".92"/><stop offset="56%" stop-color="#00f0ff" stop-opacity=".85"/><stop offset="78%" stop-color="#0284c7" stop-opacity=".65"/><stop offset="92%" stop-color="#082f49" stop-opacity=".35"/><stop offset="100%" stop-color="#020713" stop-opacity=".05"/></radialGradient>
-          <radialGradient id="coreSphereError" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff"/><stop offset="20%" stop-color="#ff7b9f" stop-opacity=".95"/><stop offset="45%" stop-color="#ff2a5f" stop-opacity=".9"/><stop offset="75%" stop-color="#990526" stop-opacity=".75"/><stop offset="100%" stop-color="#1a0208" stop-opacity=".1"/></radialGradient>
-          <linearGradient id="glareGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="50%" stop-color="#a5f3fc" stop-opacity=".3"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></linearGradient>
-          <radialGradient id="scanGrad" cx="250" cy="250" r="185" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#00f0ff" stop-opacity=".15"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
-          <linearGradient id="wingGradL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#0066ff" stop-opacity=".15"/><stop offset="100%" stop-color="#051329" stop-opacity=".05"/></linearGradient>
-          <linearGradient id="wingGradR" x1="1" y1="0" x2="0" y2="0"><stop offset="0%" stop-color="#00f0ff" stop-opacity=".4"/><stop offset="60%" stop-color="#0066ff" stop-opacity=".15"/><stop offset="100%" stop-color="#051329" stop-opacity=".05"/></linearGradient>
+          <radialGradient id="coreSphere" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="16%" stop-color="#E8E8E8" stop-opacity=".98"/><stop offset="34%" stop-color="#9C9C9C" stop-opacity=".92"/><stop offset="56%" stop-color="#AAAAAA" stop-opacity=".85"/><stop offset="78%" stop-color="#656565" stop-opacity=".65"/><stop offset="92%" stop-color="#262626" stop-opacity=".35"/><stop offset="100%" stop-color="#111111" stop-opacity=".05"/></radialGradient>
+          <radialGradient id="coreSphereError" cx="48%" cy="46%" r="52%"><stop offset="0%" stop-color="#fff"/><stop offset="20%" stop-color="#A7A7A7" stop-opacity=".95"/><stop offset="45%" stop-color="#707070" stop-opacity=".9"/><stop offset="75%" stop-color="#353535" stop-opacity=".75"/><stop offset="100%" stop-color="#111111" stop-opacity=".1"/></radialGradient>
+          <linearGradient id="glareGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="50%" stop-color="#DDDDDD" stop-opacity=".3"/><stop offset="100%" stop-color="#AAAAAA" stop-opacity="0"/></linearGradient>
+          <radialGradient id="scanGrad" cx="250" cy="250" r="185" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#AAAAAA" stop-opacity=".4"/><stop offset="60%" stop-color="#AAAAAA" stop-opacity=".15"/><stop offset="100%" stop-color="#AAAAAA" stop-opacity="0"/></radialGradient>
+          <linearGradient id="wingGradL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#AAAAAA" stop-opacity=".4"/><stop offset="60%" stop-color="#595959" stop-opacity=".15"/><stop offset="100%" stop-color="#111111" stop-opacity=".05"/></linearGradient>
+          <linearGradient id="wingGradR" x1="1" y1="0" x2="0" y2="0"><stop offset="0%" stop-color="#AAAAAA" stop-opacity=".4"/><stop offset="60%" stop-color="#595959" stop-opacity=".15"/><stop offset="100%" stop-color="#111111" stop-opacity=".05"/></linearGradient>
         </defs>
         <g class="reactor-outer-ring ring" style="transform-origin:250px 250px">
           <circle cx="250" cy="250" r="186" fill="none" stroke="var(--hud-cyan)" stroke-width="1.4" stroke-dasharray="95 18 45 12 180 25 70 15" opacity=".85" filter="url(#ringGlow)"/>
@@ -193,7 +193,7 @@ body.home .orb-caption{font-size:.5rem;margin-top:4px}
           <circle cx="435" cy="250" r="2.5" fill="#fff"/>
         </g>
         <g class="reactor-energy-core" id="energy-core" style="transform-origin:250px 250px">
-          <circle cx="250" cy="250" r="58" fill="none" stroke="#38bdf8" stroke-width="1" opacity=".45"/>
+          <circle cx="250" cy="250" r="58" fill="none" stroke="#9C9C9C" stroke-width="1" opacity=".45"/>
           <g id="azimuth-ticks"></g>
           <circle id="core-sphere" cx="250" cy="250" r="52" fill="url(#coreSphere)" filter="url(#coreGlow)" opacity=".94"/>
           <path d="M 220 220 C 230 208 270 208 280 220 C 265 214 235 214 220 220 Z" fill="url(#glareGrad)" opacity=".85"/>
@@ -255,9 +255,9 @@ body.home .orb-caption{font-size:.5rem;margin-top:4px}
   var STATES={
     idle:{dot:'var(--hud-cyan)',cap:'SYSTEM ONLINE &bull; TAP TO SPEAK',st:'ONLINE',coreFill:'url(#coreSphere)'},
     listening:{dot:'var(--hud-cyan-bright)',cap:'TRANSCRIBING VOICE INPUT...',st:'LISTENING',coreFill:'url(#coreSphere)'},
-    thinking:{dot:'#a78bfa',cap:'PROCESSING REQUEST...',st:'ANALYZING',coreFill:'url(#coreSphere)'},
+    thinking:{dot:'#A0A0A0',cap:'PROCESSING REQUEST...',st:'ANALYZING',coreFill:'url(#coreSphere)'},
     speaking:{dot:'var(--hud-cyan-bright)',cap:'JARVIS TRANSMITTING AUDIO',st:'TRANSMITTING',coreFill:'url(#coreSphere)'},
-    error:{dot:'#ff2a5f',cap:'DIAGNOSTIC ALERT',st:'ALERT',coreFill:'url(#coreSphereError)'}
+    error:{dot:'#707070',cap:'DIAGNOSTIC ALERT',st:'ALERT',coreFill:'url(#coreSphereError)'}
   };
   var currentState='idle',audioLevel=0;
   function applyState(s,audio){var cfg=STATES[s]||STATES.idle;currentState=s;hud.dataset.state=s;statusText.textContent=cfg.st;orbCaption.innerHTML=cfg.cap;orbCaption.style.color=cfg.dot;statusDot.style.background=cfg.dot;statusDot.style.boxShadow='0 0 8px '+cfg.dot;if(coreSphere)coreSphere.setAttribute('fill',cfg.coreFill);if(typeof audio==='number')audioLevel=Math.min(audio,1);}
@@ -289,7 +289,7 @@ body.home .orb-caption{font-size:.5rem;margin-top:4px}
   window.setScreenShareState=function(isSharing){if(isSharing){btnVision.classList.add('btn-active');labelVision.textContent='Vision On';labelVision.style.color='var(--hud-cyan)';}else{btnVision.classList.remove('btn-active');labelVision.textContent='Vision';labelVision.style.color='';}};
   window.updateScreenShareState=window.setScreenShareState;
   window.setOrbTheme=function(theme,hex){window.JarvisOrb.setTheme(theme);if(theme==='custom'&&hex)window.JarvisOrb.setBackground(hex);};
-  var THEMES={cyan:{p:'#00f0ff',pb:'#70f7ff',b:'#0066ff',be:'#0284c7'},lime:{p:'#00ff88',pb:'#a7f3d0',b:'#059669',be:'#10b981'},emerald:{p:'#00ff88',pb:'#a7f3d0',b:'#059669',be:'#10b981'},amber:{p:'#fbbf24',pb:'#fef08a',b:'#d97706',be:'#f59e0b'},gold:{p:'#fbbf24',pb:'#fef08a',b:'#d97706',be:'#f59e0b'},red:{p:'#ff2a5f',pb:'#ff7b9f',b:'#990526',be:'#ff2a5f'},crimson:{p:'#ff2a5f',pb:'#ff7b9f',b:'#990526',be:'#ff2a5f'},dark:{p:'#00f0ff',pb:'#70f7ff',b:'#0284c7',be:'#0b1f4d'},light:{p:'#00f0ff',pb:'#70f7ff',b:'#0066ff',be:'#0284c7'}};
+  var THEMES={cyan:{p:'#AAAAAA',pb:'#D0D0D0',b:'#595959',be:'#656565'},lime:{p:'#A5A5A5',pb:'#D8D8D8',b:'#666666',be:'#808080'},emerald:{p:'#A5A5A5',pb:'#D8D8D8',b:'#666666',be:'#808080'},amber:{p:'#BFBFBF',pb:'#E8E8E8',b:'#878787',be:'#A7A7A7'},gold:{p:'#BFBFBF',pb:'#E8E8E8',b:'#878787',be:'#A7A7A7'},red:{p:'#707070',pb:'#A7A7A7',b:'#353535',be:'#707070'},crimson:{p:'#707070',pb:'#A7A7A7',b:'#353535',be:'#707070'},dark:{p:'#AAAAAA',pb:'#D0D0D0',b:'#656565',be:'#1E1E1E'},light:{p:'#AAAAAA',pb:'#D0D0D0',b:'#595959',be:'#656565'}};
   function applyPalette(p){root.style.setProperty('--hud-cyan',p.p);root.style.setProperty('--hud-cyan-bright',p.pb);root.style.setProperty('--hud-blue',p.b);root.style.setProperty('--hud-blue-electric',p.be);root.style.setProperty('--accent',p.p);}
   window.JarvisOrb={setState:window.setOrbState,setExternalAudio:function(amp,bass,high){window.setAudioLevel(Math.max(amp||0,bass||0,high||0));},setTheme:function(theme){var t=THEMES[(theme||'').toLowerCase()];if(t)applyPalette(t);},setBackground:function(hex){if(!/^#[0-9a-f]{6}$/i.test(hex))return;applyPalette({p:hex,pb:hex,b:hex,be:hex});},startListening:function(){window.setOrbState('listening');},startThinking:function(){window.setOrbState('thinking');},startSpeaking:function(){window.setOrbState('speaking');},stopSpeaking:function(){window.setOrbState('idle');},say:function(text){if(!orbCaption)return;var c=String(text||'').replace(/\s+/g,' ').trim().slice(0,140);if(!c)return;orbCaption.textContent=c.toUpperCase();orbCaption.style.color='var(--hud-cyan)';clearTimeout(window.__sayT);window.__sayT=setTimeout(function(){orbCaption.style.color='';},6000);}};
   window.JarvisVisual={set:function(){}};

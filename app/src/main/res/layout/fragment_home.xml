@@ -466,7 +466,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_warning"
-                app:tint="#EF4444" />
+                app:tint="#777777" />
 
             <TextView
                 android:id="@+id/tvLiveErrorTitle"
@@ -475,7 +475,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="10dp"
                 android:text="API KEY ERROR"
-                android:textColor="#EF4444"
+                android:textColor="#777777"
                 android:textSize="14sp"
                 android:letterSpacing="0.08"
                 android:fontFamily="sans-serif-medium"

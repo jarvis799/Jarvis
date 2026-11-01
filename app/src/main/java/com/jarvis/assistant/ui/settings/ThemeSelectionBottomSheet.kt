@@ -50,9 +50,9 @@ class ThemeSelectionBottomSheet : BottomSheetDialogFragment() {
 
         // Quick Swatches
         binding.swatch1.setOnClickListener { applyCustomColor("#000000") }
-        binding.swatch2.setOnClickListener { applyCustomColor("#1E1B4B") }
-        binding.swatch3.setOnClickListener { applyCustomColor("#042F2E") }
-        binding.swatch4.setOnClickListener { applyCustomColor("#451A03") }
+        binding.swatch2.setOnClickListener { applyCustomColor("#212121") }
+        binding.swatch3.setOnClickListener { applyCustomColor("#222222") }
+        binding.swatch4.setOnClickListener { applyCustomColor("#242424") }
         binding.swatch5.setOnClickListener { applyCustomColor("#F0FDF4") }
         binding.swatch6.setOnClickListener { applyCustomColor("#FAF5FF") }
     }
@@ -62,7 +62,7 @@ class ThemeSelectionBottomSheet : BottomSheetDialogFragment() {
         try {
             Color.parseColor(hex)
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Invalid HEX color format (e.g. #1E1B4B)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Invalid HEX color format (e.g. #212121)", Toast.LENGTH_SHORT).show()
             return
         }
 

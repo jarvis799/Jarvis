@@ -7,8 +7,8 @@
 <style>
   :root {
         --bg: transparent;
-    --ink: #eaffd6;
-    --mute: #c3e39a;
+    --ink: #E8E8E8;
+    --mute: #D1D1D1;
     --line: rgba(255, 255, 255, .1);
     --chip: rgba(255, 255, 255, .05);
   }
@@ -91,12 +91,12 @@ colors[1] = SPEAK_PINK;
       const el = document.getElementById('orb');
       const light = isLightTheme(themeKey, accentHex);
       if (el) {
-        el.style.setProperty('--cap', light ? '#12240f' : '#f2ffe4');
+        el.style.setProperty('--cap', light ? '#1C1C1C' : '#E8E8E8');
         el.style.setProperty('--cap-dim', light ? 'rgba(18,36,15,.72)' : 'rgba(242,255,228,.72)');
-        el.style.setProperty('--cap-user', light ? '#8a5620' : '#ffd6a8');
+        el.style.setProperty('--cap-user', light ? '#5F5F5F' : '#DDDDDD');
       }
-      document.documentElement.style.setProperty('--ink', light ? '#12240f' : '#eaffd6');
-      document.documentElement.style.setProperty('--mute', light ? 'rgba(18,36,15,.66)' : '#c3e39a');
+      document.documentElement.style.setProperty('--ink', light ? '#1C1C1C' : '#E8E8E8');
+      document.documentElement.style.setProperty('--mute', light ? 'rgba(18,36,15,.66)' : '#D1D1D1');
     };
     window.__jarvisOrbInk();
     const SPK = 1;
@@ -182,7 +182,7 @@ colors[1] = SPEAK_PINK;
       .orb{position:relative;width:100%;aspect-ratio:1}
       canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
       .cap{position:relative;margin:-4% auto 0;width:var(--cap-w,92%);min-height:2.7em;text-align:center;font:600 var(--cap-size,24px)/1.3 var(--cap-font,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif);letter-spacing:-.01em;color:var(--cap);text-wrap:balance}
-      .cap.user{--cap:var(--cap-user,#ffd6a8);font-weight:500}
+      .cap.user{--cap:var(--cap-user,#DDDDDD);font-weight:500}
       .cap span{display:inline-block;white-space:pre;will-change:opacity,transform}
       canvas.fx{pointer-events:none}`;
 
@@ -503,14 +503,14 @@ colors[1] = SPEAK_PINK;
     var light = theme === 'light' || theme === 'sunset' || (theme === 'custom' && (accentLum === null || accentLum > 0.55));
     var host = document.getElementById('orb');
     if (!light) {
-      if (host) host.style.setProperty('--cap-user', '#ffd6a8');
+      if (host) host.style.setProperty('--cap-user', '#DDDDDD');
       return;
     }
     document.documentElement.style.setProperty('--ink', '#16241c');
-    document.documentElement.style.setProperty('--mute', '#4b5a50');
+    document.documentElement.style.setProperty('--mute', '#545454');
     if (host) {
       host.style.setProperty('--cap', '#16241c');
-      host.style.setProperty('--cap-user', '#8a4b12');
+      host.style.setProperty('--cap-user', '#575757');
       host.style.setProperty('--cap-dim', 'rgba(22, 36, 28, .55)');
     }
   })();

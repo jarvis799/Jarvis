@@ -6,8 +6,8 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="38dp"
-                android:startColor="#3B82F6"
-                android:endColor="#1D4ED8" />
+                android:startColor="#7A7A7A"
+                android:endColor="#4F4F4F" />
             <stroke
                 android:width="2dp"
                 android:color="#FFFFFF" />

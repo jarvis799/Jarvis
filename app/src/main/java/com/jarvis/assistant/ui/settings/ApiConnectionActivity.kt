@@ -76,7 +76,7 @@ class ApiConnectionActivity : AppCompatActivity() {
 
         if (!preferences.canStoreApiKeySecurely) {
             binding.tvLiveStatus.text = "SECURE STORAGE UNAVAILABLE • API KEY DISABLED"
-            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EF4444"))
+            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#777777"))
         }
 
         when (preferences.aiModel) {
@@ -89,10 +89,10 @@ class ApiConnectionActivity : AppCompatActivity() {
             // Keep the secure-storage warning set above.
         } else if (preferences.apiKey.isNotBlank()) {
             binding.tvLiveStatus.text = "KEY CONFIGURED • READY"
-            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#22C55E"))
+            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#898989"))
         } else {
             binding.tvLiveStatus.text = "NO API KEY • ENTER KEY BELOW"
-            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EAB308"))
+            binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#B0B0B0"))
         }
 
         if (preferences.customEndpoint.isNotBlank()) {
@@ -213,7 +213,7 @@ class ApiConnectionActivity : AppCompatActivity() {
         val customModel = binding.etCustomChatModel.text?.toString()?.trim().orEmpty()
         binding.btnTestConnection.isEnabled = false
         binding.tvPingResult.text = "Testing ping..."
-        binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#3B82F6"))
+        binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#7A7A7A"))
 
         lifecycleScope.launch {
             val startTime = System.currentTimeMillis()
@@ -244,13 +244,13 @@ class ApiConnectionActivity : AppCompatActivity() {
                 val ping = result.second
                 binding.tvPingResult.text = "Ping: ${ping}ms • Valid"
                 binding.tvLiveStatus.text = "CONNECTED • HANDSHAKE OK"
-                binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#22C55E"))
+                binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#898989"))
                 Snackbar.make(binding.root, "Connection verified! Ping: ${ping}ms", Snackbar.LENGTH_LONG).show()
             } else {
                 val code = result.second
                 binding.tvPingResult.text = if (code == -1) "Network Timeout" else "HTTP $code Error"
                 binding.tvLiveStatus.text = "FAILED • INVALID KEY OR NETWORK"
-                binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EF4444"))
+                binding.viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#777777"))
                 Snackbar.make(binding.root, "Connection failed. Check the endpoint, request format, model and personal key.", Snackbar.LENGTH_LONG).show()
             }
         }

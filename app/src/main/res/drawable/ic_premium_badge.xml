@@ -14,25 +14,25 @@
                 android:startY="6"
                 android:endX="21.5"
                 android:endY="18">
-                <item android:offset="0" android:color="#FFEDB8"/>
-                <item android:offset="0.45" android:color="#F5B301"/>
-                <item android:offset="1" android:color="#C77F02"/>
+                <item android:offset="0" android:color="#E8E8E8"/>
+                <item android:offset="0.45" android:color="#B2B2B2"/>
+                <item android:offset="1" android:color="#868686"/>
             </gradient>
         </aapt:attr>
     </path>
     <!-- Base bar -->
     <path
-        android:fillColor="#B36F02"
+        android:fillColor="#777777"
         android:pathData="M4.6,18.8 h14.8 a1.2,1.2 0 0 1 1.2,1.2 v0 a1.2,1.2 0 0 1 -1.2,1.2 h-14.8 a1.2,1.2 0 0 1 -1.2,-1.2 v0 a1.2,1.2 0 0 1 1.2,-1.2 z" />
     <!-- Center gem -->
     <path
-        android:fillColor="#FFF6D8"
+        android:fillColor="#E8E8E8"
         android:pathData="M11.85,10.6 l1.75,2.2 -1.75,2.6 -1.75,-2.6 z" />
     <!-- Sparkles -->
     <path
-        android:fillColor="#FFE082"
+        android:fillColor="#DFDFDF"
         android:pathData="M19.6,2.2 l0.55,1.45 1.45,0.55 -1.45,0.55 -0.55,1.45 -0.55,-1.45 -1.45,-0.55 1.45,-0.55 z" />
     <path
-        android:fillColor="#FFE082"
+        android:fillColor="#DFDFDF"
         android:pathData="M4.4,3.4 l0.4,1.05 1.05,0.4 -1.05,0.4 -0.4,1.05 -0.4,-1.05 -1.05,-0.4 1.05,-0.4 z" />
 </vector>

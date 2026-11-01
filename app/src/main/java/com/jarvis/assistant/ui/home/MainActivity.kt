@@ -597,8 +597,8 @@ class MainActivity : AppCompatActivity() {
 
                         if (!isOn) {
                             binding.ivTabMic.setImageResource(R.drawable.ic_mic_jarvis)
-                            binding.ivTabMic.imageTintList = ColorStateList.valueOf(android.graphics.Color.parseColor("#94A3B8"))
-                            binding.tvTabMic.setTextColor(android.graphics.Color.parseColor("#94A3B8"))
+                            binding.ivTabMic.imageTintList = ColorStateList.valueOf(android.graphics.Color.parseColor("#A1A1A1"))
+                            binding.tvTabMic.setTextColor(android.graphics.Color.parseColor("#A1A1A1"))
                             binding.pillTabMic.setBackgroundResource(R.drawable.bg_dock_mic_off)
                             binding.pillTabMic.animate().cancel()
                             binding.pillTabMic.alpha = 0.85f

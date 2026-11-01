@@ -197,9 +197,9 @@ class WhatsAppSubAgentActivity : AppCompatActivity() {
         val rules = manager.getRules()
         val access = SubAgentStateResolver.notificationAccessGranted(this)
         val state = when {
-            rules.none { it.enabled && it.replyText.isNotBlank() } -> "SETUP · no rule yet" to Color.parseColor("#D97706")
-            !access -> "SETUP · notification access needed" to Color.parseColor("#D97706")
-            manager.isEnabled() -> "ACTIVE · replying automatically" to Color.parseColor("#16A34A")
+            rules.none { it.enabled && it.replyText.isNotBlank() } -> "SETUP · no rule yet" to Color.parseColor("#878787")
+            !access -> "SETUP · notification access needed" to Color.parseColor("#878787")
+            manager.isEnabled() -> "ACTIVE · replying automatically" to Color.parseColor("#6F6F6F")
             else -> "PAUSED · switch is off" to ui.textMuted
         }
 
@@ -265,7 +265,7 @@ class WhatsAppSubAgentActivity : AppCompatActivity() {
             android.widget.TextView(this@WhatsAppSubAgentActivity).apply {
                 text = "Remove"
                 textSize = 12f
-                setTextColor(Color.parseColor("#DC2626"))
+                setTextColor(Color.parseColor("#5C5C5C"))
                 setPadding(ui.dp(10), ui.dp(8), ui.dp(4), ui.dp(8))
                 isClickable = true
                 setOnClickListener {

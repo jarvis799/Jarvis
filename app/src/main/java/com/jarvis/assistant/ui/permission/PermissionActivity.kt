@@ -145,13 +145,13 @@ class PermissionActivity : AppCompatActivity() {
     private fun updateCardState(granted: Boolean, statusTv: TextView, button: Button) {
         if (granted) {
             statusTv.text = "Active & Granted ✓"
-            statusTv.setTextColor(Color.parseColor("#10B981")) // Emerald Green
+            statusTv.setTextColor(Color.parseColor("#808080")) // Emerald Green
             button.text = "Manage"
             button.alpha = 1.0f
             button.isEnabled = true
         } else {
             statusTv.text = "Action Required • Tap Grant"
-            statusTv.setTextColor(Color.parseColor("#F59E0B")) // Amber
+            statusTv.setTextColor(Color.parseColor("#A7A7A7")) // Amber
             button.text = "Grant"
             button.alpha = 1.0f
             button.isEnabled = true
@@ -279,7 +279,7 @@ class PermissionActivity : AppCompatActivity() {
     private fun updateExtraPermission(key: String, granted: Boolean) {
         val status = extraStatus[key] ?: return
         status.text = if (granted) "Granted ✓" else "Not granted"
-        status.setTextColor(if (granted) Color.parseColor("#10B981") else Color.parseColor("#F59E0B"))
+        status.setTextColor(if (granted) Color.parseColor("#808080") else Color.parseColor("#A7A7A7"))
         extraButtons[key]?.text = if (granted) "Manage" else "Grant"
     }
 

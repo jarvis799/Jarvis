@@ -36,9 +36,9 @@ class ChatBorderBeamView @JvmOverloads constructor(
 
     private val beamColors = intArrayOf(
         Color.TRANSPARENT,
-        Color.parseColor("#A8FF7A"),
-        Color.parseColor("#5EEAD4"),
-        Color.parseColor("#E6F766"),
+        Color.parseColor("#D6D6D6"),
+        Color.parseColor("#BEBEBE"),
+        Color.parseColor("#E1E1E1"),
         Color.TRANSPARENT
     )
     private val beamStops = floatArrayOf(0f, 0.16f, 0.30f, 0.44f, 0.60f)

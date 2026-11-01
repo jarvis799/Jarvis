@@ -43,20 +43,20 @@ class MacroListActivity : AppCompatActivity() {
         root.addView(TextView(this).apply {
             text = "Macro Center"
             textSize = 22f
-            setTextColor(Color.parseColor("#111827"))
+            setTextColor(Color.parseColor("#181818"))
             typeface = Typeface.DEFAULT_BOLD
         })
         root.addView(TextView(this).apply {
             text = "Jarvis ke bolei automation banano jay - emon: Jarvis, WhatsApp e message asle deep-think kore reply diye de."
             textSize = 13f
-            setTextColor(Color.parseColor("#6B7280"))
+            setTextColor(Color.parseColor("#727272"))
             setPadding(0, dp(6), 0, dp(4))
         })
         if (!JarvisNotificationListenerService.isEnabled()) {
             root.addView(TextView(this).apply {
                 text = "Notification Access off ache - Settings > Notification access e Jarvis on korun, notification-trigger automation er jonno."
                 textSize = 12f
-                setTextColor(Color.parseColor("#DC2626"))
+                setTextColor(Color.parseColor("#5C5C5C"))
                 setPadding(0, dp(4), 0, dp(4))
             })
         }
@@ -66,7 +66,7 @@ class MacroListActivity : AppCompatActivity() {
             root.addView(TextView(this).apply {
                 text = "Ekono kono automation nei.\nJarvis ke bolen - ekhane dekha jabe."
                 textSize = 14f
-                setTextColor(Color.parseColor("#9CA3AF"))
+                setTextColor(Color.parseColor("#A2A2A2"))
                 setPadding(0, dp(28), 0, 0)
             })
         }
@@ -77,7 +77,7 @@ class MacroListActivity : AppCompatActivity() {
             root.addView(TextView(this).apply {
                 text = "Recent Activity"
                 textSize = 15f
-                setTextColor(Color.parseColor("#111827"))
+                setTextColor(Color.parseColor("#181818"))
                 typeface = Typeface.DEFAULT_BOLD
                 setPadding(0, dp(28), 0, dp(8))
             })
@@ -86,7 +86,7 @@ class MacroListActivity : AppCompatActivity() {
                     val ok = e.status == "OK"
                     text = fmt.format(Date(e.at)) + " - " + e.macroName + (if (ok) "  OK" else "  " + e.status)
                     textSize = 12f
-                    setTextColor(if (ok) Color.parseColor("#16A34A") else Color.parseColor("#DC2626"))
+                    setTextColor(if (ok) Color.parseColor("#6F6F6F") else Color.parseColor("#5C5C5C"))
                     setPadding(0, dp(2), 0, dp(2))
                 })
             }
@@ -113,12 +113,12 @@ class MacroListActivity : AppCompatActivity() {
             text = macro.name
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#111827"))
+            setTextColor(Color.parseColor("#181818"))
         })
         card.addView(TextView(this).apply {
             text = macro.trigger.describe() + "\n" + macro.actions.joinToString("\n") { "- " + it.describe() }
             textSize = 12f
-            setTextColor(Color.parseColor("#6B7280"))
+            setTextColor(Color.parseColor("#727272"))
             setPadding(0, dp(4), 0, 0)
         })
         if (macro.lastFiredAt > 0) {
@@ -126,7 +126,7 @@ class MacroListActivity : AppCompatActivity() {
                 val ok = macro.lastStatus == "OK"
                 text = "Last run: " + fmt.format(Date(macro.lastFiredAt)) + (if (ok) "  OK" else "  " + macro.lastStatus)
                 textSize = 11f
-                setTextColor(if (ok) Color.parseColor("#16A34A") else Color.parseColor("#DC2626"))
+                setTextColor(if (ok) Color.parseColor("#6F6F6F") else Color.parseColor("#5C5C5C"))
                 setPadding(0, dp(3), 0, 0)
             })
         }
@@ -144,7 +144,7 @@ class MacroListActivity : AppCompatActivity() {
         })
         row.addView(Button(this).apply {
             text = "Run"
-            setBackgroundColor(Color.parseColor("#84CC16"))
+            setBackgroundColor(Color.parseColor("#A2A2A2"))
             setTextColor(Color.parseColor("#FFFFFF"))
             setOnClickListener {
                 MacroEngine.get(this@MacroListActivity).runByName(macro.name)
@@ -153,8 +153,8 @@ class MacroListActivity : AppCompatActivity() {
         })
         row.addView(Button(this).apply {
             text = "Delete"
-            setBackgroundColor(Color.parseColor("#FEE2E2"))
-            setTextColor(Color.parseColor("#B91C1C"))
+            setBackgroundColor(Color.parseColor("#E8E8E8"))
+            setTextColor(Color.parseColor("#4B4B4B"))
             setOnClickListener {
                 MacroStore.delete(this@MacroListActivity, macro.id)
                 render()

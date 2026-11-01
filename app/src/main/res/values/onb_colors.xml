@@ -2,13 +2,13 @@
 <resources>
     <!-- Gemini key onboarding palette (white + lime + soft mint) -->
     <color name="onb_bg_top">#F8FCF5</color>
-    <color name="onb_bg_bottom">#E2F3E3</color>
-    <color name="onb_heading">#0B2E1A</color>
-    <color name="onb_body">#3F5A46</color>
+    <color name="onb_bg_bottom">#E8E8E8</color>
+    <color name="onb_heading">#212121</color>
+    <color name="onb_body">#505050</color>
     <color name="onb_glass">#F2FFFFFF</color>
-    <color name="onb_border">#C9E7BE</color>
-    <color name="onb_lime">#A3E635</color>
-    <color name="onb_green">#22C55E</color>
-    <color name="onb_mint">#E8F7DF</color>
-    <color name="onb_muted">#6F8A75</color>
+    <color name="onb_border">#D9D9D9</color>
+    <color name="onb_lime">#BEBEBE</color>
+    <color name="onb_green">#898989</color>
+    <color name="onb_mint">#E8E8E8</color>
+    <color name="onb_muted">#808080</color>
 </resources>
