@@ -9,6 +9,13 @@ object LocalModelRuntime {
 
     private external fun generateNative(path: String, system: ByteArray, user: ByteArray, maxTokens: Int): ByteArray
     private external fun warmUpNative(path: String)
+    private external fun releaseNative()
+
+    /** Frees the cached weights when Android reports memory pressure. */
+    fun release() {
+        if (!isAvailable()) return
+        runCatching { releaseNative() }
+    }
 
     /**
      * Loads the weights into memory ahead of the first question, so an offline reply does not

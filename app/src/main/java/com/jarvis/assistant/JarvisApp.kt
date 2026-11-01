@@ -69,6 +69,18 @@ class JarvisApp : Application() {
     lateinit var commandExecutor: CommandExecutor
         private set
 
+    override fun onTrimMemory(level: Int) {
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) {
+            com.jarvis.assistant.model.LocalModelRuntime.release()
+        }
+        super.onTrimMemory(level)
+    }
+
+    override fun onLowMemory() {
+        com.jarvis.assistant.model.LocalModelRuntime.release()
+        super.onLowMemory()
+    }
+
     override fun onCreate() {
         super.onCreate()
         SecurityManager.verify(this)

@@ -137,6 +137,18 @@ Java_com_jarvis_assistant_model_LocalModelRuntime_warmUpNative(
     }
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_jarvis_assistant_model_LocalModelRuntime_releaseNative(JNIEnv *, jobject) {
+    try {
+        std::lock_guard<std::mutex> guard(inference_mutex);
+        if (resident_model) {
+            resident_model.reset();
+            resident_path.clear();
+        }
+    } catch (...) {
+    }
+}
+
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_jarvis_assistant_model_LocalModelRuntime_generateNative(
         JNIEnv *env, jobject, jstring path, jbyteArray system, jbyteArray user, jint max_tokens) {
