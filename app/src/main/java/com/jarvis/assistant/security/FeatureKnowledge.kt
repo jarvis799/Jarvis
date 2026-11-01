@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.8"
+    const val APP_VERSION = "2.0.9"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."

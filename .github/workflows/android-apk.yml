@@ -154,12 +154,24 @@ jobs:
           NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
           echo "Publishing $NAME"
           cp "$APK" "$NAME"
+          # A release that already exists may be immutable, in which case replacing its
+          # asset is refused (HTTP 422 "Cannot delete asset from an immutable release").
+          # Then the build publishes under its own build tag instead of failing.
+          PUBLISHED=0
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber
+            gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber && PUBLISHED=1
           else
             gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
               --target "${GITHUB_SHA}" \
               --title "Jarvis V$VERSION" \
-              --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber
+              --notes "$NOTES" && PUBLISHED=1
+          fi
+          if [ "$PUBLISHED" -ne 1 ]; then
+            TAG="v$VERSION-build.$GITHUB_RUN_NUMBER"
+            echo "Release $VERSION is immutable - publishing under $TAG instead"
+            gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
+              --target "${GITHUB_SHA}" \
+              --title "Jarvis V$VERSION (build $GITHUB_RUN_NUMBER)" \
+              --notes "$NOTES"
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
