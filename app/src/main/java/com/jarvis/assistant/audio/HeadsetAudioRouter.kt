@@ -98,73 +98,59 @@ class HeadsetAudioRouter(private val context: Context) {
      */
     fun isHeadsetConnected(): Boolean = cachedIsHeadsetConnected
 
-    private fun findConnectedHeadset(): AudioDeviceInfo? {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val available = audioManager.availableCommunicationDevices
-            return available.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
-                it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_USB_HEADSET
-            }
-        } else {
-            val inputs = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
-            return inputs.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
-                it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_USB_HEADSET
-            }
-        }
+    /** Any device that plays sound away from the phone speaker (Bluetooth, AirPods, mini box, wired). */
+    private fun findExternalOutput(): AudioDeviceInfo? {
+        val headsetTypes = intArrayOf(
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_USB_DEVICE,
+            AudioDeviceInfo.TYPE_HEARING_AID,
+            AudioDeviceInfo.TYPE_BLE_HEADSET,
+            AudioDeviceInfo.TYPE_BLE_SPEAKER
+        )
+        return audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            .firstOrNull { device -> headsetTypes.any { it == device.type } }
     }
 
     /**
-     * Dynamically chooses and sets the best communication device:
-     * - Headset connected: route to headset mic and speaker.
-     * - No headset connected: route to phone's LOUDSPEAKER (never the call speaker).
+     * Playback routing only. Jarvis speaks with USAGE_MEDIA, which Android routes to the
+     * connected Bluetooth device or the phone loudspeaker on its own. Forcing
+     * MODE_IN_COMMUNICATION plus Bluetooth SCO here pushed that speech onto the call
+     * stream, which is silent on most earbuds, AirPods and Bluetooth mini boxes while
+     * also muting the phone speaker.
      */
     fun routeToOptimalAudio() {
         try {
-            val targetHeadset = findConnectedHeadset()
-            cachedIsHeadsetConnected = (targetHeadset != null)
-
-            if (targetHeadset != null) {
-                // External Headset Connected: Route to headset
-                Log.i(TAG, "External headset detected: ${targetHeadset.productName} (type=${targetHeadset.type}). Routing to headset.")
-                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val success = audioManager.setCommunicationDevice(targetHeadset)
-                    Log.i(TAG, "setCommunicationDevice: ${targetHeadset.productName} -> success=$success")
-                } else {
-                    if (audioManager.isBluetoothScoAvailableOffCall && !audioManager.isBluetoothScoOn) {
-                        audioManager.startBluetoothSco()
-                        audioManager.isBluetoothScoOn = true
-                        isScoStarted = true
-                    }
-                }
-                audioManager.isSpeakerphoneOn = false
-            } else {
-                // No Headset Connected: Ensure STRICT routing to LOUDSPEAKER
-                Log.i(TAG, "No external headset connected. Routing strictly to LOUDSPEAKER (main speaker).")
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    audioManager.clearCommunicationDevice()
-                }
-
-                if (isScoStarted) {
-                    try {
-                        audioManager.stopBluetoothSco()
-                        audioManager.isBluetoothScoOn = false
-                    } catch (_: Exception) {}
-                    isScoStarted = false
-                }
-
-                // Return to MODE_NORMAL so all media audio plays through the main loudspeaker
-                audioManager.mode = AudioManager.MODE_NORMAL
-                audioManager.isSpeakerphoneOn = true
-            }
+            cachedIsHeadsetConnected = findExternalOutput() != null
+            releaseCallAudioCapture()
+            audioManager.mode = AudioManager.MODE_NORMAL
+            audioManager.isSpeakerphoneOn = false
+            Log.i(TAG, if (cachedIsHeadsetConnected)
+                "External headset connected: media routes to it through the system route."
+            else "No external headset: media plays on the phone loudspeaker.")
         } catch (e: Exception) {
             Log.w(TAG, "Failed in routeToOptimalAudio: ${e.message}")
+        }
+    }
+
+    /** Call audio capturing is never left running once playback starts. */
+    private fun releaseCallAudioCapture() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                audioManager.clearCommunicationDevice()
+            } catch (_: Exception) {
+            }
+        }
+        if (isScoStarted) {
+            try {
+                audioManager.stopBluetoothSco()
+                audioManager.isBluetoothScoOn = false
+            } catch (_: Exception) {
+            }
+            isScoStarted = false
         }
     }
 
@@ -184,22 +170,11 @@ class HeadsetAudioRouter(private val context: Context) {
                 isRegistered = false
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                audioManager.clearCommunicationDevice()
-            }
-
-            if (isScoStarted) {
-                try {
-                    audioManager.stopBluetoothSco()
-                    audioManager.isBluetoothScoOn = false
-                } catch (_: Exception) {}
-                isScoStarted = false
-            }
-
+            releaseCallAudioCapture()
             audioManager.mode = AudioManager.MODE_NORMAL
-            audioManager.isSpeakerphoneOn = true
+            audioManager.isSpeakerphoneOn = false
             cachedIsHeadsetConnected = false
-            Log.i(TAG, "HeadsetAudioRouter stopped, audio mode reset to NORMAL (speakerphone active).")
+            Log.i(TAG, "HeadsetAudioRouter stopped, audio mode reset to NORMAL media routing.")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping HeadsetAudioRouter: ${e.message}", e)
         }

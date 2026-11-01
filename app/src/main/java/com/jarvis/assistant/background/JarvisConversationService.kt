@@ -785,10 +785,7 @@ class JarvisConversationService : Service() {
     private fun beginActiveConversation(wakeTriggered: Boolean = false) {
         // DEV STYLE: "Hey Jarvis" wake triggers the pastel rainbow edge-lighting glow.
         if (wakeTriggered) {
-            com.jarvis.assistant.ui.lighting.EdgeLightingService.show(this)
-            if (preferences.isVoiceOverlayEnabled) {
-                com.jarvis.assistant.ui.voice.VoiceOverlayController.show(this)
-            }
+            com.jarvis.assistant.ui.voice.WakeOverlays.show(this, preferences.isVoiceOverlayEnabled)
         }
         if (_isSessionOn.value) return
         // DEV STYLE: free tier — without a license key the AI session is limited to 30 minutes per day
@@ -3596,10 +3593,8 @@ class JarvisConversationService : Service() {
 
             val cleanPhrase = wordList.joinToString(" ")
             val wakePhrases = validWakePhrases()
-            val isMatch = cleanPhrase in wakePhrases
-
-            if (!isMatch) {
-                Log.d("JarvisService", "WAKE REJECTED: '$cleanPhrase' is not an exact valid wake phrase.")
+            if (!com.jarvis.assistant.voice.WakePhraseMatcher.containsWakeWord(wordList, wakePhrases)) {
+                Log.d("JarvisService", "WAKE REJECTED: '$cleanPhrase' has no wake word.")
                 return
             }
 
@@ -3618,9 +3613,8 @@ class JarvisConversationService : Service() {
             // 4. Acoustic Verification:
             // The wake trigger word ("jarvis", a premium custom word, or the
             // owner's chosen name) must be recognized with solid confidence.
-            val fillers = setOf("hey", "hi", "hello", "ok", "okay", "wake", "up", "sun", "suno")
-            val triggerWords = wakePhrases.flatMap { it.split(" ") }.toSet() - fillers
-            val triggerConf = triggerWords.maxOf { wordConfMap[it] ?: 0.0 }
+            val triggerWords = com.jarvis.assistant.voice.WakePhraseMatcher.triggerWords(wakePhrases)
+            val triggerConf = com.jarvis.assistant.voice.WakePhraseMatcher.confidence(triggerWords, wordConfMap)
             if (triggerConf < 0.38) {
                 Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < 0.38). Ignored.")
                 return
@@ -3634,7 +3628,7 @@ class JarvisConversationService : Service() {
                 }
             } else {
                 // Multi-word phrases like "hey jarvis", "wake up ahona"
-                if (avgConf < 0.48) {
+                if (avgConf < 0.38) {
                     Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf). Ignored.")
                     return
                 }

@@ -27,7 +27,6 @@ class ModelSetupViewModel(app: Application) : AndroidViewModel(app) {
 
     fun install(remote: RemoteModel) = start(remote.id) {
         val archive = ModelArchive(getApplication())
-        check(archive.folder != null) { "Choose a reusable phone folder first, so the model file survives uninstall." }
         val resolved = ModelCatalogue.resolve(remote)
         // Transfer checks only the remaining storage, so resuming never requires a second full copy.
         val compatibility = ModelCompatibility.check(getApplication(), resolved.sizeBytes, checkStorage = false)
@@ -38,8 +37,12 @@ class ModelSetupViewModel(app: Application) : AndroidViewModel(app) {
             { done, total -> current.value = State(remote.id, "download", "Downloading ${done * 100 / total}% · ${done / 1048576} / ${total / 1048576} MB", done, total, true) },
             { stage -> current.value = State(remote.id, if (stage.startsWith("Downloading")) "download" else "verify", stage, busy = true) })
         val local = LocalModel(resolved.id, resolved.name, file.absolutePath, file.length(), System.currentTimeMillis(), resolved.quant)
-        current.value = State(remote.id, "archive", "Saving reusable model in your chosen folder… Keep this file after uninstall.", busy = true)
-        archive.save(file)
+        // The reusable folder is optional: without one the model still downloads,
+        // verifies and runs. With one, the file also survives an uninstall.
+        if (archive.folder != null) {
+            current.value = State(remote.id, "archive", "Saving reusable model in your chosen folder… Keep this file after uninstall.", busy = true)
+            archive.save(file)
+        }
         local
     }
 

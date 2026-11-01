@@ -298,10 +298,6 @@ class SettingsFragment : Fragment() {
             startActivity(Intent(requireContext(), MemoryActivity::class.java))
         }
 
-        binding.rowCyberLab.setOnClickListener {
-            startActivity(Intent(requireContext(), com.jarvis.assistant.security.cyberlab.CyberLabActivity::class.java))
-        }
-
         binding.rowPermissions.setOnClickListener {
             startActivity(Intent(requireContext(), PermissionActivity::class.java))
         }
@@ -339,10 +335,6 @@ class SettingsFragment : Fragment() {
 // Creator Profile — About DEV STYLE
         binding.rowCreatorProfile.setOnClickListener {
             startActivity(Intent(requireContext(), CreatorProfileActivity::class.java))
-        }
-
-        binding.rowAppIdentity.setOnClickListener {
-            showControlCenterDialog()
         }
 
 // Social Media Community Buttons

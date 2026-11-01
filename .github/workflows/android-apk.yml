@@ -124,6 +124,19 @@ jobs:
           echo "APK: $APK"
           sha256sum "$APK" | tee apk-sha256.txt
 
+      # Runtime Feature Updates reads this asset from the newest release. Without it
+      # the app could not find any feature list at all, so the screen always failed.
+      - name: Prepare the runtime feature manifest
+        if: success() && github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          if [ -f feature-manifest.json ]; then
+            echo "Using the committed feature-manifest.json"
+          else
+            printf '{"format_version":1,"features":[]}\n' > feature-manifest.json
+            echo "No feature packs yet - publishing an empty manifest."
+          fi
+
       # The artifact download is a .zip that some Android file managers cannot unpack.
       # A release asset gives a direct .apk download (no zip, no unzip step).
       - name: Publish a direct APK download
@@ -142,11 +155,11 @@ jobs:
           echo "Publishing $NAME"
           cp "$APK" "$NAME"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
+            gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber
           else
-            gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt \
+            gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
               --target "${GITHUB_SHA}" \
               --title "Jarvis V$VERSION" \
-              --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt --clobber
+              --notes "$NOTES" || gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"

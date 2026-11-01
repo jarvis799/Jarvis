@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 object RuntimeUpdateManager {
 
     const val MANIFEST_ASSET = "feature-manifest.json"
-    private const val DEFAULT_REPO = "devayan000/Jarvis-app"
+    private const val DEFAULT_REPO = "jarvis799/Jarvis"
     private const val PREFS = "runtime_feature_updates"
     private const val KEY_LAST_CHECKED = "last_checked"
 
@@ -29,11 +29,11 @@ object RuntimeUpdateManager {
 
     /** The update source is the official repository - nothing to configure here. */
     fun repo(context: Context): String = DEFAULT_REPO
-    /** Built-in default so update checks work on the private repo even before the owner saves a token. */
-    private const val BUILTIN_TOKEN = "REDACTED_GITHUB_TOKEN"
-
-    /** Owner token from Developer Studio wins; otherwise the built-in one is used. */
-    fun token(context: Context): String = GithubPreferences(context).token.ifBlank { BUILTIN_TOKEN }
+    /**
+     * Only the owner's own token is ever sent. A placeholder value here made every
+     * check fail with 401, which is why feature updates never arrived.
+     */
+    fun token(context: Context): String = GithubPreferences(context).token.trim()
 
     fun lastChecked(context: Context): Long =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_LAST_CHECKED, 0L)
@@ -69,15 +69,23 @@ object RuntimeUpdateManager {
             }
             if (manifestUrl != null) break
         }
-        if (manifestUrl.isNullOrBlank())
-            throw UpdateCheckException("No '" + MANIFEST_ASSET + "' asset on any recent published release of " + repo + ".")
+        if (manifestUrl.isNullOrBlank()) {
+            // Releases that ship only the APK are normal: no manifest simply means
+            // there are no feature packs yet, never a failed update check.
+            markChecked(context)
+            return UpdateCheckResult(emptyList(), emptyList(), "No feature packs published yet", System.currentTimeMillis())
+        }
         val parsed = FeatureCodec.parseReleaseManifest(fetchText(manifestUrl, requestHeaders))
         val valid = parsed.filter { FeatureCodec.validate(it) == null }
         val result = FeatureCodec.computeUpdates(valid, FeatureRegistry.all(context), currentAppVersion())
             .copy(releaseName = releaseName)
+        markChecked(context)
+        return result
+    }
+
+    private fun markChecked(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putLong(KEY_LAST_CHECKED, System.currentTimeMillis()).apply()
-        return result
     }
 
     fun currentAppVersion(): String = try {
