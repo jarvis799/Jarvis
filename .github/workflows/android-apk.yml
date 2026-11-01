@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: jarvis-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-debug-apk:
     name: Build release APK

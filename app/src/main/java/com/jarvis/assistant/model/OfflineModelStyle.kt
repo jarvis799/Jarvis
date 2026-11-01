@@ -29,7 +29,7 @@ object OfflineModelStyle {
         view.layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(context, 14) }
     }
     fun button(context: Context, label: String, action: () -> Unit) = Button(context).apply {
-        text = label; isAllCaps = false; setTextColor(background)
+        text = label; isAllCaps = false; setTextColor(OfflineModelStyle.background)
         minHeight = dp(context, 48)
         background = GradientDrawable().apply { setColor(lime); cornerRadius = dp(context, 18).toFloat() }
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(context, 10) }

@@ -37,7 +37,10 @@ class ChargerSpeechCache(private val context: Context) {
         if (!ready) return
         val tts = engine ?: return
         val locale = ChargerPhrases.locale(com.jarvis.assistant.JarvisApp.instance.preferences.language)
-        if (tts.setLanguage(locale) < 0) { report("Install the ${locale.displayLanguage} Android TTS voice to enable charger announcements."); return }
+        if (tts.setLanguage(locale) < 0) {
+            tts.stop(); key = ""; events = emptyMap(); pending = null
+            report("Install the ${locale.displayLanguage} Android TTS voice to enable charger announcements."); return
+        }
         com.jarvis.assistant.voice.TtsVoiceSelector.applyTo(context, tts)
         if (tts.voice?.locale?.language != locale.language) tts.setLanguage(locale)
         val next = "v1_${locale.language}_${tts.voice?.name.hashCode().toUInt()}"

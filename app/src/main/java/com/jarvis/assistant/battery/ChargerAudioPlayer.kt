@@ -30,7 +30,7 @@ object ChargerAudioPlayer {
                 setAudioAttributes(attributes); setDataSource(file.path)
                 setOnCompletionListener { stop(manager) }
                 setOnErrorListener { _, _, _ -> stop(manager); true }
-                setOnPreparedListener { isPlaying = true; it.start() }
+                setOnPreparedListener { ChargerAudioPlayer.isPlaying = true; it.start() }
                 prepareAsync()
             }
         } catch (_: Exception) { stop(manager) }
