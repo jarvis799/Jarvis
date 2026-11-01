@@ -23,6 +23,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Install pinned offline inference build tools
+        run: sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1"
+
       - name: Compile and test native changes
         run: chmod +x gradlew && ./gradlew :app:compileDebugKotlin :app:processDebugResources :app:testDebugUnitTest --stacktrace
 

@@ -223,14 +223,26 @@ class ChatFragment : Fragment() {
         val text = binding.etMessageInput.text?.toString()?.trim() ?: ""
         if (text.isBlank()) return
 
-        if (!JarvisConversationService.isServiceRunning()) {
+        if (!com.jarvis.assistant.model.LlmRouter.isOnline(requireContext())) {
             val app = JarvisApp.instance
-            if (app.preferences.offlineReplies && !com.jarvis.assistant.model.LlmRouter.isOnline(requireContext())) {
-                binding.etMessageInput.text?.clear()
-                hideKeyboard()
-                Thread { app.chatRepository.addTurn(text, com.jarvis.assistant.model.OfflineReply.answer(app, text)) }.start()
-                return
+            binding.etMessageInput.text?.clear()
+            binding.btnSendMessage.isEnabled = false
+            binding.etMessageInput.hint = "Jarvis is thinking offline…"
+            hideKeyboard()
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val reply = com.jarvis.assistant.model.OfflineReply.answer(app, text)
+                    app.chatRepository.addTurn(text, reply)
+                } catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                catch (error: Exception) { app.chatRepository.addTurn(text, "Offline reply failed: ${error.message}") }
+                finally {
+                    _binding?.btnSendMessage?.isEnabled = true
+                    _binding?.etMessageInput?.hint = "Message Jarvis…"
+                }
             }
+            return
+        }
+        if (!JarvisConversationService.isServiceRunning()) {
             (activity as? MainActivity)?.handleMicOrOrbClick()
         }
 

@@ -66,7 +66,9 @@ object SubAgentStateResolver {
                 false
             } else {
                 GmailStore.setAutoReplyEnabled(context, running)
-                if (running) EmailWatchService.start(context) else EmailWatchService.stop(context)
+                if (running) com.jarvis.assistant.email.GmailAutoReplyWorker.schedule(context)
+                else com.jarvis.assistant.email.GmailAutoReplyWorker.cancel(context)
+                EmailWatchService.stop(context)
                 true
             }
         }

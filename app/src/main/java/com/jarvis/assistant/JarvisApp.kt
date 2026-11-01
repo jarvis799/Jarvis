@@ -74,6 +74,7 @@ class JarvisApp : Application() {
         SecurityManager.verify(this)
         instance = this
         preferences = AppPreferences(this)
+        com.jarvis.assistant.battery.ChargerMonitor.start(this)
         chatRepository = ChatRepository(preferences)
         com.jarvis.assistant.personality.PersonalityProfileHolder.refresh(this)
         appScope.launch(kotlinx.coroutines.Dispatchers.IO) {

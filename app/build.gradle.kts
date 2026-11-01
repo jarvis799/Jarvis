@@ -24,13 +24,24 @@ val releaseSigningReady = listOf(releaseStorePath, releaseStorePassword, release
 android {
     namespace = "com.jarvis.assistant"
     compileSdk = 34
+    ndkVersion = "27.0.12077973"
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.jarvis.assistant"
         minSdk = 26
         targetSdk = 28
-        versionCode = 205
-        versionName = "2.0.5"
+        versionCode = 208
+        versionName = "2.0.8"
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        externalNativeBuild {
+            cmake { arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DANDROID_STL=c++_static") }
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "DEVELOPER_NAME", buildConfigString(developerName.ifBlank { "Unverified developer" }))
@@ -134,6 +145,7 @@ dependencies {
     // ML Kit for barcode scanning + on-device OCR
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
     implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:language-id:17.0.6")
     // Robolectric for local JVM unit tests
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.5.0")

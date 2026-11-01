@@ -34,7 +34,7 @@ class HolographicHudPreferencesTest {
         assertEquals(AppPreferences.ORB_HUD_TARGET, preferences.orbStyle)
         assertEquals("Saved owner", storage.getString("key_user_name", null))
         assertEquals("[]", storage.getString("key_chat_history", null))
-        assertTrue(storage.getBoolean("holographic_hud_ui_v4", false))
+        assertTrue(storage.getBoolean("holographic_hud_ui_v5", false))
     }
 
     @Test fun laterThemeAndOrbChoicesAreNotOverriddenOnNextLaunch() {

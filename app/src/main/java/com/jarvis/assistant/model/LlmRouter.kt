@@ -20,27 +20,27 @@ object LlmRouter {
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    suspend fun answer(context: Context, prompt: String, remote: suspend () -> String): String {
+    suspend fun localAnswer(context: Context, input: String, system: String = LocalJarvisPrompt.system(context)): String {
         val store = ModelStore(context)
+        check(store.offlineFallback()) { "Offline fallback is off. Enable it in Settings > Offline AI Models." }
         val model = store.activeModel()
-        val localReady = model != null && model.exists() && LocalModelRuntime.isAvailable()
-
-        if (!isOnline(context)) {
-            // The Offline reply switch decides this too - it is not a fallback that ignores the setting.
-            if (localReady && store.offlineFallback()) {
-                LocalModelRuntime.generate(model!!.filePath, prompt)?.let { return it }
-            }
-            throw IllegalStateException("No internet and no working on-device model is installed.")
+            ?: throw IllegalStateException("No local model is ready. Open Settings > Offline AI Models and use Download & auto-setup.")
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            LocalModelRuntime.reply(model.filePath, system, input)
         }
+    }
 
-        return try {
-            remote()
-        } catch (error: Exception) {
-            if (localReady && store.offlineFallback()) {
-                val local = LocalModelRuntime.generate(model!!.filePath, prompt)
-                if (local != null) return local
-            }
-            throw error
+    suspend fun answer(context: Context, prompt: String, remote: suspend () -> String): String =
+        answer(context, prompt, LocalJarvisPrompt.system(context), remote)
+
+    suspend fun answer(context: Context, input: String, system: String, remote: suspend () -> String): String {
+        if (!isOnline(context)) return localAnswer(context, input, system)
+        return try { remote() }
+        catch (error: kotlinx.coroutines.CancellationException) { throw error }
+        catch (error: java.io.IOException) {
+            val store = ModelStore(context)
+            if (store.offlineFallback() && store.activeModel()?.exists() == true) localAnswer(context, input, system)
+            else throw error
         }
     }
 }

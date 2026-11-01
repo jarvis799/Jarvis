@@ -24,7 +24,27 @@ object AgentEngine {
         apiKey: String, model: String, context: Context,
         onDelta: ((String) -> Unit)? = null
     ): String {
+        com.jarvis.assistant.automation.command.NativeCommandGateway.execute(context, userInput)?.let { return it }
+        val router = com.jarvis.assistant.model.LlmRouter
+        if (!router.isOnline(context) || endpoint.isBlank()) {
+            com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
+            return router.localAnswer(context, userInput)
+        }
+        return router.answer(context, userInput, com.jarvis.assistant.model.LocalJarvisPrompt.system(context)) {
+            processConnected(userInput, basePrompt, endpoint, apiKey, model, context, onDelta)
+        }
+    }
+
+    private suspend fun processConnected(
+        userInput: String, basePrompt: String, endpoint: String,
+        apiKey: String, model: String, context: Context,
+        onDelta: ((String) -> Unit)?
+    ): String {
         val adultEducationEnabled = com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
+        if (endpoint.isBlank()) {
+            com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
+            return com.jarvis.assistant.model.LlmRouter.localAnswer(context, userInput)
+        }
         if (!FeatureFlags.engineEnabled) {
             CapabilityRouter.route(context, userInput)?.let { return it }
             return HttpChatClient().ask(
@@ -184,7 +204,8 @@ object AgentEngine {
         } else null
 
         var reply = if (streamed != null) streamed
-        else if (FeatureFlags.isEnabled(FeatureFlags.errorRecovery))
+        else if (FeatureFlags.isEnabled(FeatureFlags.errorRecovery) &&
+            !(com.jarvis.assistant.model.OfflineModelStatus.ready(context) && com.jarvis.assistant.model.ModelStore(context).offlineFallback()))
             ErrorRecovery.execute { HttpChatClient().ask(endpoint, enhancedPrompt, apiKey, model) }
         else HttpChatClient().ask(endpoint, enhancedPrompt, apiKey, model)
 

@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.5"
+    const val APP_VERSION = "2.0.8"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -41,8 +41,8 @@ object FeatureKnowledge {
         "Runtime Feature Updates: feature packs install from GitHub Releases without a new APK",
         "Sub Agents: WhatsApp auto reply agent and Gmail email auto reply agent, both Kotlin native - no Python needed",
         "Sub agent banano: ek sentence e bolo - 'sub agent banao, jokhon keu price bole reply: ...' - Jarvis real agent toiri kore rule store e rakhe; kono 'tool nai' na",
-        "Local AI models: download a GGUF model from Hugging Face with pause/resume, set it active, and an Offline reply switch sits right under the downloader",
-        "Offline reply: when the network or the API fails, Jarvis answers with the installed local model instead of going dark",
+        "Settings > Offline AI Models: premium on-device setup page with TinyLlama 1.1B and Qwen2.5 1.5B downloads, pause/resume, SHA-256 verification and automatic activation only after real native test generation succeeds",
+        "Offline knowledge: existing pretrained open-source model weights with concise Jarvis-style instructions, not a newly trained model and not one billion facts. Live information still needs internet. Runtime and model readiness are checked before claiming offline replies work",
         "Creator console: unlocked by the creator key configured at build time or set on this device - no key ships inside the app",
         "Scanner: camera QR/barcode scan plus gallery import, torch and WiFi/Link handling",
         "Home header greets you with your display name, live weather and connection status",
@@ -52,6 +52,8 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Offline AI Models: 1.1B / 1.5B verified downloads, automatic setup and a bundled llama.cpp CPU inference engine",
+        "Offline readiness is reported only after this phone actually loads the model and generates a test reply; setup errors appear directly on the download page",
         "Sub agent banano ekhon kaj kore: bolo ar sathe sathe real WhatsApp/Email agent toiri hoy",
         "Jarvis ar kono kaj e 'amar tool nai' bole na - sub agent, plugin, local model, backup, memory ar scanner sob local action diye kore",
         "Creator key is no longer inside the app - the build secret or the key set on this device is what verifies the creator",
@@ -73,6 +75,7 @@ object FeatureKnowledge {
     fun promptBlock(): String = buildString {
         appendLine("[WHAT THIS APP CAN ACTUALLY DO - v$APP_VERSION]:")
         capabilities.forEachIndexed { index, item -> appendLine("${index + 1}. $item") }
+        appendLine("[LOCAL MODEL STATUS]: " + com.jarvis.assistant.model.OfflineModelStatus.describe(com.jarvis.assistant.JarvisApp.instance))
         appendLine("[SUB AGENTS - WHAT THEY DO AND HOW THEY WORK]:")
         appendLine("- WhatsApp sub agent: watches incoming WhatsApp notifications, matches your reply rules and answers for you in the background. Setup on its screen: notification access plus at least one enabled rule.")
         appendLine("- Email sub agent: connects to Gmail with a 16-character App Password, reads new unread mail and replies using your saved HTML design. Runs about every 15 minutes with hourly and daily send caps.")

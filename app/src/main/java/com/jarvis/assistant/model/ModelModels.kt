@@ -8,7 +8,8 @@ data class RemoteModel(
     val fileName: String,
     val sizeBytes: Long,
     val downloadUrl: String,
-    val quant: String
+    val quant: String,
+    val sha256: String = ""
 )
 
 /** One model already stored on this device. */

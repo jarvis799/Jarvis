@@ -31,7 +31,14 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     current = id;
     frame.src = urlFor(id);
   }
-  function post(message) { try { frame.contentWindow.postMessage(message, "*"); } catch (e) {} }
+  var latest = {};
+  function post(message) {
+    latest[message.type] = message;
+    try { frame.contentWindow.postMessage(message, "*"); } catch (e) {}
+  }
+  frame.addEventListener("load", function () {
+    Object.keys(latest).forEach(function (type) { post(latest[type]); });
+  });
   window.JarvisVisual = { set: show, current: function () { return current; } };
   window.JarvisOrb = {
     setState: function (state) { post({ type: "jarvis:state", state: state }); },

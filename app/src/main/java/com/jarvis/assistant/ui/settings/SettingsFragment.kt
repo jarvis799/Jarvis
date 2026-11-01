@@ -195,6 +195,8 @@ class SettingsFragment : Fragment() {
         // Silent Execution Mode
         binding.switchSilentMode.isChecked = preferences.isSilentExecutionMode
 
+        com.jarvis.assistant.model.OfflineModelSettingsRow.bind(requireContext(), binding)
+
         // Model
         val modelDisplay = preferences.aiModel.removePrefix("models/")
         binding.tvCurrentModel.text = "$modelDisplay • Live WebSocket"
@@ -272,11 +274,7 @@ class SettingsFragment : Fragment() {
             Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
         }
 
-        // Offline replies: answers with no internet, from the on-device engine (existing Settings row)
-        binding.switchOfflineReplies.isChecked = preferences.offlineReplies
-        binding.switchOfflineReplies.setOnCheckedChangeListener { _, isChecked ->
-            preferences.offlineReplies = isChecked
-        }
+        // Offline model navigation and switch readiness are bound by loadUserData().
 
         // Section 2: System & Intelligence Data
         binding.rowApiConnection.setOnClickListener {

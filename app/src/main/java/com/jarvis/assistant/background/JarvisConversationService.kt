@@ -244,53 +244,34 @@ class JarvisConversationService : Service() {
         // Chat messages typed before the live session is ready are queued and flushed when LIVE.
         private val pendingTextMessages = java.util.concurrent.ConcurrentLinkedQueue<String>()
 
+        private val textScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         fun sendTextMessage(text: String) {
-            val instance = activeInstance
-
-            // DEV STYLE: small device commands typed in chat run instantly - no LLM round-trip,
-            // and they work even while the mic is muted.
-            val quick = runCatching {
-                val parsed = com.jarvis.assistant.automation.command.CommandParser.parse(text)
-                parsed.command to parsed.confidence
-            }.getOrNull()
-            val quickCmd = quick?.first
-            if (quickCmd != null && quick.second >= 0.94f &&
-                quickCmd !is com.jarvis.assistant.automation.command.JarvisCommand.ConfirmAction &&
-                quickCmd !is com.jarvis.assistant.automation.command.JarvisCommand.DisambiguationChoice) {
-                val target = instance
-                if (target != null) {
-                    target.serviceScope.launch(Dispatchers.Main.immediate) {
-                        try {
-                            val result = JarvisApp.instance.commandExecutor.execute(quickCmd)
-                            _events.emit(result)
-                            JarvisApp.instance.chatRepository.addTurn(text, result)
-                        } catch (e: Exception) {
-                            Log.e("JarvisService", "Quick command failed: ${e.message}")
+            if (text.isBlank()) return
+            textScope.launch {
+                try {
+                    val r = com.jarvis.assistant.automation.command.NativeCommandGateway.execute(JarvisApp.instance, text)
+                    if (r != null) {
+                        _liveUserTranscript.value = text; _liveAssistantResponse.value = r
+                        _events.emit(r); JarvisApp.instance.chatRepository.addTurn(text, r)
+                    } else {
+                        val s = activeInstance
+                        val http = s?.httpSession
+                        val ws = s?.liveWebSocket
+                        if (http != null) http.sendText(text)
+                        else if (ws?.isSessionReady() == true) {
+                            ws.sendClientContent(text); JarvisApp.instance.chatRepository.addTurn(text, "")
+                        } else {
+                            pendingTextMessages.add(text)
+                            if (s == null) JarvisApp.instance.startForegroundService(Intent(JarvisApp.instance, JarvisConversationService::class.java).setAction(ACTION_START_CONVERSATION))
+                            else if (!_isSessionOn.value) s.beginActiveConversation()
                         }
                     }
-                    return
+                } catch (e: CancellationException) { throw e }
+                catch (e: Exception) {
+                    val r = "Command failed; completion not confirmed. " + (e.message ?: "Check permissions.")
+                    _events.emit(r); JarvisApp.instance.chatRepository.addTurn(text, r)
                 }
             }
-            if (instance?.httpSession != null) {
-                instance.serviceScope.launch(Dispatchers.Main.immediate) { instance.httpSession?.sendText(text) }
-                return
-            }
-            val ws = instance?.liveWebSocket
-            if (ws == null || !ws.isSessionReady()) {
-                pendingTextMessages.add(text)
-                if (instance == null) {
-                    val ctx = JarvisApp.instance
-                    runCatching {
-                        val intent = Intent(ctx, JarvisConversationService::class.java).setAction(ACTION_START_CONVERSATION)
-                        ctx.startForegroundService(intent)
-                    }
-                } else if (!_isSessionOn.value && com.jarvis.assistant.network.EndpointConfig.httpEndpoint(instance.preferences.apiKey, instance.preferences.customEndpoint) != null) {
-                    instance.serviceScope.launch(Dispatchers.Main.immediate) { instance.beginActiveConversation() }
-                }
-                return
-            }
-            ws.sendClientContent(text)
-            JarvisApp.instance.chatRepository.addTurn(text, "")
         }
 
         // DEV STYLE: chat image attachment — stream one photo into the live session
@@ -401,7 +382,7 @@ class JarvisConversationService : Service() {
     private var lastVerifiedFlowPrompt = ""
     private var autonomousLoopJob: Job? = null
     private val MAX_AUTONOMOUS_STEPS = 25
-    // Mic voice-activity tuning. Raised so room noise no longer flips LISTENING/THINKING when nobody speaks.
+    private val liveInputGate = com.jarvis.assistant.voice.LiveInputGate()
     private val VAD_MIN_THRESHOLD = 0.05f
     private val VAD_NOISE_MULTIPLIER = 2.0f
     private val VAD_START_FRAMES = 5
@@ -837,18 +818,6 @@ class JarvisConversationService : Service() {
         val app = application as JarvisApp
         val preferences = app.preferences
         val apiKey = preferences.apiKey.trim()
-        if (apiKey.isBlank() && com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint) == null) {
-            _liveError.value = JarvisLiveError(
-                title = "API KEY MISSING",
-                message = "No default API is provided. Add your own Gemini key or HTTPS endpoint in Settings.",
-                errorCode = "API_KEY_MISSING",
-                actionText = "OPEN SETTINGS"
-            )
-            serviceScope.launch { _events.emit("সেটিংস থেকে নিজের API দিন। सेटिंग्स से अपना API जोड़ें। Configure your own API in Settings.") }
-            fullStop()
-            return
-        }
-
         if (!PermissionHelper.hasAllRequiredPermissions(this)) {
             _liveError.value = JarvisLiveError(
                 title = "PERMISSIONS REQUIRED",
@@ -882,9 +851,8 @@ class JarvisConversationService : Service() {
         headsetAudioRouter?.start()
 
         val httpEndpoint = com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint)
-        if (httpEndpoint != null) {
-            startHttpConversation(httpEndpoint)
-            return
+        if (httpEndpoint != null || apiKey.isBlank()) {
+            startHttpConversation(httpEndpoint ?: ""); return
         }
 
         audioPlayer = AudioPlayer(
@@ -1205,13 +1173,6 @@ class JarvisConversationService : Service() {
                             if (userUtterance.isNotEmpty()) {
                                 app.memoryManager.learnPreferencesFromConversation(userUtterance)
                             }
-                            val assistantText = currentTurnAssistantText.toString().lowercase(Locale.ROOT)
-                            val isConfused = assistantText.contains("not understand") ||
-                                    assistantText.contains("didn't understand") ||
-                                    assistantText.contains("don't understand") ||
-                                    assistantText.contains("couldn't understand") ||
-                                    assistantText.contains("sorry, i can't") ||
-                                    assistantText.contains("i'm not sure")
 
                             // DEV STYLE: conversation awareness - overheard speech (the
                             // operator talking to someone else) must never trigger commands.
@@ -1226,10 +1187,9 @@ class JarvisConversationService : Service() {
                             if (!addressedToJarvis) {
                                 Log.i("JarvisService", "Ignoring speech not addressed to JARVIS (operator may be talking to someone else): '" + userUtterance + "'")
                             }
-                            // Only run fallback if Gemini Live did NOT call a tool AND did not express confusion
-                            else if (!hasExecutedCommandInCurrentTurn && !isConfused) {
+                            // A model refusal must not suppress an available native action.
+                            else if (!hasExecutedCommandInCurrentTurn) {
                                 checkAndExecuteCommand(userUtterance)
-                                checkAssistantTextForCommands(currentTurnAssistantText.toString())
                             }
 
                             // Reset verification flag for the next conversational turn
@@ -1516,23 +1476,15 @@ class JarvisConversationService : Service() {
                     } else {
                         consecutiveVoicedFrames = 0
                     }
-                    // Suppress mic audio from streaming to Gemini ONLY while assistant is physically speaking over loudspeaker.
+                    liveInputGate.reset()
                     return@AudioRecorder
                 }
 
-                // Stream user speech to Gemini Live
+                val gated = liveInputGate.accept(chunk, amplitude)
                 if (liveWebSocket?.isSessionReady() == true) {
-                    while (!preConnectAudioQueue.isEmpty()) {
-                        val queued = preConnectAudioQueue.poll() ?: break
-                        liveWebSocket?.sendAudioChunk(queued)
-                    }
-                    liveWebSocket?.sendAudioChunk(chunk)
-                } else {
-                    // Connection still warming up: buffer up to 60 chunks (~1.2s of audio) so early speech is never lost
-                    if (preConnectAudioQueue.size < 60) {
-                        preConnectAudioQueue.offer(chunk.copyOf())
-                    }
-                }
+                    gated.chunks.forEach { liveWebSocket?.sendAudioChunk(it) }
+                    if (gated.ended) liveWebSocket?.sendAudioStreamEnd()
+                } else liveInputGate.reset()
 
                 // Track ambient noise floor adaptively when quiet
                 if (amplitude < 0.10f) {
@@ -1607,8 +1559,7 @@ class JarvisConversationService : Service() {
                         }
                     }
                 } else {
-                    // Gradual decrement instead of instant reset: one quiet 20ms frame won't kill voiced speech tracking
-                    if (consecutiveVoicedFrames > 0) consecutiveVoicedFrames--
+                    consecutiveVoicedFrames = 0
                     val silentDuration = now - lastUserSpeechDetectedTime
 
                     if (hasSpeechInCurrentUtterance && silentDuration < 450) {
@@ -2484,22 +2435,9 @@ class JarvisConversationService : Service() {
                     }
 
 
-                    "run_native_command" -> {
-                        val rawCommand = args.optString("command", "").trim()
-                        if (rawCommand.isEmpty()) {
-                            result.put("success", false)
-                            result.put("message", "No command text was given.")
-                        } else {
-                            val fastAction = com.jarvis.assistant.automation.command.FastCommandRouter.lookup(this@JarvisConversationService, rawCommand)
-                            if (fastAction == null) {
-                                result.put("success", false)
-                                result.put("message", "No native handler matched this command. Use your other tools for it, and never tell the user their phone cannot do it.")
-                            } else {
-                                val fastReply = com.jarvis.assistant.automation.command.FastCommandRouter.executeAction(app, fastAction, rawCommand)
-                                result.put("success", true)
-                                result.put("message", fastReply)
-                            }
-                        }
+                    "run_native_command", "create_sub_agent", "get_email_status" -> {
+                        val local = LiveNativeTools.execute(this@JarvisConversationService, name, args)
+                        local.keys().forEach { key -> result.put(key, local.get(key)) }
                     }
 
                     "open_jarvis_feature" -> {
@@ -3003,19 +2941,15 @@ class JarvisConversationService : Service() {
                 return
             }
         }
-        // DEV STYLE: instant command pack (10000+ multilingual phrases) - fast responses
-        run {
-            val fastApp = application as? JarvisApp
-            if (fastApp != null) {
-                if (com.jarvis.assistant.automation.command.FastCommandRouter.lookup(fastApp, cleanSpeech) != null) {
-                    lastHandledCommandText = cleanSpeech
-                    com.jarvis.assistant.automation.command.FastCommandRouter.tryExecuteAsync(fastApp, cleanSpeech) { announce(it) }
-                    return
-                }
+        val native = com.jarvis.assistant.automation.command.NativeCommandGateway
+        if (native.canHandle(this, cleanSpeech)) {
+            lastHandledCommandText = cleanSpeech; hasExecutedCommandInCurrentTurn = true
+            serviceScope.launch {
+                val r = native.execute(this@JarvisConversationService, cleanSpeech)
+                if (r != null) { _liveAssistantResponse.value = r; announce(r) }
             }
+            return
         }
-
-
         Log.d("JarvisService", "checkAndExecuteCommand: '$cleanSpeech'")
 
         val app = application as? JarvisApp ?: return
@@ -3386,9 +3320,8 @@ class JarvisConversationService : Service() {
                 onError = { message -> if (httpSession === session && _isSessionOn.value) serviceScope.launch { _events.emit(message) } }
             )
             httpSession = session
-            _connectionStatus.value = "HTTP READY"
-            _liveError.value = null
-            updateNotification()
+            _connectionStatus.value = if(endpoint.isBlank()) "NATIVE READY" else "HTTP READY"
+            _liveError.value = null; updateNotification()
             session.start(preferences.isMicMuted)
             while (!pendingTextMessages.isEmpty()) session.sendText(pendingTextMessages.poll() ?: break)
         }
@@ -3409,9 +3342,8 @@ class JarvisConversationService : Service() {
         finalizeTurn()
 
 
-        currentTurnAssistantText.clear()
-        currentTurnUserText.clear()
-        preConnectAudioQueue.clear()
+        currentTurnAssistantText.clear(); currentTurnUserText.clear()
+        preConnectAudioQueue.clear(); liveInputGate.reset()
         hasSpeechInCurrentUtterance = false
         hasSignalledUtteranceEnd = false
 
@@ -3543,13 +3475,11 @@ class JarvisConversationService : Service() {
 
         override fun onError(exception: Exception?) {
             Log.e("JarvisService", "Vosk error: ${exception?.message}")
-            if (_isStandby.value) {
-                serviceScope.launch(Dispatchers.Main) {
-                    delay(1500)
-                    if (_isStandby.value && voskSpeechService == null) {
-                        startWakeListening()
-                    }
-                }
+            try { voskSpeechService?.shutdown() } catch (_: Exception) {}
+            voskSpeechService = null
+            if (_isStandby.value) serviceScope.launch(Dispatchers.Main) {
+                delay(1500)
+                if (_isStandby.value) startWakeListening()
             }
         }
 
@@ -3666,10 +3596,7 @@ class JarvisConversationService : Service() {
 
             val cleanPhrase = wordList.joinToString(" ")
             val wakePhrases = validWakePhrases()
-            val wakeWords = wakePhrases.flatMap { it.split(" ") }.toSet()
-            val isMatch = cleanPhrase in wakePhrases ||
-                    wakePhrases.any { cleanPhrase.contains(it) } ||
-                    wakeWords.any { wordList.contains(it) }
+            val isMatch = cleanPhrase in wakePhrases
 
             if (!isMatch) {
                 Log.d("JarvisService", "WAKE REJECTED: '$cleanPhrase' is not an exact valid wake phrase.")
@@ -3914,7 +3841,7 @@ class JarvisConversationService : Service() {
         if (audioManager.mode == AudioManager.MODE_IN_CALL) return true
         try {
             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
-            if (telephonyManager != null && telephonyManager.callState != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
+            if (telephonyManager?.callState == android.telephony.TelephonyManager.CALL_STATE_OFFHOOK) {
                 return true
             }
         } catch (_: Exception) {}

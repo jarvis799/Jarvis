@@ -590,16 +590,17 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Offline Replies"
+                            android:text="Premium · Offline AI Models"
                             android:textColor="?attr/themeTextPrimary"
                             android:textSize="15sp"
                             android:fontFamily="sans-serif-medium"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvOfflineModelStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Answer from the on-device engine when there is no internet"
+                            android:text="1.1B / 1.5B models · download &amp; auto-setup"
                             android:textColor="?attr/themeTextMuted"
                             android:textSize="12sp"
                             android:fontFamily="sans-serif"

@@ -62,6 +62,15 @@ class ModelStore(context: Context) {
 
     fun activeModelId(): String? = prefs.getString(KEY_ACTIVE, null)
 
+    fun readyModelId(): String? = prefs.getString("tested_model_id", null)
+
+    /** Only called after a real native generation has succeeded on this phone. */
+    fun activateVerified(model: LocalModel) {
+        add(model)
+        check(prefs.edit().putString(KEY_ACTIVE, model.id).putString("tested_model_id", model.id)
+            .putBoolean(KEY_OFFLINE_FALLBACK, true).commit()) { "Could not save model setup. Free storage and retry." }
+    }
+
     fun setActive(id: String?) {
         prefs.edit().putString(KEY_ACTIVE, id).apply()
     }

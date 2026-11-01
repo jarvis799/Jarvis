@@ -317,15 +317,20 @@ class HttpChatSession(
         val best = alternatives.firstOrNull().orEmpty()
 
         when (confidence.evaluate(best, scores?.firstOrNull(), alternatives.drop(1))) {
-            SpeechConfidencePolicy.Verdict.CLEAR ->
-                if (best.isNotBlank()) sendText(best) else listen()
-
-            SpeechConfidencePolicy.Verdict.UNCERTAIN,
-            SpeechConfidencePolicy.Verdict.UNINTELLIGIBLE -> {
-                if (confidence.shouldAsk()) askToRepeat()
-                else if (best.isNotBlank()) sendText(best)
-                else listen()
+            SpeechConfidencePolicy.Verdict.CLEAR -> {
+                confidence.reset()
+                if (com.jarvis.assistant.battery.ChargerAudioPlayer.isPlaying) { listen(); return }
+                if (best.isNotBlank()) {
+                    com.jarvis.assistant.battery.ConversationLanguage.observe(context, best)
+                    sendText(best)
+                } else listen()
             }
+            SpeechConfidencePolicy.Verdict.UNCERTAIN -> {
+                if (confidence.shouldAsk()) askToRepeat() else listen()
+            }
+            // Ambient noise and low-confidence hypotheses never become commands,
+            // even after the clarification budget has been exhausted.
+            SpeechConfidencePolicy.Verdict.UNINTELLIGIBLE -> listen()
         }
     }
 
@@ -363,6 +368,7 @@ class HttpChatSession(
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, EndpointConfig.speechLocale(language).toLanguageTag())
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, endpoint.isBlank())
             // More than one hypothesis is what lets the confidence policy spot a conflict.
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }

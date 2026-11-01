@@ -69,8 +69,9 @@ class WhatsAppAutoReplyManager private constructor(private val context: Context)
         val rule = AutoReplyMatcher.match(getRules(), sender, message) ?: return false
         val reply = rule.replyText.replace("{name}", sender.trim()).trim()
         if (reply.isBlank()) return false
-        // Never echo our own reply back — breaks auto-reply loops
-        if (lastReplies[sender.trim()] == reply) return false
+        // Ignore our own outgoing text, not every future incoming message from
+        // this sender. The old reply-only check blocked this chat forever.
+        if (lastReplies[sender.trim()] == message.trim()) return false
         if (replyAction == null || replyAction.remoteInputs.isNullOrEmpty()) return false
         if (!throttle.allow(sender.trim(), System.currentTimeMillis())) return false
         return try {
@@ -78,7 +79,8 @@ class WhatsAppAutoReplyManager private constructor(private val context: Context)
             val results = Bundle()
             results.putCharSequence(replyAction.remoteInputs[0].resultKey, reply)
             RemoteInput.addResultsToIntent(replyAction.remoteInputs, intent, results)
-            replyAction.actionIntent?.send(context, 0, intent)
+            val pending = replyAction.actionIntent ?: return false
+            pending.send(context, 0, intent)
             lastReplies[sender.trim()] = reply
             Log.i(TAG, "Auto-replied to $sender")
             true

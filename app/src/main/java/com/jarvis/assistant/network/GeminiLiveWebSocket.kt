@@ -691,7 +691,7 @@ class GeminiLiveWebSocket(
                                 put("properties", JSONObject().apply {
                                     put("command", JSONObject().apply {
                                         put("type", "STRING")
-                                        put("description", "The user command in their own words, for example torch on koro, screenshot nao, phone lock koro, volume barabo, settings kholo.")
+                                        put("description", "The user's exact command. Supports set alarm at 7 am (system Clock confirmation), remind me in 10 minutes to drink water (local notification), what time is it, answer/reject the call, read my email, summarize my emails, draft a reply, send email reply, sub agent creation, and existing phone/app actions. Never invent success; report the returned message and any missing permission.")
                                     })
                                 })
                                 put("required", JSONArray().put("command"))
@@ -712,6 +712,21 @@ class GeminiLiveWebSocket(
                                 })
                                 put("required", JSONArray().put("feature"))
                             })
+                        })
+
+                        put(JSONObject().apply {
+                            put("name", "create_sub_agent")
+                            put("description", "Save an auto-reply rule only when explicitly requested. Include the user's trigger and exact reply text in instruction. Missing details produce a question, not a fabricated agent. Read the returned setup state; never claim a reply was delivered.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject().put("instruction", JSONObject().put("type", "STRING")))
+                                put("required", JSONArray().put("instruction"))
+                            })
+                        })
+                        put(JSONObject().apply {
+                            put("name", "get_email_status")
+                            put("description", "Read fresh on-device Gmail App Password connection and auto-reply state. This is not Google Workspace OAuth. Never guess that Gmail is disconnected.")
+                            put("parameters", JSONObject().put("type", "OBJECT").put("properties", JSONObject()))
                         })
 
                         // 24. my_features - the truthful capability list
@@ -834,7 +849,8 @@ class GeminiLiveWebSocket(
                             userText = sb.toString().trim()
                         }
                     }
-                    if (userText.isNotBlank()) {
+                    if (userText.isNotBlank() && !com.jarvis.assistant.battery.ChargerAudioPlayer.isPlaying) {
+                        com.jarvis.assistant.battery.ConversationLanguage.observe(com.jarvis.assistant.JarvisApp.instance, userText)
                         listener.onUserTextReceived(userText)
                     }
                 }

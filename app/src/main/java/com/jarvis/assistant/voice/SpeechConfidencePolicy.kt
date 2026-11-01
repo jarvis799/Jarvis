@@ -50,7 +50,8 @@ class SpeechConfidencePolicy(
         val text = transcript.trim()
         if (engineError || text.isEmpty()) return Verdict.UNINTELLIGIBLE
 
-        val score = confidence?.takeIf { it.isFinite() && it > 0f }
+        // Android uses -1 for unavailable; zero is a real, low confidence value.
+        val score = confidence?.takeIf { it.isFinite() && it in 0f..1f }
         if (score != null) {
             if (score < unintelligibleBelow) return Verdict.UNINTELLIGIBLE
             if (score < uncertainBelow) return Verdict.UNCERTAIN

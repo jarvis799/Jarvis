@@ -43,6 +43,24 @@ object ModelCatalogue {
         }
     }
 
+    suspend fun resolve(model: RemoteModel): RemoteModel = withContext(Dispatchers.IO) {
+        if (model.sha256.isNotBlank()) return@withContext model
+        val request = Request.Builder().url("https://huggingface.co/api/models/${model.id}?blobs=true").build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Cannot verify model source: HTTP ${response.code}")
+            val metadata = JSONObject(response.body?.string() ?: throw IOException("Empty model metadata"))
+            val siblings = metadata.getJSONArray("siblings")
+            val file = (0 until siblings.length()).map { siblings.getJSONObject(it) }
+                .firstOrNull { it.optString("rfilename") == model.fileName }
+                ?: throw IOException("Model file is no longer listed at the source.")
+            val hash = file.optJSONObject("lfs")?.optString("sha256").orEmpty()
+            val revision = metadata.optString("sha")
+            if (hash.length != 64 || revision.isBlank()) throw IOException("Source did not provide a verifiable model checksum.")
+            model.copy(sizeBytes = file.optLong("size"), sha256 = hash,
+                downloadUrl = "https://huggingface.co/${model.id}/resolve/$revision/${model.fileName}?download=true")
+        }
+    }
+
     private fun parse(json: String): List<RemoteModel> {
         val array = JSONArray(json)
         val result = ArrayList<RemoteModel>()

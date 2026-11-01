@@ -118,7 +118,7 @@ class OrbHelper(
             }
         }
 
-        webView.loadUrl("file:///android_asset/hud/index.html")
+        webView.loadUrl("file:///android_asset/orbs/hud-target.html")
     }
 
     fun updateState(state: ConversationState, audioLevel: Float = 0f) {
