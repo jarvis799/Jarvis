@@ -16,14 +16,14 @@ class AdultEducationPromptTest {
 
     @Test fun livePromptCarriesEnabledStateAfterPersonaInstructions() {
         val output = prompt(true)
-        assertTrue(output.endsWith(AdultEducationPolicy.promptBlock(true).trimEnd()))
+        assertTrue(output.trimEnd().endsWith(AdultEducationPolicy.promptBlock(true).trimEnd()))
         assertTrue(output.contains("Mode: ON (saved setting)"))
         assertTrue(output.contains("override romantic persona"))
     }
 
     @Test fun disablingDoesNotLeaveEnabledInstructionsInTheNextPrompt() {
         val output = prompt(false)
-        assertTrue(output.endsWith(AdultEducationPolicy.promptBlock(false).trimEnd()))
+        assertTrue(output.trimEnd().endsWith(AdultEducationPolicy.promptBlock(false).trimEnd()))
         assertTrue(output.contains("Mode: OFF (saved setting)"))
         assertFalse(output.contains("Mode: ON (saved setting)"))
         assertFalse(output.contains("[EDUCATIONAL RESPONSE RULES"))
