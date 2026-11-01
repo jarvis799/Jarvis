@@ -42,6 +42,7 @@ class AppPreferences(context: Context) {
         private const val ENCRYPTED_API_PREF_NAME = "jarvis_secure_api_prefs"
         private const val TAG = "AppPreferences"
         private const val KEY_API_KEY = "key_api_key"
+        private const val KEY_API_KEYS = "key_api_keys"
         private const val KEY_MODEL = "key_model"
         private const val KEY_VOICE = "key_voice"
         private const val KEY_PERSONALITY = "key_personality"
@@ -183,13 +184,45 @@ class AppPreferences(context: Context) {
             .apply()
     }
 
+    /** Every saved Gemini key, primary first. An exhausted key hands the session to the next one. */
+    val apiKeys: List<String>
+        get() {
+            val raw = secureApiPrefs?.getString(KEY_API_KEYS, "")?.trim().orEmpty()
+            val stored = if (raw.isBlank()) emptyList() else runCatching {
+                gson.fromJson(raw, Array<String>::class.java)?.toList() ?: emptyList()
+            }.getOrDefault(emptyList())
+            val cleaned = stored.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+            if (cleaned.isNotEmpty()) return cleaned
+            val single = secureApiPrefs?.getString(KEY_API_KEY, "")?.trim().orEmpty()
+            return if (single.isBlank()) emptyList() else listOf(single)
+        }
+
+    /** Saves the whole key list; the first one is used until its quota runs out. */
+    fun setApiKeys(keys: List<String>): Boolean {
+        val secure = secureApiPrefs ?: return false
+        val clean = keys.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val editor = secure.edit()
+        if (clean.isEmpty()) editor.remove(KEY_API_KEYS).remove(KEY_API_KEY)
+        else editor.putString(KEY_API_KEYS, gson.toJson(clean)).putString(KEY_API_KEY, clean.first())
+        return editor.commit()
+    }
+
+    /** Moves an exhausted key behind the others so the next call uses a fresh one. */
+    @Synchronized
+    fun rotateApiKeyAfterExhaustion(failedKey: String = apiKey): Boolean {
+        val keys = apiKeys
+        if (keys.size < 2) return false
+        val index = keys.indexOf(failedKey.trim())
+        if (index < 0) return false
+        val rotated = keys.drop(index + 1) + keys.take(index + 1)
+        return setApiKeys(rotated)
+    }
+
     var apiKey: String
-        get() = secureApiPrefs?.getString(KEY_API_KEY, "")?.trim() ?: ""
+        get() = apiKeys.firstOrNull() ?: ""
         set(value) {
-            val secure = checkNotNull(secureApiPrefs) { "Secure API-key storage is unavailable on this device." }
             val clean = value.trim()
-            val saved = if (clean.isEmpty()) secure.edit().remove(KEY_API_KEY).commit()
-            else secure.edit().putString(KEY_API_KEY, clean).commit()
+            val saved = if (clean.isEmpty()) setApiKeys(emptyList()) else setApiKeys(listOf(clean))
             check(saved) { "Could not save API key to encrypted storage." }
         }
 

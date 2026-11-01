@@ -6,11 +6,11 @@
 <title>JARVIS HUD Target</title>
 <style>
   :root{
-    --ink:#E8E8E8;
-    --accent:#D2D2D2;
+    --ink:#f4ffe9;
+    --accent:#a8ff57;
   }
   html[data-theme="light"]{
-    --ink:#212121;
+    --ink:#122a1c;
   }
   html,body{
     margin:0;padding:0;width:100%;height:100%;
@@ -37,14 +37,15 @@
   root.setAttribute("data-theme", theme === "light" ? "light" : "dark");
 
   var ACCENTS = {
-    idle: "#D2D2D2",
-    listening: "#DEDEDE",
-    thinking: "#CDCDCD",
-    speaking: "#AAAAAA"
+    idle: "#a8ff57",
+    listening: "#c5ff78",
+    thinking: "#8ef0c0",
+    speaking: "#65e04a"
   };
 
   var STATE = "idle";
-  var SPEED = { idle: 1, listening: 1.35, thinking: 2.1, speaking: 1.7 };
+  // Calm, normal-speed HUD motion: the rings turn smoothly instead of racing.
+  var SPEED = { idle: 0.5, listening: 0.68, thinking: 1.05, speaking: 0.85 };
 
   var w = 0, h = 0, dpr = 1, cx = 0, cy = 0, R = 0;
   var clock = 0;
@@ -66,7 +67,7 @@
   }
 
   function ink() {
-    return getComputedStyle(root).getPropertyValue("--ink").trim() || "#E8E8E8";
+    return getComputedStyle(root).getPropertyValue("--ink").trim() || "#f4ffe9";
   }
 
   function resize() {

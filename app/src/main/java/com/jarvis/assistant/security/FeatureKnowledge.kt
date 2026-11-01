@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.1.2"
+    const val APP_VERSION = "2.1.3"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -52,6 +52,10 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Chat e kichu likhe send korlei message sathe sathe chat e ashe - ar kono 'kichu hoy na' nei",
+        "Jotogulo Gemini key chan add korun: ekta key er limit sesh hole porer key te automatic switch hoy",
+        "Gmail settings e ekhon nijer HTML reply template set kora jay, sathe HTML design switch",
+        "Home HUD er ring animation ekhon normal speed e ghore, age chhilo khub druto",
         "Background noise is now ignored: a fan, TV or street sound no longer opens a turn or gets answered",
         "The same creator line is no longer repeated - Jarvis answers the actual question",
         "Answers start much faster: thinking is at its lightest for every Live model",

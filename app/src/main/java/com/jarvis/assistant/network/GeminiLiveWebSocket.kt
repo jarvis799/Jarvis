@@ -44,6 +44,10 @@ class GeminiLiveWebSocket(
     private val client = sharedClient
     private val spokenLanguageTurn = StringBuilder()
 
+    // Multi-key: when one key's quota ends, the next saved key takes over this same session.
+    private var activeKey: String = apiKey
+    private var keySwitchAttempts = 0
+
     private var activeModel: String = when (model) {
         GeminiConstants.MODEL_3_8_LIVE -> GeminiConstants.MODEL_3_8_LIVE
         GeminiConstants.MODEL_3_8_LIVE_THINKING -> GeminiConstants.MODEL_3_8_LIVE_THINKING
@@ -79,7 +83,7 @@ class GeminiLiveWebSocket(
         listener.onConnectionStateChanged("CONNECTING...")
 
         try {
-            val url = "${GeminiConstants.WS_BASE_URL}?key=$apiKey"
+            val url = "${GeminiConstants.WS_BASE_URL}?key=$activeKey"
             val request = Request.Builder()
                 .url(url)
                 .build()
@@ -119,6 +123,7 @@ class GeminiLiveWebSocket(
                                        reason.contains("key invalid", ignoreCase = true)
                     if (isApiKeyError) {
                         Log.e(TAG, "Gemini rejected session due to invalid API key (code=$code, reason=$reason)")
+                        if (trySwitchToNextKey()) { scheduleReconnect(); return }
                         listener.onError("Invalid API Key: Google rejected the key. Please verify your Gemini API key in Settings.", isFatal = true, errorCode = "API_KEY_INVALID")
                         listener.onConnectionStateChanged("ERROR • INVALID KEY")
                         return
@@ -127,6 +132,7 @@ class GeminiLiveWebSocket(
                     val isQuotaError = reason.contains("RESOURCE_EXHAUSTED", ignoreCase = true) ||
                                        reason.contains("quota", ignoreCase = true)
                     if (isQuotaError) {
+                        if (trySwitchToNextKey()) { scheduleReconnect(); return }
                         Log.w(TAG, "Gemini rate-limited or connection collision (code=$code, reason=$reason). Retrying in cooldown...")
                         listener.onConnectionStateChanged("COOLDOWN • RETRYING")
                         scheduleReconnect()
@@ -188,12 +194,14 @@ class GeminiLiveWebSocket(
 
                     if (isApiKeyError) {
                         Log.e(TAG, "Fatal failure: Invalid API Key (HTTP $code: $errorMsg)")
+                        if (trySwitchToNextKey()) { scheduleReconnect(); return }
                         listener.onError("Invalid API Key: Google rejected the key. Please verify your Gemini API key in Settings.", isFatal = true, errorCode = "API_KEY_INVALID")
                         listener.onConnectionStateChanged("ERROR • INVALID KEY")
                         return
                     }
 
                     if (isQuotaError) {
+                        if (trySwitchToNextKey()) { scheduleReconnect(); return }
                         Log.w(TAG, "Quota / rate limit hit (HTTP $code: $errorMsg). Retrying in cooldown...")
                         listener.onConnectionStateChanged("COOLDOWN • RETRYING")
                         scheduleReconnect()
@@ -213,6 +221,23 @@ class GeminiLiveWebSocket(
             listener.onError("Connection failed: ${e.message}", isFatal = true, errorCode = "CONNECTION_FAILED")
             listener.onConnectionStateChanged("OFFLINE")
         }
+    }
+
+    /**
+     * Hands this session to the next saved Gemini key once one key's quota has ended.
+     * Returns false when only one key is saved, or every saved key was already tried.
+     */
+    private fun trySwitchToNextKey(): Boolean {
+        if (isManuallyStopped.get()) return false
+        val preferences = runCatching { com.jarvis.assistant.JarvisApp.instance.preferences }.getOrNull() ?: return false
+        val saved = preferences.apiKeys.size
+        if (saved < 2 || keySwitchAttempts >= saved - 1) return false
+        if (!preferences.rotateApiKeyAfterExhaustion(activeKey)) return false
+        keySwitchAttempts++
+        activeKey = preferences.apiKey
+        Log.w(TAG, "Key exhausted - switched to another saved key ($keySwitchAttempts/${saved - 1})")
+        listener.onConnectionStateChanged("SWITCHING KEY...")
+        return true
     }
 
     private fun sendSetupMessage(ws: WebSocket) {

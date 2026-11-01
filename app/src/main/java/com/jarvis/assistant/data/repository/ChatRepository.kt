@@ -34,11 +34,18 @@ class ChatRepository(private val preferences: AppPreferences) {
             if (last.userTranscript == cleanUser && last.jarvisResponse == cleanJarvis) {
                 return
             }
+            // The message is shown the moment Send is tapped; its reply fills that same bubble.
+            if (last.userTranscript == cleanUser && last.jarvisResponse.isBlank() && cleanJarvis.isNotEmpty()) {
+                currentList[currentList.lastIndex] = last.copy(jarvisResponse = cleanJarvis)
+                _turns.value = currentList
+                preferences.saveChatHistory(currentList)
+                return
+            }
         }
 
         val newTurn = ChatTurn(
             userTranscript = cleanUser.ifEmpty { "(Audio query)" },
-            jarvisResponse = cleanJarvis.ifEmpty { "(Audio response)" }
+            jarvisResponse = cleanJarvis
         )
 
         currentList.add(newTurn)

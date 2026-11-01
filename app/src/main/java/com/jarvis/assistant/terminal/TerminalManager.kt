@@ -119,6 +119,9 @@ object TerminalManager {
                 val adjusted = if (rest.firstOrNull()?.lowercase() == "install") listOf("add") + rest.drop(1) else rest
                 "apk " + adjusted.joinToString(" ")
             }
+            // Alpine ships python3/pip3 only; plain "python file.py" would fail with "not found".
+            "python", "py" -> (listOf("python3") + parts.drop(1)).joinToString(" ")
+            "pip" -> (listOf("pip3") + parts.drop(1)).joinToString(" ")
             else -> cmd
         }
         return mapped to true

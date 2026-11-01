@@ -223,32 +223,55 @@ class ChatFragment : Fragment() {
         val text = binding.etMessageInput.text?.toString()?.trim() ?: ""
         if (text.isBlank()) return
 
-        if (!com.jarvis.assistant.model.LlmRouter.isOnline(requireContext())) {
-            val app = JarvisApp.instance
-            binding.etMessageInput.text?.clear()
-            binding.btnSendMessage.isEnabled = false
-            binding.etMessageInput.hint = "Jarvis is thinking offline…"
-            hideKeyboard()
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val reply = com.jarvis.assistant.model.OfflineReply.answer(app, text)
-                    app.chatRepository.addTurn(text, reply)
-                } catch (error: kotlinx.coroutines.CancellationException) { throw error }
-                catch (error: Exception) { app.chatRepository.addTurn(text, "Offline reply failed: ${error.message}") }
-                finally {
-                    _binding?.btnSendMessage?.isEnabled = true
-                    _binding?.etMessageInput?.hint = "Message Jarvis…"
-                }
-            }
+        val app = JarvisApp.instance
+        val context = requireContext()
+
+        // Show the message straight away, so tapping Send never looks dead.
+        app.chatRepository.addTurn(text, "")
+        binding.etMessageInput.text?.clear()
+        hideKeyboard()
+
+        val preferences = app.preferences
+        val remoteConfigured = preferences.apiKey.isNotBlank() ||
+            com.jarvis.assistant.network.EndpointConfig.httpEndpoint(preferences.apiKey, preferences.customEndpoint) != null
+        val localReady = com.jarvis.assistant.model.LlmRouter.localReady(context)
+        val online = com.jarvis.assistant.model.LlmRouter.isOnline(context)
+
+        if (!remoteConfigured) {
+            if (localReady) askOffline(app, text)
+            else app.chatRepository.addTurn(
+                text,
+                if (online) "Kono AI key set kora nei — Settings > API Connection e nijer Gemini key din, tarpor chat kaj korbe."
+                else "Internet nei, ar kono offline model installed nei. Settings > Offline AI Models theke model download korun."
+            )
             return
         }
+        if (!online) {
+            if (localReady) askOffline(app, text)
+            else app.chatRepository.addTurn(text, "Internet nei. Connect kore abar pathan, ba Settings > Offline AI Models theke offline model set korun.")
+            return
+        }
+
         if (!JarvisConversationService.isServiceRunning()) {
             (activity as? MainActivity)?.handleMicOrOrbClick()
         }
-
         JarvisConversationService.sendTextMessage(text)
-        binding.etMessageInput.text?.clear()
-        hideKeyboard()
+    }
+
+    private fun askOffline(app: JarvisApp, text: String) {
+        binding.btnSendMessage.isEnabled = false
+        binding.etMessageInput.hint = "Jarvis is thinking offline…"
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val reply = com.jarvis.assistant.model.OfflineReply.answer(app, text)
+                app.chatRepository.addTurn(text, reply)
+            } catch (error: kotlinx.coroutines.CancellationException) { throw error }
+            catch (error: Exception) { app.chatRepository.addTurn(text, "Offline reply failed: ${error.message}") }
+            finally {
+                _binding?.btnSendMessage?.isEnabled = true
+                _binding?.etMessageInput?.hint = "Message Jarvis…"
+            }
+        }
     }
 
     private fun hideKeyboard() {

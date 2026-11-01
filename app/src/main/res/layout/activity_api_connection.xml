@@ -202,7 +202,7 @@
                         android:id="@+id/etApiKey"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="AIzaSy..."
+                        android:hint="AIzaSy... (one key per line for auto rotation)"
                         android:inputType="textPassword"
                         android:textColor="?attr/themeTextPrimary"
                         android:textSize="14sp"
