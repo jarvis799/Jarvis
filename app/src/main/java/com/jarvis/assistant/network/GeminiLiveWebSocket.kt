@@ -685,7 +685,7 @@ class GeminiLiveWebSocket(
                         // 22. run_native_command - every instant phone command JARVIS already ships
                         put(JSONObject().apply {
                             put("name", "run_native_command")
-                            put("description", "Runs ANY instant phone command from JARVIS own native command pack: torch on/off, volume up/down/mute, brightness up/down, lock phone, screenshot, next/previous/pause music, opening any installed app or settings page, going home, reading the time or date. ALWAYS call this before telling the user a phone action is not possible.")
+                            put("description", "Runs ANY instant command from JARVIS own native pack: torch on/off, volume up/down/mute, brightness up/down, lock phone, screenshot, music controls, opening any installed app or settings page, going home, time and date, AND every in-app capability - creating a sub agent (for example sub agent banao, jokhon keu price bole to reply: amar price list pathacchi), opening the plugin lab, downloading a local model, backup and restore, memories and any Jarvis screen. ALWAYS call this before telling the user something is not possible or that you have no tool for it.")
                             put("parameters", JSONObject().apply {
                                 put("type", "OBJECT")
                                 put("properties", JSONObject().apply {
@@ -723,6 +723,7 @@ class GeminiLiveWebSocket(
                                 put("properties", JSONObject())
                             })
                         })
+
 
 
 

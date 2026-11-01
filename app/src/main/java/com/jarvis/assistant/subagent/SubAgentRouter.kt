@@ -23,6 +23,8 @@ object SubAgentRouter {
     )
 
     fun route(context: Context, request: String): String? {
+        // DEV STYLE 2.0.5: "sub agent banao" builds and stores a real working agent.
+        if (SubAgentBuilder.wantsCreation(request)) return SubAgentBuilder.create(context, request)
         val text = request.lowercase()
         val mentionsWhatsAppAgent = text.contains("whatsapp") && Regex("auto[ -]?reply|auto reply|agent").containsMatchIn(text)
         val mentionsEmailAgent = (text.contains("email") || text.contains("gmail")) &&

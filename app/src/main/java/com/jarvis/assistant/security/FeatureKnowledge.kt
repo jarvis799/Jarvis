@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.4"
+    const val APP_VERSION = "2.0.5"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -40,6 +40,7 @@ object FeatureKnowledge {
         "Skill registry: verified native skills + reviewed external skill libraries",
         "Runtime Feature Updates: feature packs install from GitHub Releases without a new APK",
         "Sub Agents: WhatsApp auto reply agent and Gmail email auto reply agent, both Kotlin native - no Python needed",
+        "Sub agent banano: ek sentence e bolo - 'sub agent banao, jokhon keu price bole reply: ...' - Jarvis real agent toiri kore rule store e rakhe; kono 'tool nai' na",
         "Local AI models: download a GGUF model from Hugging Face with pause/resume, set it active, and an Offline reply switch sits right under the downloader",
         "Offline reply: when the network or the API fails, Jarvis answers with the installed local model instead of going dark",
         "Creator console: unlocked by the creator key configured at build time or set on this device - no key ships inside the app",
@@ -51,6 +52,8 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Sub agent banano ekhon kaj kore: bolo ar sathe sathe real WhatsApp/Email agent toiri hoy",
+        "Jarvis ar kono kaj e 'amar tool nai' bole na - sub agent, plugin, local model, backup, memory ar scanner sob local action diye kore",
         "Creator key is no longer inside the app - the build secret or the key set on this device is what verifies the creator",
         "Offline reply switch now sits directly under the local model downloader",
         "Local model downloader restored: search Hugging Face, download with pause and resume, set active",
@@ -75,6 +78,10 @@ object FeatureKnowledge {
         appendLine("- Email sub agent: connects to Gmail with a 16-character App Password, reads new unread mail and replies using your saved HTML design. Runs about every 15 minutes with hourly and daily send caps.")
         appendLine("- Sub agents are pure Kotlin and need no Python. Python only exists for the background terminal when the user asks for shell work.")
         appendLine("- If the user asks what a sub agent does, say it in one short line and name the single switch that turns it on. Never claim an agent is ON unless its screen shows it ON.")
+        appendLine("[CREATING A NEW SUB AGENT - THE APP CAN DO THIS]:")
+        appendLine("- The user may say: \"ekta sub agent banao\", \"create a sub agent\", \"sub agent lagao je price bolle reply de\". Jarvis builds it at once with the create_sub_agent tool (or locally): the trigger keyword and the reply line are stored in the WhatsApp auto-reply rule store, or in the Email agent, so a real agent runs afterwards.")
+        appendLine("- Reply with what was stored (trigger + reply + ON/OFF state) and name the one remaining step if a permission is missing (notification access for WhatsApp, App Password for Gmail).")
+        appendLine("- NEVER say \"amar sub agent bananor tool nai\", \"I have no tool for this\" or any equivalent. If a specific detail is missing, ask one short question (which trigger, which reply) and create it immediately after the answer.")
     }
 
     fun capabilitiesText(): String =

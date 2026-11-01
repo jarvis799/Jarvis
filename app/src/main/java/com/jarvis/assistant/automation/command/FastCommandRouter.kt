@@ -65,6 +65,9 @@ object FastCommandRouter {
         if (Regex("\\b(youtube|yt)\\b").containsMatchIn(t) && watch) return "PLAY_YOUTUBE"
         if (Regex("\\binstagram\\b|\\binsta\\b|\\breel\\b").containsMatchIn(t) && watch) return "OPEN_INSTAGRAM"
         if (Regex("cyber ?lab|security ?lab|cybersecurity lab|সাইবার").containsMatchIn(t)) return "OPEN_CYBER_LAB"
+        // DEV STYLE 2.0.5: anything the local capability router owns (sub agent creation, plugin
+        // lab, local models, backup, in-app screens) runs instead of ending in "not possible".
+        if (com.jarvis.assistant.agent.CapabilityRouter.matches(rawText)) return "CAPABILITY_ROUTE"
         return null
     }
 
@@ -186,6 +189,9 @@ object FastCommandRouter {
             }
             "OPEN_CYBER_LAB" -> if (launch(app, Intent(app, com.jarvis.assistant.security.cyberlab.CyberLabActivity::class.java))) "Cyber Lab khule dilam, Sir - learning, audit ar authorized assessment ekhane." else "Cyber Lab khola gelo na, Sir."
             "HELP" -> com.jarvis.assistant.security.FeatureKnowledge.capabilitiesText()
+            "CAPABILITY_ROUTE" ->
+                com.jarvis.assistant.agent.CapabilityRouter.route(app, rawText)
+                    ?: "Ei request ta local action e match holo na, Sir."
             else -> "Ei command ta ekhono map kora nei, Sir."
         }
     }

@@ -25,9 +25,12 @@ object AgentEngine {
         onDelta: ((String) -> Unit)? = null
     ): String {
         val adultEducationEnabled = com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
-        if (!FeatureFlags.engineEnabled) return HttpChatClient().ask(
-            endpoint, com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(basePrompt, adultEducationEnabled), apiKey, model
-        )
+        if (!FeatureFlags.engineEnabled) {
+            CapabilityRouter.route(context, userInput)?.let { return it }
+            return HttpChatClient().ask(
+                endpoint, com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(basePrompt, adultEducationEnabled), apiKey, model
+            )
+        }
 
         val sb = StringBuilder(basePrompt)
         // DEV STYLE: Hindi-first language, no-nonsense replies and full app knowledge - always on.
@@ -69,6 +72,10 @@ object AgentEngine {
 
         // DEV STYLE 2.0.1 - Sub Agent routing: WhatsApp / Email auto reply agents and the showcase.
         com.jarvis.assistant.subagent.SubAgentRouter.route(context, request)?.let { return it }
+
+        // DEV STYLE 2.0.5 - local capability router: sub agent creation, plugin lab, local
+        // models, backup and every in-app screen Jarvis can act on itself.
+        CapabilityRouter.route(context, request)?.let { return it }
 
         // DEV STYLE: APK Agent - import an APK, truthful analysis, step-by-step changes.
         if (Regex("\\bapk\\b.*(analy|agent|import|modify)|\\b(analy[sz]e|analy[sz]is)\\b.*\\bapk\\b", RegexOption.IGNORE_CASE).containsMatchIn(request)) {
@@ -194,6 +201,10 @@ object AgentEngine {
         // Auto-save bugs: when the user asks for something and Jarvis replies it cannot
         // do it, record the failure so the creator can review it later.
         if (replyIndicatesInability(request, reply)) {
+            // DEV STYLE 2.0.5: before any "I cannot do it" reaches the user, perform the
+            // request locally when Jarvis actually owns the capability.
+            CapabilityRouter.route(context, request)?.let { return it }
+            com.jarvis.assistant.subagent.SubAgentRouter.route(context, request)?.let { return it }
             BugDetectionService.report(
                 ctx = context,
                 feature = "Task Fulfillment",
@@ -254,6 +265,8 @@ object AgentEngine {
 - Memory: Home > Saved memories; owner voice enrollment; photo memory.
 - Weather card on Home, live web search, screen share + visual tasks, multi-command sentences.
 - Every feature is free and unlimited for all users - no licence key and no daily limit.
+- Sub agent: user bole "ekta sub agent banao je X bole to Y reply de" - tumi sathe sathe oi agent ta banai dao (WhatsApp rule store ba Email agent), tarpor real state bolo. "Sub agent bananor tool nai" bola ekdom nishedh.
+- Plugin, local model download, backup, memory, scanner, apk agent, dev studio, protita Jarvis screen - sob tomar kache ache. Kono kaj er jonno "amar tool nai / pari na" bolle age nijer local action try koro.
 When a request maps to a feature, explain in 1-2 short Hindi lines how it works and execute it.
 4. Pehle request ko samjho: kya karna hai, kaunsa feature use hoga, phir turant execute karo - confusion me atko mat.
 5. Jis kaam ke liye upar feature already hai, uske liye kabhi "main nahi kar sakta / pari na" mat bolo - seedha feature use karo. Email, calendar, WhatsApp, calls, messages, terminal - sab direct chalte hain; accessibility service sirf screen automation ke liye hai, email padhne ke liye kabhi nahi.
@@ -303,6 +316,8 @@ ${creatorStatusBlock()}
 
     /** DEV STYLE: features added in the latest updates - Jarvis announces these when asked. */
     private val whatsNew = listOf(
+        "Sub agent banano ab ar kaj kore - bolo ar sathe sathe real WhatsApp/Email agent ban jata hai.",
+        "Jarvis kabhi 'mere paas tool nahi hai' nahi bolta - sub agent, plugin, local model, backup, memory, scanner sab local action se khud karta hai.",
         "Creator key chat me likhlei Jarvis turant creator mode on kore - Ayan Sir recognized.",
         "Offline reply switch ekhon local model downloader er thik niche.",
         "Local model downloader: Hugging Face theke GGUF model search, pause/resume download, set active.",
