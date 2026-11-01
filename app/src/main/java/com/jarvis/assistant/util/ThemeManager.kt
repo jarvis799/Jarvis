@@ -25,7 +25,7 @@ object ThemeManager {
             "red" -> Color.parseColor("#0E0307")
             "sunset" -> Color.parseColor("#FFF0EA")
             "custom" -> try { Color.parseColor(customHex ?: "#FFFFFF") } catch (_: Exception) { Color.WHITE }
-            else -> Color.parseColor("#F0F4F7")
+            else -> Color.parseColor("#F7F8F4")
         }
     }
 
@@ -46,7 +46,7 @@ object ThemeManager {
                 val res = if (light) R.style.Theme_JarvisAssistant_CustomLight else R.style.Theme_JarvisAssistant_CustomDark
                 Triple(res, light, parsedColor)
             }
-            else -> Triple(R.style.Theme_JarvisAssistant_Light, true, Color.parseColor("#F3FBEA"))
+            else -> Triple(R.style.Theme_JarvisAssistant_Light, true, Color.parseColor("#F7F8F4"))
         }
 
         activity.setTheme(themeRes)
