@@ -273,8 +273,13 @@ class SettingsFragment : Fragment() {
         }
 
         // Offline replies: answers with no internet, from the on-device engine (existing Settings row)
-        binding.switchOfflineReplies.isChecked = preferences.offlineReplies
+        binding.rowOfflineReplies.setOnClickListener {
+            startActivity(Intent(requireContext(), com.jarvis.assistant.model.ModelCatalogueActivity::class.java))
+        }
+        val localStore = com.jarvis.assistant.model.ModelStore(requireContext())
+        binding.switchOfflineReplies.isChecked = localStore.offlineFallback()
         binding.switchOfflineReplies.setOnCheckedChangeListener { _, isChecked ->
+            localStore.setOfflineFallback(isChecked)
             preferences.offlineReplies = isChecked
         }
 

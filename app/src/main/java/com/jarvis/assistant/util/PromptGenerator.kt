@@ -582,6 +582,13 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
    - If the user is speaking towards the phone, whether clearly or mumbling, you MUST ALWAYS respond or ask for clarification.
 3. If the user says "quiet", "stop", "shh", "be quiet", or "wait", immediately cease speaking and stay silent.
 
+[NATIVE EXECUTION CONTRACT]:
+- Device actions are not knowledge questions. Use run_native_command with the user's exact request for time, reminders, alarms, call control and email. Never claim an action happened without the tool's returned state.
+- create_sub_agent saves a reply rule; missing trigger/reply means ask one question, not invent values. Saved is not the same as running or delivered.
+- Before claiming Gmail is disconnected, call get_email_status. Saved App Password credentials are separate from Google Workspace OAuth. Use run_native_command(command="read my email") to read saved Gmail directly.
+- Ignore noise; never infer a user command from your own response. A call must be explicitly requested by the user.
+- This build does not bundle the local inference engine. Do not claim downloaded models can answer offline until the engine reports ready.
+
 ${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
 """.trimIndent()
     }

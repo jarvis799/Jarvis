@@ -25,6 +25,11 @@ object AgentEngine {
         onDelta: ((String) -> Unit)? = null
     ): String {
         val adultEducationEnabled = com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
+        com.jarvis.assistant.automation.command.NativeCommandGateway.execute(context, userInput)?.let { return it }
+        if (endpoint.isBlank()) {
+            com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
+            return "Native commands ready: time, reminders, alarms, calls and saved reply rules work without an AI key. General conversation needs a configured API or a working local model engine; this build does not include that engine yet."
+        }
         if (!FeatureFlags.engineEnabled) {
             CapabilityRouter.route(context, userInput)?.let { return it }
             return HttpChatClient().ask(

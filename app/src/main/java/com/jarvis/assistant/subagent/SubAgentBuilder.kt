@@ -41,7 +41,7 @@ object SubAgentBuilder {
 
     /** True only for a request that asks Jarvis to MAKE a new agent. */
     fun wantsCreation(text: String): Boolean =
-        agentWord.containsMatchIn(text) && createWord.containsMatchIn(text) && !statusOnly.containsMatchIn(text)
+        agentWord.containsMatchIn(text) && createWord.containsMatchIn(text)
 
     /** Creates the agent and returns one honest line about what is now stored. */
     fun create(context: Context, instruction: String): String {
@@ -52,6 +52,9 @@ object SubAgentBuilder {
                 "Example: \"sub agent banao, jokhon keu price bole to reply: amar price list pathacchi\"."
         }
         val keyword = keyword(text)
+        if (keyword.isBlank() && !catchAll.containsMatchIn(text)) {
+            return "Kon keyword e reply dibe? Bolo: sub agent create, when price says reply: amar price list. Sob message hole explicitly bolo every message. Ekhono kono rule save hoyni."
+        }
         return if (emailWord.containsMatchIn(text) && !whatsappWord.containsMatchIn(text)) {
             createEmail(context, keyword, reply)
         } else {
@@ -67,7 +70,9 @@ object SubAgentBuilder {
             replyText = reply,
             enabled = true
         )
-        manager.addRule(rule)
+        val duplicate = manager.getRules().any { it.keywordPattern == keyword && it.replyText == reply && it.enabled }
+        if (!duplicate) manager.addRule(rule)
+        check(manager.getRules().any { it.keywordPattern == keyword && it.replyText == reply && it.enabled }) { "Reply rule could not be saved." }
         if (!manager.isEnabled()) manager.setEnabled(true)
         val access = SubAgentStateResolver.notificationAccessGranted(context)
         val liveRules = manager.getRules().count { it.enabled && it.replyText.isNotBlank() }
@@ -77,7 +82,7 @@ object SubAgentBuilder {
             append("trigger: ")
             append(if (keyword.isBlank()) "sob notun message" else "\"" + keyword + "\"")
             append(" · reply: \"").append(reply.take(100)).append("\".")
-            append(" WhatsApp agent switch ekhon ON, mot ").append(liveRules).append(" ta rule cholche.")
+            append(" WhatsApp switch ON; ").append(liveRules).append(" ta rule saved. Ekhono reply delivery verify hoyni.")
             append(
                 if (access) " Notification access ok."
                 else " Sudhu notification access ta dite hobe - Android settings theke on korun, tarpor nijei kaj korbe."
@@ -86,24 +91,24 @@ object SubAgentBuilder {
     }
 
     private fun createEmail(context: Context, keyword: String, reply: String): String {
-        val existing = GmailStore.keywords(context)
-        val merged = (existing + keyword).map { it.trim() }.filter { it.isNotBlank() }.distinct()
-        if (merged.isNotEmpty()) GmailStore.setKeywords(context, merged.joinToString(","))
+        GmailStore.setKeywords(context, keyword.replace('|', ','))
+        GmailStore.setTemplate(context, reply)
+        GmailStore.setAiReplyEnabled(context, false)
         val connected = GmailStore.isConnected(context)
-        if (connected) GmailStore.setAutoReplyEnabled(context, true) else open(context, EmailSubAgentActivity::class.java)
-        return buildString {
-            append("Email sub agent update holo, Sir - ")
-            append(if (keyword.isBlank()) "protita notun mail" else "\"" + keyword + "\" wala mail")
-            append(" e reply jabe tomar saved HTML design e (line: \"").append(reply.take(80)).append("\").")
-            append(
-                if (connected) " Auto reply ON."
-                else " Gmail connect kora nei - 16-character App Password diye connect korlei agent chalu hobe."
-            )
-        }
+        val ready = connected && GmailStore.connectionVerified(context)
+        GmailStore.setAutoReplyEnabled(context, ready)
+        if (ready) com.jarvis.assistant.email.GmailAutoReplyWorker.schedule(context)
+        else open(context, EmailSubAgentActivity::class.java)
+        return "Email auto-reply configuration saved — trigger: " +
+            (keyword.ifBlank { "all eligible new mail" }) + "; reply: \"$reply\". " +
+            if (ready) "Auto reply ON. Background inbox checks scheduled; no reply has been sent yet."
+            else if (connected) "Credentials saved; Test Gmail must verify the connection before enabling auto reply."
+            else "Auto reply OFF until Gmail is connected and tested."
     }
 
     private fun replyText(text: String): String {
-        val marker = replyMarker.findAll(text).lastOrNull() ?: return quoted.find(text)?.groupValues?.get(1)?.trim().orEmpty()
+        val marker = Regex("(?i)\\b(?:reply|uttor|answer|jawab)\\b\\s*[:\\-]?\\s*").find(text)
+            ?: replyMarker.find(text) ?: return ""
         return marker.let { text.substring(it.range.last + 1) }
             .trim()
             .trim('"', '\'', '.', ',', ':', '-', ' ')

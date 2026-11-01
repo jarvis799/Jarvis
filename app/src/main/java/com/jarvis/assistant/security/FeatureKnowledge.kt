@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.0.5"
+    const val APP_VERSION = "2.0.6"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -42,7 +42,7 @@ object FeatureKnowledge {
         "Sub Agents: WhatsApp auto reply agent and Gmail email auto reply agent, both Kotlin native - no Python needed",
         "Sub agent banano: ek sentence e bolo - 'sub agent banao, jokhon keu price bole reply: ...' - Jarvis real agent toiri kore rule store e rakhe; kono 'tool nai' na",
         "Local AI models: download a GGUF model from Hugging Face with pause/resume, set it active, and an Offline reply switch sits right under the downloader",
-        "Offline reply: when the network or the API fails, Jarvis answers with the installed local model instead of going dark",
+        "Offline status: native device commands work locally; this build does not yet bundle the model inference engine, so downloading a GGUF file alone does not enable offline conversation",
         "Creator console: unlocked by the creator key configured at build time or set on this device - no key ships inside the app",
         "Scanner: camera QR/barcode scan plus gallery import, torch and WiFi/Link handling",
         "Home header greets you with your display name, live weather and connection status",

@@ -123,7 +123,7 @@ class PermissionActivity : AppCompatActivity() {
         updateCardState(hasOverlay, binding.tvStatusOverlay, binding.btnGrantOverlay)
         updateCardState(hasA11y, binding.tvStatusAccessibility, binding.btnGrantAccessibility)
         updateExtraPermission("contacts", PermissionHelper.hasContactsPermission(this))
-        updateExtraPermission("phone", hasPermission(Manifest.permission.CALL_PHONE))
+        updateExtraPermission("phone", listOf(Manifest.permission.CALL_PHONE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.READ_PHONE_STATE).all { hasPermission(it) })
         updateExtraPermission("camera", hasPermission(Manifest.permission.CAMERA))
         updateExtraPermission("bluetooth", Build.VERSION.SDK_INT < Build.VERSION_CODES.S || hasPermission(Manifest.permission.BLUETOOTH_CONNECT))
         updateExtraPermission("battery", PermissionHelper.hasBatteryOptimizationPermission(this))
@@ -170,7 +170,7 @@ class PermissionActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !PermissionHelper.hasNotificationPermission(this)) {
             missing.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        listOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE, Manifest.permission.CAMERA).forEach {
+        listOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.READ_PHONE_STATE, Manifest.permission.CAMERA).forEach {
             if (!hasPermission(it)) missing.add(it)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
@@ -244,8 +244,10 @@ class PermissionActivity : AppCompatActivity() {
         card("contacts", "Contacts", "Lets WhatsApp and calling features resolve saved contact names.", com.jarvis.assistant.R.drawable.ic_nav_chat) {
             if (!PermissionHelper.hasContactsPermission(this)) contactsLauncher.launch(Manifest.permission.READ_CONTACTS) else PermissionHelper.openAppSettings(this)
         }
-        card("phone", "Phone calls", "Needed only when you ask JARVIS to place a normal phone call.", com.jarvis.assistant.R.drawable.ic_settings_voice) {
-            if (!hasPermission(Manifest.permission.CALL_PHONE)) callLauncher.launch(Manifest.permission.CALL_PHONE) else PermissionHelper.openAppSettings(this)
+        card("phone", "Phone calls", "Place, answer and reject SIM calls. WhatsApp calls use a different control.", com.jarvis.assistant.R.drawable.ic_settings_voice) {
+            val missing = listOf(Manifest.permission.CALL_PHONE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.READ_PHONE_STATE).filterNot { hasPermission(it) }
+            if (missing.isEmpty()) PermissionHelper.openAppSettings(this)
+            else allPermissionsLauncher.launch(missing.toTypedArray())
         }
         card("camera", "Camera and flashlight", "Camera access is used only for the flashlight control.", com.jarvis.assistant.R.drawable.ic_settings_orb) {
             if (!hasPermission(Manifest.permission.CAMERA)) cameraLauncher.launch(Manifest.permission.CAMERA) else PermissionHelper.openAppSettings(this)

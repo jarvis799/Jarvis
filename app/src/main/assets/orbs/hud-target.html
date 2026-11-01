@@ -347,6 +347,12 @@
     refresh: resize
   };
   window.JarvisOrb = window.JarvisHud;
+  window.setOrbState = function (name, level) { setState(name); setAudio(level, level, level); };
+  window.setAudioLevel = function (level) { setAudio(level, level, level); };
+  window.setAudioFrequency = function (amp, pitch, bass, mid, high) { setAudio(amp, bass, high); };
+  canvas.addEventListener("click", function () {
+    if (window.JarvisBridge && window.JarvisBridge.onOrbClicked) window.JarvisBridge.onOrbClicked();
+  });
 
   window.addEventListener("message", function (event) {
     var data = event && event.data;
