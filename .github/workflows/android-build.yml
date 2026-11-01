@@ -25,6 +25,9 @@ jobs:
 
       - name: Set up Android SDK and command-line tools
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
 
       - name: Install pinned offline inference build tools
         run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
