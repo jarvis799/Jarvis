@@ -9,11 +9,11 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * Talks to GitHub Releases: reads the feature manifest from the latest
- * published release of the configured repository and decides which features
- * are new, updated or blocked behind an app update. Public repositories need
- * no token; a private repository uses the token the user stores in Runtime
- * Feature Updates (encrypted, on-device, never hardcoded).
+ * Talks to GitHub Releases: reads the feature manifest from a published
+ * release of the configured repository and decides which features are new,
+ * updated or blocked behind an app update. Public repositories need no token;
+ * a private repository uses the token the user stores in Runtime Feature
+ * Updates (encrypted, on-device, never hardcoded).
  */
 object RuntimeUpdateManager {
 
@@ -21,6 +21,8 @@ object RuntimeUpdateManager {
     private const val DEFAULT_REPO = "jarvis799/Jarvis"
     private const val PREFS = "runtime_feature_updates"
     private const val KEY_LAST_CHECKED = "last_checked"
+    private const val PER_PAGE = 50
+    private const val MAX_PAGES = 2
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -49,38 +51,61 @@ object RuntimeUpdateManager {
         )
         val savedToken = token(context)
         if (savedToken.isNotBlank()) requestHeaders["Authorization"] = "Bearer " + savedToken
-        // APK builds are also published to this repository, so releases/latest is
-        // usually an APK release without a manifest. Scan the recent published
-        // releases and use the newest one that actually carries the manifest.
-        val releases = fetchJsonArray("https://api.github.com/repos/" + repo + "/releases?per_page=50", requestHeaders)
-        var manifestUrl: String? = null
-        var releaseName = ""
-        for (i in 0 until releases.length()) {
-            val release = releases.optJSONObject(i) ?: continue
-            if (release.optBoolean("draft") || release.optBoolean("prerelease")) continue
-            val assets = release.optJSONArray("assets") ?: continue
-            for (j in 0 until assets.length()) {
-                val a = assets.optJSONObject(j) ?: continue
-                if (a.optString("name") == MANIFEST_ASSET) {
-                    manifestUrl = a.optString("browser_download_url")
-                    releaseName = release.optString("name", "")
+        // APK builds are published to this repository, so the newest release is
+        // usually an APK release whose manifest lists no packs. GitHub also does
+        // not always list releases in publication order, so every candidate is
+        // tried newest-publication first and a manifest is used only when it
+        // actually carries valid feature packs.
+        val candidates = manifestReleases(repo, requestHeaders)
+        for (candidate in candidates) {
+            val parsed = FeatureCodec.parseReleaseManifest(fetchText(candidate.url, requestHeaders))
+            val valid = parsed.filter { FeatureCodec.validate(it) == null }
+            if (valid.isEmpty()) continue
+            val result = FeatureCodec.computeUpdates(valid, FeatureRegistry.all(context), currentAppVersion())
+                .copy(releaseName = candidate.name)
+            markChecked(context)
+            return result
+        }
+        // Releases that ship only the APK are normal: no feature packs simply
+        // means there is nothing new, never a failed update check.
+        markChecked(context)
+        return UpdateCheckResult(emptyList(), emptyList(), "No feature packs published yet", System.currentTimeMillis())
+    }
+
+    private class ManifestRelease(val url: String, val name: String, val publishedAt: String)
+
+    /** Manifest asset URLs from published releases, most recently published first. */
+    private fun manifestReleases(
+        repo: String,
+        requestHeaders: Map<String, String>
+    ): List<ManifestRelease> {
+        val found = mutableListOf<ManifestRelease>()
+        for (page in 1..MAX_PAGES) {
+            val releases = fetchJsonArray(
+                "https://api.github.com/repos/" + repo + "/releases?per_page=" + PER_PAGE + "&page=" + page,
+                requestHeaders
+            )
+            if (releases.length() == 0) break
+            for (i in 0 until releases.length()) {
+                val release = releases.optJSONObject(i) ?: continue
+                if (release.optBoolean("draft") || release.optBoolean("prerelease")) continue
+                val assets = release.optJSONArray("assets") ?: continue
+                for (j in 0 until assets.length()) {
+                    val asset = assets.optJSONObject(j) ?: continue
+                    if (asset.optString("name") != MANIFEST_ASSET) continue
+                    val url = asset.optString("browser_download_url")
+                    if (url.isBlank()) continue
+                    found += ManifestRelease(
+                        url = url,
+                        name = release.optString("name", ""),
+                        publishedAt = release.optString("published_at", release.optString("created_at", ""))
+                    )
                     break
                 }
             }
-            if (manifestUrl != null) break
         }
-        if (manifestUrl.isNullOrBlank()) {
-            // Releases that ship only the APK are normal: no manifest simply means
-            // there are no feature packs yet, never a failed update check.
-            markChecked(context)
-            return UpdateCheckResult(emptyList(), emptyList(), "No feature packs published yet", System.currentTimeMillis())
-        }
-        val parsed = FeatureCodec.parseReleaseManifest(fetchText(manifestUrl, requestHeaders))
-        val valid = parsed.filter { FeatureCodec.validate(it) == null }
-        val result = FeatureCodec.computeUpdates(valid, FeatureRegistry.all(context), currentAppVersion())
-            .copy(releaseName = releaseName)
-        markChecked(context)
-        return result
+        // ISO-8601 UTC timestamps sort chronologically as text.
+        return found.sortedByDescending { it.publishedAt }
     }
 
     private fun markChecked(context: Context) {
