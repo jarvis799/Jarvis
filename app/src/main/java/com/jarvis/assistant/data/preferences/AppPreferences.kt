@@ -388,6 +388,16 @@ class AppPreferences(context: Context) {
         get() = prefs.getFloat(KEY_ORB_HUE, -1f)
         set(value) = prefs.edit().putFloat(KEY_ORB_HUE, value).apply()
 
+    /** Orb particle count driven by the density slider (see util/OrbDensity). */
+    var orbParticles: Int
+        get() = prefs.getInt("key_orb_particles", 80000).coerceIn(20000, 200000)
+        set(value) = prefs.edit().putInt("key_orb_particles", value.coerceIn(20000, 200000)).apply()
+
+    /** Offline replies: answer from the on-device model when the network or the API fails. */
+    var offlineReplies: Boolean
+        get() = prefs.getBoolean("key_offline_replies", false)
+        set(value) = prefs.edit().putBoolean("key_offline_replies", value).apply()
+
     var customEndpoint: String
         get() = prefs.getString(KEY_CUSTOM_ENDPOINT, "")?.trim().orEmpty()
         set(value) = prefs.edit().putString(KEY_CUSTOM_ENDPOINT, value.trim()).apply()
