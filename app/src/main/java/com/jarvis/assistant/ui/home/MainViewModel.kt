@@ -144,7 +144,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
             val apiKey = preferences.apiKey.trim()
-            if (apiKey.isBlank() && com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint) == null) {
+            if (apiKey.isBlank() && com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint) == null &&
+                !com.jarvis.assistant.model.LlmRouter.localReady(context)) {
                 viewModelScope.launch {
                     _eventFlow.emit("Configure your own Gemini key or HTTPS endpoint in Settings first. No default API is provided.")
                 }

@@ -45,10 +45,11 @@ object UnlockManager {
     )
 
     fun isEnabled(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, true)
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
 
     fun setEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_ENABLED, enabled).apply()
+        com.jarvis.assistant.background.JarvisConversationService.refreshVoiceUnlockGrammar()
     }
 
     private fun normalize(text: String): String {
@@ -61,6 +62,9 @@ object UnlockManager {
 
     /** True when the spoken text is a request to unlock the phone. */
     fun isUnlockCommand(text: String): Boolean {
+        val app = JarvisApp.instance
+        if (!isEnabled(app)) return false
+        if (com.jarvis.assistant.lock.VoiceUnlockStore(app).matches(text)) return true
         val spoken = normalize(text)
         if (spoken.isEmpty()) return false
         return UNLOCK_PATTERNS.any { phrase ->
@@ -101,13 +105,12 @@ object UnlockManager {
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentTitle("Voice unlock")
                 .setContentText("Jarvis heard your unlock command. Confirm with Android to open the phone.")
-                .setCategory(Notification.CATEGORY_CALL)
+                .setCategory(Notification.CATEGORY_STATUS)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setContentIntent(open)
-                .setFullScreenIntent(open, true)
                 .setAutoCancel(true)
                 .build())
-            "Android unlock opened on your lock screen. Authenticate with your PIN, password or fingerprint."
+            "Unlock requested. Tap the Jarvis notification, then authenticate with Android's PIN, pattern, password or biometrics."
         } catch (e: SecurityException) {
             "Android blocked the unlock screen. Allow Jarvis notifications, then ask again."
         }

@@ -104,8 +104,7 @@ class SettingsFragment : Fragment() {
         profileAvatarPicker.launch(request)
     }
 
-    private val voiceRowTag = "jarvisVoiceExperienceRow"
-    private var voiceExperienceSubtitle: android.widget.TextView? = null
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -121,7 +120,7 @@ class SettingsFragment : Fragment() {
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
 
         loadUserData()
-        installVoiceExperienceRow()
+        com.jarvis.assistant.lock.LockSettingsRow.install(binding)
         setupClickListeners()
     }
 
@@ -130,7 +129,7 @@ class SettingsFragment : Fragment() {
         if (_binding != null) {
             com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
             loadUserData()
-            refreshVoiceExperienceRow()
+            Unit
         }
     }
 
@@ -139,7 +138,7 @@ class SettingsFragment : Fragment() {
         if (!hidden && _binding != null) {
             binding.root.visibility = View.VISIBLE
             com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
-            refreshVoiceExperienceRow()
+            Unit
             loadUserData()
         } else if (hidden && _binding != null) {
             binding.root.visibility = View.GONE
@@ -655,7 +654,7 @@ class SettingsFragment : Fragment() {
             .setPositiveButton("Save") { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotBlank()) {
-                refreshVoiceExperienceRow()
+                Unit
                     preferences.userName = newName
                     loadUserData()
                 }
@@ -673,78 +672,6 @@ class SettingsFragment : Fragment() {
         }
     }
 
-
-    private fun installVoiceExperienceRow() {
-        val anchor = binding.rowVoiceUnlock
-        val parent = anchor.parent as? ViewGroup ?: return
-        if (parent.findViewWithTag<android.view.View>(voiceRowTag) != null) return
-        val activity = requireContext()
-        val density = resources.displayMetrics.density
-        val pad = { value: Int -> (value * density).toInt() }
-        val accent = themedColor(com.jarvis.assistant.R.attr.themeAccent, 0xFF22E3FF.toInt())
-        val primary = themedColor(com.jarvis.assistant.R.attr.themeTextPrimary, Color.WHITE)
-        val secondary = themedColor(com.jarvis.assistant.R.attr.themeTextSecondary, Color.LTGRAY)
-        val muted = themedColor(com.jarvis.assistant.R.attr.themeTextMuted, Color.GRAY)
-
-        val row = android.widget.LinearLayout(activity).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            setPadding(pad(12), pad(14), pad(12), pad(14))
-            setBackgroundResource(com.jarvis.assistant.R.drawable.bg_jarvis_row_item)
-            isClickable = true
-            isFocusable = true
-            tag = voiceRowTag
-        }
-        val iconWrap = android.widget.FrameLayout(activity).apply {
-            layoutParams = android.widget.LinearLayout.LayoutParams(pad(40), pad(40))
-            setBackgroundResource(com.jarvis.assistant.R.drawable.bg_jarvis_icon_square)
-        }
-        iconWrap.addView(android.widget.ImageView(activity).apply {
-            setImageResource(com.jarvis.assistant.R.drawable.ic_settings_wave)
-            imageTintList = android.content.res.ColorStateList.valueOf(accent)
-            layoutParams = android.widget.FrameLayout.LayoutParams(pad(22), pad(22), android.view.Gravity.CENTER)
-        })
-        val column = android.widget.LinearLayout(activity).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setPadding(pad(12), 0, pad(8), 0)
-        }
-        column.addView(android.widget.TextView(activity).apply {
-            text = "Voice Experience"
-            setTextColor(primary)
-            textSize = 15f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        })
-        val subtitle = android.widget.TextView(activity).apply {
-            textSize = 11f
-            setTextColor(secondary)
-        }
-        column.addView(subtitle)
-        row.addView(iconWrap)
-        row.addView(column)
-        row.addView(android.widget.ImageView(activity).apply {
-            setImageResource(com.jarvis.assistant.R.drawable.ic_arrow_right)
-            imageTintList = android.content.res.ColorStateList.valueOf(muted)
-            layoutParams = android.widget.LinearLayout.LayoutParams(pad(18), pad(18))
-        })
-        row.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        row.setOnClickListener {
-            startActivity(Intent(requireContext(), com.jarvis.assistant.ui.voice.VoiceExperienceActivity::class.java))
-        }
-        voiceExperienceSubtitle = subtitle
-        parent.addView(row, parent.indexOfChild(anchor) + 1)
-        refreshVoiceExperienceRow()
-    }
-
-    private fun refreshVoiceExperienceRow() {
-        val subtitle = voiceExperienceSubtitle ?: return
-        subtitle.text = "Overlay " + flag(preferences.isVoiceOverlayEnabled) +
-            " \u2022 Edge " + flag(preferences.isEdgeLightingEnabled) +
-            " \u2022 Keyboard " + flag(preferences.isVoiceOverlayKeyboardEnabled) +
-            " \u2022 Auto-listen " + flag(preferences.isVoiceOverlayAutoListen)
-    }
-
-    private fun flag(enabled: Boolean): String = if (enabled) "ON" else "OFF"
 
     private fun themedColor(attr: Int, fallback: Int): Int {
         val value = android.util.TypedValue()

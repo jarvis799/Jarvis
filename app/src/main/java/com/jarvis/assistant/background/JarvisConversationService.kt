@@ -90,7 +90,7 @@ class JarvisConversationService : Service() {
         const val ACTION_START_CONVERSATION = "com.jarvis.assistant.START_CONVERSATION"
         const val ACTION_STOP_ALL = "com.jarvis.assistant.STOP_ALL"
         const val ACTION_ENTER_STANDBY = "com.jarvis.assistant.ENTER_STANDBY"
-
+        fun pauseForLocalCapture(ready: () -> Unit) = com.jarvis.assistant.lock.SharedMicrophone.pause(_isSessionOn.value, _isStandby.value, { activeInstance?.stopActiveConversation(); activeInstance?.exitStandbyListening() }, { mode -> if (mode == "active") activeInstance?.beginActiveConversation() else if (mode == "standby") activeInstance?.enterStandby(announce = false) }, ready)
         private const val CHANNEL_ID = "jarvis_conversation"
         private const val NOTIFICATION_ID = 41
         private const val INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000L // 30 minutes before standby
@@ -98,7 +98,7 @@ class JarvisConversationService : Service() {
         private const val IDLE_CHECKIN_MS = 15 * 60 * 1000L // DEV STYLE: no command for this long — Jarvis asks how it went
 
         @Volatile private var activeInstance: JarvisConversationService? = null
-
+        fun resumeAfterLocalCapture() = com.jarvis.assistant.lock.SharedMicrophone.resume()
         private val _isSessionOn = MutableStateFlow(false)
         val isSessionOn: StateFlow<Boolean> = _isSessionOn.asStateFlow()
 
@@ -108,7 +108,7 @@ class JarvisConversationService : Service() {
 
         private val _isStandby = MutableStateFlow(false)
         val isStandby: StateFlow<Boolean> = _isStandby.asStateFlow()
-
+        fun refreshVoiceUnlockGrammar() { activeInstance?.let { s -> s.serviceScope.launch(Dispatchers.Main.immediate) { if (_isStandby.value) { s.exitStandbyListening(); _isStandby.value = true; s.startWakeListening() } } } }
         private val _liveError = MutableStateFlow<JarvisLiveError?>(null)
         val liveError: StateFlow<JarvisLiveError?> = _liveError.asStateFlow()
 
@@ -586,7 +586,7 @@ class JarvisConversationService : Service() {
     }
 
     override fun onCreate() {
-        super.onCreate()
+        super.onCreate(); com.jarvis.assistant.lock.GlassLockNotifications.attach(this)
         activeInstance = this
         createChannel()
         // DEV STYLE: free-tier usage meter — counts active session time (no license key = 30 min/day)
@@ -785,7 +785,7 @@ class JarvisConversationService : Service() {
     private fun beginActiveConversation(wakeTriggered: Boolean = false) {
         // DEV STYLE: "Hey Jarvis" wake triggers the pastel rainbow edge-lighting glow.
         if (wakeTriggered) {
-            com.jarvis.assistant.ui.voice.WakeOverlays.show(this, preferences.isVoiceOverlayEnabled)
+            // Wake continues through the existing session/navigation, without overlays or edge lighting.
         }
         if (_isSessionOn.value) return
         // DEV STYLE: free tier — without a license key the AI session is limited to 30 minutes per day
@@ -848,7 +848,7 @@ class JarvisConversationService : Service() {
         headsetAudioRouter?.start()
 
         val httpEndpoint = com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint)
-        if (httpEndpoint != null || apiKey.isBlank()) {
+        if (httpEndpoint != null || apiKey.isBlank() || (!com.jarvis.assistant.model.LlmRouter.isOnline(this) && com.jarvis.assistant.model.LlmRouter.localReady(this))) {
             startHttpConversation(httpEndpoint ?: ""); return
         }
 
@@ -2463,7 +2463,7 @@ class JarvisConversationService : Service() {
                             "projectplanner" to com.jarvis.assistant.planner.ProjectPlannerActivity::class.java,
                             "promptlab" to com.jarvis.assistant.promptlab.PromptLabActivity::class.java,
                             "personality" to com.jarvis.assistant.personality.PersonalitySettingsActivity::class.java,
-                            "voice" to com.jarvis.assistant.ui.voice.VoiceExperienceActivity::class.java,
+                            "voice" to com.jarvis.assistant.ui.settings.VoiceUnlockActivity::class.java,
                             "orbvisual" to com.jarvis.assistant.ui.settings.OrbVisualActivity::class.java,
                             "privacyshield" to com.jarvis.assistant.ui.settings.PrivacyShieldActivity::class.java,
                             "handsfree" to com.jarvis.assistant.ui.settings.HandsFreeActivity::class.java,
@@ -3406,7 +3406,7 @@ class JarvisConversationService : Service() {
     private fun exitStandbyListening() {
         _isStandby.value = false
         try {
-            voskSpeechService?.stop()
+            voskSpeechService?.shutdown()
         } catch (e: Exception) {
             Log.e("JarvisService", "Error stopping Vosk SpeechService: ${e.message}")
         }
@@ -3434,7 +3434,7 @@ class JarvisConversationService : Service() {
         try {
             standbyActivatedTime = System.currentTimeMillis()
             // Phrase grammar: built from the valid wake phrases (default + premium custom word) and [unk]
-            val grammar = "[\"" + validWakePhrases().joinToString("\",\"") + "\", \"[unk]\"]"
+            val grammar = com.jarvis.assistant.lock.VoiceUnlockBackground.grammar(this, validWakePhrases())
             val rec = Recognizer(model, 16000.0f, grammar)
             rec.setWords(true)
             val spkModel = VoskModelManager.speakerModel
@@ -3565,7 +3565,7 @@ class JarvisConversationService : Service() {
         try {
             val json = JSONObject(hypothesisJson)
             val text = json.optString("text", "").trim().lowercase(Locale.ROOT)
-            if (text.isEmpty() || text == "[unk]") return
+            if (text.isEmpty() || text == "[unk]" || com.jarvis.assistant.lock.VoiceUnlockBackground.handle(this, text)) return
 
             // Word-level array must be present: never wake blindly without confidence verification.
             val resultArr = json.optJSONArray("result")
@@ -3773,7 +3773,7 @@ class JarvisConversationService : Service() {
     }
 
     override fun onDestroy() {
-        stopActiveConversation()
+        stopActiveConversation(); com.jarvis.assistant.lock.GlassLockNotifications.detach(this)
         exitStandbyListening()
         try {
             tts?.stop()

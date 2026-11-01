@@ -8,7 +8,7 @@ import android.os.StatFs
 /** Checks RAM, free storage and CPU flavour before a model is downloaded. */
 object ModelCompatibility {
 
-    fun check(context: Context, sizeBytes: Long, checkStorage: Boolean = true): ModelCompat {
+    fun check(context: Context, sizeBytes: Long, checkStorage: Boolean = true, checkRam: Boolean = true): ModelCompat {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val info = ActivityManager.MemoryInfo()
         manager?.getMemoryInfo(info)
@@ -29,7 +29,7 @@ object ModelCompatibility {
                 ModelCompat(false, "CPU $abi is not supported for on-device models.", availableRamMb, freeMb)
             checkStorage && sizeMb > 0 && freeMb < sizeMb + 300 ->
                 ModelCompat(false, "Needs ${sizeMb + 300} MB free storage, only $freeMb MB free.", availableRamMb, freeMb)
-            availableRamMb < neededRamMb ->
+            checkRam && availableRamMb < neededRamMb ->
                 ModelCompat(false, "Needs about $neededRamMb MB free RAM, $availableRamMb MB free right now.", availableRamMb, freeMb)
             else ->
                 ModelCompat(true, "Compatible — about $neededRamMb MB RAM and ${sizeMb + 300} MB storage.", availableRamMb, freeMb)

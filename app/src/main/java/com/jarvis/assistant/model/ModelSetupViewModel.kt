@@ -29,7 +29,7 @@ class ModelSetupViewModel(app: Application) : AndroidViewModel(app) {
         val archive = ModelArchive(getApplication())
         val resolved = ModelCatalogue.resolve(remote)
         // Transfer checks only the remaining storage, so resuming never requires a second full copy.
-        val compatibility = ModelCompatibility.check(getApplication(), resolved.sizeBytes, checkStorage = false)
+        val compatibility = ModelCompatibility.check(getApplication(), resolved.sizeBytes, checkStorage = false, checkRam = false)
         check(compatibility.supported) { compatibility.reason }
         check(LocalModelRuntime.isAvailable()) { LocalModelRuntime.statusMessage }
         val download = VerifiedModelTransfer(getApplication()).also { transfer = it }

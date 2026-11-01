@@ -153,7 +153,7 @@
         <activity
             android:name=".ui.settings.VoiceUnlockActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:theme="@style/Theme.JarvisVoiceUnlock"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.home.UpdatesActivity" android:exported="false" />
         <activity android:name=".macro.MacroListActivity" android:exported="false" />
@@ -213,7 +213,8 @@
             android:stopWithTask="false"
             android:foregroundServiceType="microphone|mediaPlayback|mediaProjection" />
 
-            <service android:name=".ui.lighting.EdgeLightingService" android:exported="false" />
+        <activity android:name=".lock.GlassLockActivity" android:theme="@style/Theme.JarvisVoiceUnlock" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
+        <activity android:name=".lock.GlassLockSettingsActivity" android:theme="@style/Theme.JarvisVoiceUnlock" android:exported="false" />
 <service
             android:name=".security.ThiefGuardService"
             android:exported="false"
@@ -290,10 +291,7 @@
             android:label="AI Background Remover"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity
-            android:name=".ui.voice.VoiceExperienceActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".ui.devstudio.DevStudioActivity"
             android:exported="false" />

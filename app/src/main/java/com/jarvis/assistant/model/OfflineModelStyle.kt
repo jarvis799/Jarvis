@@ -9,10 +9,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 object OfflineModelStyle {
-    val background = Color.rgb(10, 18, 15)
-    val surface = Color.rgb(22, 34, 28)
-    val lime = Color.rgb(204, 255, 143)
-    val mint = Color.rgb(174, 221, 197)
+    val background = Color.BLACK
+    val surface = Color.rgb(24, 24, 24)
+    val lime = Color.WHITE
+    val mint = Color.LTGRAY
     fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density).toInt()
     fun column(context: Context) = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     fun text(context: Context, value: String, size: Float = 14f, primary: Boolean = false) = TextView(context).apply {
@@ -24,7 +24,7 @@ object OfflineModelStyle {
         view.setPadding(dp(context, 18), dp(context, 16), dp(context, 18), dp(context, 16))
         view.background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(surface, background)).apply {
-            cornerRadius = dp(context, 24).toFloat(); setStroke(dp(context, 1), Color.argb(65, 204, 255, 200))
+            cornerRadius = dp(context, 24).toFloat(); setStroke(dp(context, 1), Color.argb(65, 255, 255, 255))
         }
         view.layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(context, 14) }
     }

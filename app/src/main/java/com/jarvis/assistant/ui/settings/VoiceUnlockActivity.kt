@@ -1,59 +1,34 @@
 package com.jarvis.assistant.ui.settings
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.jarvis.assistant.databinding.ActivityVoiceUnlockBinding
-import com.jarvis.assistant.security.UnlockManager
-import com.jarvis.assistant.util.ThemeManager
+import com.jarvis.assistant.lock.MonoUi
+import com.jarvis.assistant.lock.VoiceUnlockPanel
 
-/** Voice unlock settings: phrases, lock-screen readiness and Android's security limits. */
 class VoiceUnlockActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityVoiceUnlockBinding
-
+    private lateinit var panel: VoiceUnlockPanel
+    private var pending: (() -> Unit)? = null
+    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val action = pending; pending = null
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+            (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)) action?.invoke()
+        else android.widget.Toast.makeText(this, "Allow microphone and notifications in Android app permissions to enable background Voice Unlock.", android.widget.Toast.LENGTH_LONG).show()
+        panel.refresh()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
-        binding = ActivityVoiceUnlockBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        binding.tvPhrases.text = UnlockManager.SPOKEN_PHRASES.joinToString("\n") { "\u2022  " + it }
-        binding.switchVoiceUnlock.isChecked = UnlockManager.isEnabled(this)
-        binding.switchVoiceUnlock.setOnCheckedChangeListener { _, checked ->
-            UnlockManager.setEnabled(this, checked)
-            Toast.makeText(this, if (checked) "Voice unlock on" else "Voice unlock off", Toast.LENGTH_SHORT).show()
-        }
-        binding.btnReady.setOnClickListener { openLockScreenAccess() }
+        panel = VoiceUnlockPanel(this, MonoUi.page(this, "Voice Unlock"), ::withMicrophone)
     }
-
-    override fun onResume() {
-        super.onResume()
-        binding.tvStatus.text = statusLines().joinToString("\n")
+    private fun withMicrophone(action: () -> Unit) {
+        val needed = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
+        val missing = needed.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isEmpty()) action() else { pending = action; permissions.launch(missing.toTypedArray()) }
     }
-
-    private fun statusLines(): List<String> {
-        val micReady = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-            PackageManager.PERMISSION_GRANTED
-        return listOf(
-            (if (micReady) "OK" else "NEEDED") + "  Microphone, so Jarvis can hear the unlock command"
-        )
-    }
-
-    private fun openLockScreenAccess() {
-        try {
-            startActivity(Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT"))
-        } catch (e: Exception) {
-            Toast.makeText(this, "Open Settings, Apps, Jarvis and allow full-screen notifications.", Toast.LENGTH_LONG).show()
-        }
-    }
-
+    override fun onPause() { panel.close(); super.onPause() }
 }

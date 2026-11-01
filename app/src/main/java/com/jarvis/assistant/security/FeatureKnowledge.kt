@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.1.1"
+    const val APP_VERSION = "2.1.2"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -30,7 +30,7 @@ object FeatureKnowledge {
         "Photo memory, weather card, live web search, screen share visual tasks",
         "QR/barcode scanner with OCR, multi-command sentences",
         "On-Guard thief watch and official device lock (Device Administrator)",
-        "Pastel rainbow edge lighting on the wake word",
+        "Custom Voice Unlock phrases and private reference samples in Settings; Android PIN, pattern, password or biometrics remain required. Separate monochrome Liquid Glass lock-screen companion with Gallery wallpaper, camera and flashlight",
         "Every feature is free and unlimited for every user - no licence key, no daily limit",
         "Plugin Lab: install extra skills as JSON plugins",
         "In-app media viewer: YouTube and Instagram play right inside Jarvis",
