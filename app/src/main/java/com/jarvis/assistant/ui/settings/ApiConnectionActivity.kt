@@ -54,6 +54,7 @@ class ApiConnectionActivity : AppCompatActivity() {
 
     private fun refreshOrbStyleStatus() {
         val label = when (preferences.orbStyle) {
+            "hud-target" -> "HUD Target"
             "voice-orb" -> "Voice Orb"
             "face-flow" -> "Face Flow 3D"
             else -> "Speaking Orb"
@@ -80,7 +81,7 @@ class ApiConnectionActivity : AppCompatActivity() {
 
         when (preferences.aiModel) {
             GeminiConstants.MODEL_3_8_LIVE -> binding.rbModelFlash20.isChecked = true
-            GeminiConstants.MODEL_3_1_FLASH_AGENT -> binding.rbModelFlash15.isChecked = true
+            GeminiConstants.MODEL_3_8_LIVE_THINKING -> binding.rbModelFlash15.isChecked = true
             else -> binding.rbModelFlashThinking.isChecked = true
         }
 
@@ -263,7 +264,7 @@ class ApiConnectionActivity : AppCompatActivity() {
 
         val selectedModel = when (binding.rgModelGroup.checkedRadioButtonId) {
             binding.rbModelFlash20.id -> GeminiConstants.MODEL_3_8_LIVE
-            binding.rbModelFlash15.id -> GeminiConstants.MODEL_3_1_FLASH_AGENT
+            binding.rbModelFlash15.id -> GeminiConstants.MODEL_3_8_LIVE_THINKING
             else -> GeminiConstants.MODEL_3_1_FLASH
         }
 

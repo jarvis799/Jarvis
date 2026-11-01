@@ -11,27 +11,28 @@
         android:orientation="horizontal" android:gravity="center_vertical" android:padding="16dp">
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="40dp" android:layout_height="40dp"
-            android:background="@drawable/bg_back_circle" android:padding="11dp"
-            android:scaleType="centerCrop" android:src="@drawable/ic_back_arrow" android:contentDescription="Back" />
+            android:layout_width="44dp" android:layout_height="44dp"
+            android:background="@drawable/bg_back_circle" android:padding="12dp"
+            android:scaleType="centerInside" android:src="@drawable/ic_back_arrow" android:contentDescription="Back" />
         <LinearLayout
             android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
             android:orientation="vertical" android:gravity="center">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="JARVIS SCANNER" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" />
+                android:text="JARVIS SCANNER" android:textColor="#FFFFFF" android:textSize="18sp"
+                android:textStyle="bold" android:letterSpacing="0.04" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Scan any QR code or barcode instantly" android:textColor="#9FB8A0" android:textSize="11sp" />
         </LinearLayout>
-        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="6dp"
+        <ImageView android:layout_width="44dp" android:layout_height="44dp" android:padding="8dp"
             android:src="@drawable/ic_scanner_radar" android:contentDescription="Scanner" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
-        android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginBottom="16dp">
+        android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginBottom="14dp">
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent" android:layout_height="match_parent"
-            app:cardBackgroundColor="#0A1305" app:cardCornerRadius="24dp" app:cardElevation="0dp"
+            app:cardBackgroundColor="#0A1305" app:cardCornerRadius="26dp" app:cardElevation="0dp"
             app:strokeColor="#A8FF35" app:strokeWidth="2dp">
             <androidx.camera.view.PreviewView
                 android:id="@+id/previewView" android:layout_width="match_parent"
@@ -48,7 +49,7 @@
                 android:text="READY TO SCAN" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
 
-        <FrameLayout android:id="@+id/scanFrame" android:layout_width="230dp" android:layout_height="230dp"
+        <FrameLayout android:id="@+id/scanFrame" android:layout_width="238dp" android:layout_height="238dp"
             android:layout_gravity="center">
             <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_scan_frame" />
             <View android:id="@+id/scanLine" android:layout_width="match_parent" android:layout_height="5dp"
@@ -61,62 +62,80 @@
             android:textColor="#FFFFFF" android:textSize="12sp" android:maxLines="3" android:ellipsize="end" android:visibility="gone" />
     </FrameLayout>
 
+    <!-- Torch and gallery: equal, full-size touch targets (56dp tall). -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
-        android:layout_marginBottom="14dp" android:background="@drawable/bg_glass_panel" android:padding="14dp">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:gravity="center_vertical">
-            <ImageView android:layout_width="44dp" android:layout_height="44dp" android:background="@drawable/bg_qr_box"
-                android:padding="10dp" android:src="@drawable/ic_qr_box" android:contentDescription="QR" />
+        android:orientation="horizontal" android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp">
+        <LinearLayout android:id="@+id/btnFlash" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_pill_translucent" android:paddingStart="16dp" android:paddingEnd="12dp"
+            android:layout_marginEnd="10dp" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                android:src="@drawable/ic_flashlight" android:contentDescription="Flashlight" />
             <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:layout_marginStart="12dp" android:text="Point camera at a code to begin"
-                android:textColor="#FFFFFF" android:textSize="14sp" />
+                android:layout_marginStart="10dp" android:text="Flashlight" android:textColor="#FFFFFF"
+                android:textSize="14sp" android:textStyle="bold" />
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/flashToggle"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false"
+                app:thumbTint="#A8FF35" app:trackTint="#4DA8FF35" />
         </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="14dp">
-            <LinearLayout android:id="@+id/btnFlash" android:layout_width="0dp" android:layout_weight="1"
-                android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
-                android:background="@drawable/bg_pill_translucent" android:padding="10dp" android:layout_marginEnd="8dp">
-                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_flashlight" android:contentDescription="Flashlight" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                    android:layout_marginStart="8dp" android:text="Flashlight" android:textColor="#FFFFFF" android:textSize="13sp" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/flashToggle"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false"
-                    app:thumbTint="#A8FF35" app:trackTint="#4DA8FF35" />
-            </LinearLayout>
-            <LinearLayout android:id="@+id/btnGallery" android:layout_width="0dp" android:layout_weight="1"
-                android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
-                android:background="@drawable/bg_pill_translucent" android:padding="10dp">
-                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_gallery" android:contentDescription="Gallery" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                    android:layout_marginStart="8dp" android:text="Import" android:textColor="#FFFFFF" android:textSize="13sp" />
-            </LinearLayout>
+        <LinearLayout android:id="@+id/btnGallery" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_pill_translucent" android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                android:src="@drawable/ic_gallery" android:contentDescription="Gallery" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:layout_marginStart="10dp" android:text="Import" android:textColor="#FFFFFF"
+                android:textSize="14sp" android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Same dock geometry, order and colours as the main screen, so the bar never changes shape. -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center"
-        android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="6dp" android:paddingBottom="10dp">
-        <LinearLayout android:id="@+id/navHome" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:orientation="vertical" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_nav_home2" android:contentDescription="Home" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Home" android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_jarvis_dock" android:paddingStart="6dp" android:paddingEnd="6dp"
+        android:paddingTop="6dp" android:paddingBottom="6dp">
+
+        <LinearLayout android:id="@+id/navHome" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+            android:paddingTop="8dp" android:paddingBottom="8dp" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp"
+                android:src="@drawable/ic_nav_home2" android:contentDescription="Home" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Home"
+                android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
         </LinearLayout>
-        <LinearLayout android:id="@+id/navChat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:orientation="vertical" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_nav_chat2" android:contentDescription="Chat" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chat" android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
+
+        <LinearLayout android:id="@+id/navChat" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+            android:paddingTop="8dp" android:paddingBottom="8dp" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp"
+                android:src="@drawable/ic_nav_chat2" android:contentDescription="Chat" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chat"
+                android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
         </LinearLayout>
-        <LinearLayout android:id="@+id/navScan" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_nav_active_green"
-            android:paddingTop="8dp" android:paddingBottom="8dp" android:layout_marginStart="6dp" android:layout_marginEnd="6dp">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_nav_scan2" android:contentDescription="Scan" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Scan" android:textColor="#0A1305" android:textSize="11sp" android:textStyle="bold" android:layout_marginTop="2dp" />
+
+        <LinearLayout android:id="@+id/navScan" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/bg_dock_item_active"
+            android:paddingTop="8dp" android:paddingBottom="8dp"
+            android:layout_marginStart="4dp" android:layout_marginEnd="4dp"
+            android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp"
+                android:src="@drawable/ic_nav_scan2" android:contentDescription="Scan" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Scan"
+                android:textColor="#0A1305" android:textSize="11sp" android:textStyle="bold"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
-        <LinearLayout android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:orientation="vertical" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_nav_settings2" android:contentDescription="Settings" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Settings" android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
+
+        <LinearLayout android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+            android:paddingTop="8dp" android:paddingBottom="8dp" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp"
+                android:src="@drawable/ic_nav_settings2" android:contentDescription="Settings" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Settings"
+                android:textColor="#7E9A55" android:textSize="11sp" android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

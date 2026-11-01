@@ -2,25 +2,21 @@ package com.jarvis.assistant.security
 
 import com.jarvis.assistant.JarvisApp
 
-/** A local creator-greeting shortcut, not authentication or a privilege grant. */
+/**
+ * Local creator-greeting shortcut, not authentication or a privilege grant.
+ *
+ * The phrase is compared against the build-injected creator key
+ * (BuildConfig.CREATOR_KEY) or the key the owner set on this device.
+ * There is deliberately no master key in this file.
+ */
 object CreatorVerifier {
+
     private val prefs get() = JarvisApp.instance.preferences
 
-    fun isConfigured(): Boolean = creatorSecretPhrase.isNotBlank()
+    fun isConfigured(): Boolean = CreatorAuthenticationService.isConfigured()
 
-    fun isCreatorPhrase(text: String): Boolean {
-        val saved = creatorSecretPhrase.trim()
-        fun normalize(value: String) = value.lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
-        val incoming = normalize(text)
-        if (incoming.isEmpty()) return false
-        val savedNormalized = normalize(saved)
-        if (savedNormalized.isNotEmpty() && incoming == savedNormalized) return true
-        // DEV STYLE: the built-in creator master key always works, even before
-        // any custom phrase is saved - so the creator is recognized on a fresh install too.
-        return incoming == normalize(MASTER_KEY)
-    }
-
-    private const val MASTER_KEY = "AHONA-I-LOVE-YOU"
+    fun isCreatorPhrase(text: String): Boolean =
+        CreatorAuthenticationService.matchesConfiguredKey(text)
 
     var creatorSecretPhrase: String
         get() = prefs.creatorSecretPhrase

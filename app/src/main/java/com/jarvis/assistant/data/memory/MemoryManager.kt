@@ -19,7 +19,7 @@ class MemoryManager(
 ) {
     companion object {
         private const val TAG = "MemoryManager"
-        const val MAX_SHORT_TERM_TURNS = 1500
+        const val MAX_SHORT_TERM_TURNS = 200
     }
 
     // --- Short-Term Memory (Preloaded with persistent history) ---
@@ -69,20 +69,7 @@ class MemoryManager(
     }
 
     fun getShortTermContextSummary(): String {
-        val builder = StringBuilder(shortTermSummary.toString().trim())
-        val recent = _shortTermHistory.value.takeLast(300)
-        if (recent.isNotEmpty()) {
-            if (builder.isNotEmpty()) builder.append("\n")
-            recent.forEach { turn ->
-                val asked = turn.userTranscript.trim()
-                val answered = turn.jarvisResponse.trim()
-                if (asked.isNotEmpty() && answered.isNotEmpty()) {
-                    builder.append("User: ").append(asked).append("\n")
-                    builder.append("JARVIS: ").append(answered).append("\n")
-                }
-            }
-        }
-        return builder.toString().trim()
+        return shortTermSummary.toString().trim()
     }
 
     // --- Long-Term Memory (Persistent in SQLite Room Database) ---
@@ -462,7 +449,7 @@ class MemoryManager(
         }
 
         // Persistent Dialogue History across App Restarts
-        val recentTurns = chatRepository.turns.value.takeLast(400)
+        val recentTurns = chatRepository.turns.value.takeLast(50)
         if (recentTurns.isNotEmpty()) {
             sb.append("\n[PERSISTENT DIALOGUE HISTORY ACROSS APP RESTARTS]:\n")
             sb.append("You remember what was discussed in previous conversations with the user:\n")

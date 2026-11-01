@@ -193,7 +193,7 @@ object CyberLabEngine {
     data class AssessmentResult(val ok: Boolean, val message: String, val findings: List<FindingsStore.RawFinding>)
 
     fun isCreatorKey(input: String): Boolean =
-        input.trim().uppercase(Locale.ROOT).contains("AHONA-I-LOVE-YOU")
+        com.jarvis.assistant.security.CreatorAuthenticationService.matchesConfiguredKey(input)
 
     /**
      * Exactly one passive GET against the authorized host. No redirects are

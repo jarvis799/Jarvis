@@ -13,14 +13,14 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "6.0"
+    const val APP_VERSION = "2.0.2"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
 
     private val capabilities = listOf(
         "Voice + text chat, 2D animated avatar, Hindi-first replies",
-        "10000+ multilingual instant commands (English, Bangla, Banglish, Hindi, Hinglish)",
+        "Fast command router for device controls, apps, media and messaging in English, Bangla, Banglish, Hindi and Hinglish",
         "Background terminal: python, node, pip, npm, apt/pkg, git, curl - no terminal UI",
         "WhatsApp assistant: messages, calls, auto-reply",
         "YouTube automation: play, search, pause, fullscreen, subscribe",
@@ -30,29 +30,46 @@ object FeatureKnowledge {
         "Photo memory, weather card, live web search, screen share visual tasks",
         "QR/barcode scanner with OCR, multi-command sentences",
         "On-Guard thief watch and official device lock (Device Administrator)",
-        "Overlay avatar and pastel rainbow edge lighting on the wake word",
+        "Pastel rainbow edge lighting on the wake word",
         "Every feature is free and unlimited for every user - no licence key, no daily limit",
-        "Plugin Lab: install new skills as JSON plugins - self-evolving, hot-reloaded",
+        "Plugin Lab: install extra skills as JSON plugins",
         "In-app media viewer: YouTube and Instagram play right inside Jarvis",
         "Media HUD over YouTube: skip ad, like, subscribe, fullscreen",
-        "APK Agent: import any APK - truthful analysis and one-question-at-a-time changes",
+        "APK Agent: import an APK and read its manifest, permissions and structure",
         "In-app music player: songs, favourites and playlists from this device play inside Jarvis",
         "Skill registry: verified native skills + reviewed external skill libraries",
-        "Runtime Feature Updates: feature packs install from GitHub Releases without a new APK"
+        "Runtime Feature Updates: feature packs install from GitHub Releases without a new APK",
+        "Sub Agents: WhatsApp auto reply agent and Gmail email auto reply agent, both Kotlin native - no Python needed",
+        "Local AI models: download a GGUF model from Hugging Face with pause/resume, set it active, and an Offline reply switch sits right under the downloader",
+        "Offline reply: when the network or the API fails, Jarvis answers with the installed local model instead of going dark",
+        "Creator console: unlocked by the creator key configured at build time or set on this device - no key ships inside the app",
+        "Scanner: camera QR/barcode scan plus gallery import, torch and WiFi/Link handling",
+        "Home header greets you with your display name, live weather and connection status"
     )
 
     private val whatsNew = listOf(
-        "10000+ multilingual command pack - instant fast responses",
-        "Pastel rainbow edge lighting on 'Hey Jarvis' - works over other apps too",
-        "Glass QR scanner design",
-        "Creator master key AHONA-I-LOVE-YOU now works everywhere",
-        "Creator-only 'test all features' command with a full report",
-        "Jarvis knows its creator (Ayan Sir) and its full feature list",
-        "Plugin Lab: install new skills as plugins without an app update",
-        "YouTube and Instagram play inside the app with the built-in media viewer",
-        "Custom AI endpoints: any prompt-URL or OpenAI-style API now works reliably",
-        "APK Agent: real on-device APK analysis with skill registry and risk review"
+        "Creator key is no longer inside the app - the build secret or the key set on this device is what verifies the creator",
+        "Offline reply switch now sits directly under the local model downloader",
+        "Local model downloader restored: search Hugging Face, download with pause and resume, set active",
+        "Scanner bottom bar now matches the main dock and the torch and gallery buttons are full size",
+        "Sub agents answer with their real state and explain their own setup",
+        "Jarvis now explains every feature and how to use it, instead of asking the user to do it",
+        "Every feature stays free and unlimited for every user"
     )
+
+    /**
+     * Compact, truthful capability block injected into the model's system prompt so Jarvis
+     * always knows what the app can actually do and how each feature is turned on.
+     */
+    fun promptBlock(): String = buildString {
+        appendLine("[WHAT THIS APP CAN ACTUALLY DO - v$APP_VERSION]:")
+        capabilities.forEachIndexed { index, item -> appendLine("${index + 1}. $item") }
+        appendLine("[SUB AGENTS - WHAT THEY DO AND HOW THEY WORK]:")
+        appendLine("- WhatsApp sub agent: watches incoming WhatsApp notifications, matches your reply rules and answers for you in the background. Setup on its screen: notification access plus at least one enabled rule.")
+        appendLine("- Email sub agent: connects to Gmail with a 16-character App Password, reads new unread mail and replies using your saved HTML design. Runs about every 15 minutes with hourly and daily send caps.")
+        appendLine("- Sub agents are pure Kotlin and need no Python. Python only exists for the background terminal when the user asks for shell work.")
+        appendLine("- If the user asks what a sub agent does, say it in one short line and name the single switch that turns it on. Never claim an agent is ON unless its screen shows it ON.")
+    }
 
     fun capabilitiesText(): String =
         "Amar sob feature, Sir:\n" + capabilities.withIndex()
@@ -68,7 +85,7 @@ object FeatureKnowledge {
         results += "Camera" to granted(Manifest.permission.CAMERA)
         results += "Microphone" to granted(Manifest.permission.RECORD_AUDIO)
         results += "Contacts" to granted(Manifest.permission.READ_CONTACTS)
-        results += "Overlay (avatar + edge lighting)" to Settings.canDrawOverlays(context)
+        results += "Display over other apps (edge lighting)" to Settings.canDrawOverlays(context)
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val admin = android.content.ComponentName(context, DeviceLockReceiver::class.java)
         results += "Device admin (phone lock)" to dpm.isAdminActive(admin)

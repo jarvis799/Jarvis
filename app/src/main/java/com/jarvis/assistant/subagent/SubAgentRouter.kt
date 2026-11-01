@@ -16,6 +16,12 @@ object SubAgentRouter {
 
     private val statusWords = Regex("\\b(status|state|obostha|on ache|on kina|cholche|running|active|setup)\\b", RegexOption.IGNORE_CASE)
 
+    /** DEV STYLE 2.0.2: "ki kore / kivabe kaj kore" questions get a real explanation, not a screen. */
+    private val explainWords = Regex(
+        "\\b(ki kore|kivabe|kemon kore|how (does|do|to)|what (does|do|is)|explain|ki kaj|ki korte|kaaj|works?)\\b",
+        RegexOption.IGNORE_CASE
+    )
+
     fun route(context: Context, request: String): String? {
         val text = request.lowercase()
         val mentionsWhatsAppAgent = text.contains("whatsapp") && Regex("auto[ -]?reply|auto reply|agent").containsMatchIn(text)
@@ -26,6 +32,11 @@ object SubAgentRouter {
         if (!mentionsWhatsAppAgent && !mentionsEmailAgent && !mentionsShowcase) return null
 
         val wantsStatus = statusWords.containsMatchIn(text)
+
+        // Answer "what / how does it work" in words; only open a screen for a direct request.
+        if (!wantsStatus && explainWords.containsMatchIn(text)) {
+            return explanation(mentionsWhatsAppAgent, mentionsEmailAgent)
+        }
 
         return when {
             mentionsWhatsAppAgent -> {
@@ -38,6 +49,20 @@ object SubAgentRouter {
             }
             else -> open(context, SubAgentActivity::class.java, "Sub Agent showcase kholche, Sir.")
         }
+    }
+
+    /** What each sub agent does, plus the one step that turns it on. */
+    private fun explanation(whatsapp: Boolean, email: Boolean): String = when {
+        whatsapp ->
+            "WhatsApp sub agent: notun message notification theke dekhe tomar rule onujayi nijei reply dey. " +
+                "On korte: Sub Agent > WhatsApp Agent, notification access dao ar ekta reply rule enable koro."
+        email ->
+            "Email sub agent: Gmail e 16-character App Password diye connect kore, unread mail pore tomar HTML " +
+                "design e reply dey. On korte: Sub Agent > Email Agent, Gmail connect koro ar Auto reply on koro."
+        else ->
+            "Sub agent mane Jarvis er background helper - tumi switch on korle se nijei kaj kore. Duita ache: " +
+                "WhatsApp Agent (notification theke auto reply) ar Email Agent (Gmail auto reply). " +
+                "Python lage na - sub agent gulo Kotlin e chole; terminal er Python sudhu shell command er jonno."
     }
 
     private fun whatsappStatus(context: Context): String {

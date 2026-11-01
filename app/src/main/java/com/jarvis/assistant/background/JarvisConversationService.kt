@@ -52,7 +52,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -272,15 +271,6 @@ class JarvisConversationService : Service() {
                     return
                 }
             }
-            val appContext = JarvisApp.instance
-            if (appContext.preferences.offlineReplies && !com.jarvis.assistant.model.LlmRouter.isOnline(appContext)) {
-                Thread {
-                    val offlineAnswer = com.jarvis.assistant.model.OfflineReply.answer(appContext, text)
-                    appContext.chatRepository.addTurn(text, offlineAnswer)
-                    _events.tryEmit(offlineAnswer)
-                }.start()
-                return
-            }
             if (instance?.httpSession != null) {
                 instance.serviceScope.launch(Dispatchers.Main.immediate) { instance.httpSession?.sendText(text) }
                 return
@@ -335,9 +325,6 @@ class JarvisConversationService : Service() {
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var taskProgressOverlay: com.jarvis.assistant.ui.agent.TaskProgressOverlay? = null
-    private var taskProgressOverlayJob: Job? = null
-    private var overlayPermissionWarningTaskId: String? = null
     private val preferences by lazy { (applicationContext as JarvisApp).preferences }
 
     // --- Active-conversation components ---
@@ -641,25 +628,7 @@ class JarvisConversationService : Service() {
         }
         initTts()
         headsetAudioRouter = com.jarvis.assistant.audio.HeadsetAudioRouter(applicationContext)
-        taskProgressOverlay = com.jarvis.assistant.ui.agent.TaskProgressOverlay(this)
-        taskProgressOverlayJob = serviceScope.launch(Dispatchers.Main.immediate) {
-            combine(
-                com.jarvis.assistant.automation.agent.AgentTaskEngine.taskState,
-                JarvisApp.isAppForeground,
-                _isSessionOn,
-                _isStandby
-            ) { snapshot, appForeground, sessionOn, standbyOn ->
-                snapshot to (JarvisApp.instance.preferences.taskOverlayMode == "always" || (!appForeground && (sessionOn || standbyOn)))
-            }.collect { (snapshot, showIdleAvatar) ->
-                val shown = taskProgressOverlay?.update(snapshot, showIdleAvatar) == true
-                if (snapshot != null && !shown && overlayPermissionWarningTaskId != snapshot.taskId) {
-                    overlayPermissionWarningTaskId = snapshot.taskId
-                    _events.emit("Task progress is shown inside JARVIS Home. Allow Display over other apps if you want the floating task panel over Instagram, Spotify, and Chrome.")
-                }
-            }
-        }
         serviceScope.launch(Dispatchers.Main.immediate) {
-            var previousAvailability: List<Any>? = null
             while (isActive) {
                 delay(900L)
                 if (_isSessionOn.value &&
@@ -675,24 +644,6 @@ class JarvisConversationService : Service() {
                     isAutonomousTaskRunning = false
                     com.jarvis.assistant.automation.agent.AgentTaskEngine.resetForSession()
                 }
-                val snapshot = com.jarvis.assistant.automation.agent.AgentTaskEngine.taskState.value
-                val prefs = (application as JarvisApp).preferences
-                val appForeground = JarvisApp.isAppForeground.value
-                val showIdleAvatar = prefs.taskOverlayMode == "always" || (!appForeground && (_isSessionOn.value || _isStandby.value))
-                val availability = listOf(
-                    prefs.isTaskOverlayEnabled,
-                    PermissionHelper.hasOverlayPermission(this@JarvisConversationService),
-                    prefs.taskOverlayAvatar,
-                    prefs.taskOverlayMode,
-                    prefs.taskOverlayEdge,
-                    appForeground,
-                    _isSessionOn.value,
-                    _isStandby.value
-                )
-                if (availability != previousAvailability) {
-                    previousAvailability = availability
-                    taskProgressOverlay?.update(snapshot, showIdleAvatar)
-                }
             }
         }
     }
@@ -701,7 +652,7 @@ class JarvisConversationService : Service() {
         try {
             tts = TextToSpeech(applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale.US
+                    tts?.language = Locale.US; com.jarvis.assistant.voice.TtsVoiceSelector.applyTo(applicationContext, tts)
                     tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {
                             Log.d("JarvisService", "TTS onStart: $utteranceId")
@@ -2964,7 +2915,7 @@ class JarvisConversationService : Service() {
             if (Regex("(test all features|feature test|all feature test|sob feature test|shob feature test|feature test koro|test koro sob)").containsMatchIn(lower)) {
                 lastHandledCommandText = cleanSpeech
                 if (!com.jarvis.assistant.security.CreatorAuthenticationService.isCreator(this)) {
-                    announce("Feature test is creator-only, Sir. Boli creator key AHONA-I-LOVE-YOU, ami unlock kore debo.")
+                    announce("Feature test is creator-only, Sir. Creator key bolen, ami unlock kore debo.")
                 } else {
                     announce(com.jarvis.assistant.security.FeatureKnowledge.runFeatureTest(applicationContext))
                 }
@@ -3901,10 +3852,6 @@ class JarvisConversationService : Service() {
     }
 
     override fun onDestroy() {
-        taskProgressOverlayJob?.cancel()
-        taskProgressOverlayJob = null
-        taskProgressOverlay?.remove()
-        taskProgressOverlay = null
         stopActiveConversation()
         exitStandbyListening()
         try {

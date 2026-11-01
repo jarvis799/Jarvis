@@ -98,6 +98,18 @@ object TtsVoiceSelector {
             .edit().putString(KEY_SELECTED, option.key).apply()
     }
 
+    /** Applies the saved voice plus the Voice Studio pitch and rate to a live engine. */
+    fun applyTo(context: Context, tts: TextToSpeech?) {
+        if (tts == null) return
+        applyPreferred(context, tts)
+        VoiceStyles.current(context)?.let { style ->
+            runCatching {
+                tts.setPitch(style.pitch)
+                tts.setSpeechRate(style.rate)
+            }
+        }
+    }
+
     fun savedKey(context: Context): String =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_SELECTED, "").orEmpty()

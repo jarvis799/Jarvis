@@ -30,6 +30,13 @@ object AgentEngine {
         // DEV STYLE: Hindi-first language, no-nonsense replies and full app knowledge - always on.
         sb.append(coreSystemBlock())
 
+        // DEV STYLE 2.0.2: the creator key typed in chat is recognized at once and remembered,
+        // so Jarvis keeps treating the owner as its creator from then on.
+        if (com.jarvis.assistant.security.CreatorVerifier.isCreatorPhrase(userInput)) {
+            com.jarvis.assistant.security.CreatorAuthenticationService.markCreatorVerified(context)
+            return com.jarvis.assistant.security.CreatorVerifier.greeting()
+        }
+
         // DEV STYLE: high-risk actions always ask the owner for permission first.
         val risk = PermissionGate.riskCheck(userInput)
         if (risk.level != PermissionGate.Level.READ_ONLY) return risk.message
@@ -245,7 +252,30 @@ When a request maps to a feature, explain in 1-2 short Hindi lines how it works 
 5. Jis kaam ke liye upar feature already hai, uske liye kabhi "main nahi kar sakta / pari na" mat bolo - seedha feature use karo. Email, calendar, WhatsApp, calls, messages, terminal - sab direct chalte hain; accessibility service sirf screen automation ke liye hai, email padhne ke liye kabhi nahi.
 6. Agar request genuinely unclear ho, sirf EK chhota Hindi sawal pooch ke clarify karo, phir kaam complete karo.
 7. App update ke baad user "what's new / naya kya hai" pooche to latest update ke naye features confidently bata do (niche list diya hai).
+
+${com.jarvis.assistant.security.FeatureKnowledge.promptBlock()}
+
+${creatorStatusBlock()}
 """.trimIndent()
+
+    /** DEV STYLE 2.0.2: tells the model whether the person talking is the verified creator. */
+    private fun creatorStatusBlock(): String {
+        val verified = runCatching {
+            com.jarvis.assistant.security.CreatorAuthenticationService.isCreator(
+                com.jarvis.assistant.JarvisApp.instance
+            )
+        }.getOrDefault(false)
+        return if (verified) """
+[CREATOR STATUS: VERIFIED]:
+- The person talking right now IS your creator, Ayan Sir (Arian Ahamed Ayan, brand DEV STYLE).
+- Address him as Ayan Sir. Never say you do not know who he is, never ask him to prove it again, and never treat him like an ordinary user.
+- Creator console, creator feature self-test and the bug log are already unlocked for him.
+""".trimIndent() else """
+[CREATOR STATUS: NOT VERIFIED]:
+- The user has not verified as the creator yet. Never claim to know them as creator.
+- If the user says they are the creator, tell them in one line: creator key bolo, ami turant creator mode on kore debo. The app verifies the key itself - you never ask for it, repeat it or guess it.
+""".trimIndent()
+    }
 
     /** DEV STYLE: parses an incoming request into a shell command, or null when it is not one. */
     private fun parseShellCommand(input: String): String? {
@@ -266,19 +296,20 @@ When a request maps to a feature, explain in 1-2 short Hindi lines how it works 
 
     /** DEV STYLE: features added in the latest updates - Jarvis announces these when asked. */
     private val whatsNew = listOf(
-        "\u26A1 10000+ multilingual command pack - instant fast responses (English, Bangla, Banglish, Hindi, Hinglish).",
-        "\uD83C\uDF08 Pastel rainbow edge lighting - 'Hey Jarvis' bollei screen er charpashe glow, onno app er uporeo.",
-        "\uD83D\uDD0D Premium QR scanner design.",
-        "\uD83D\uDD11 Creator master key AHONA-I-LOVE-YOU ekhon sob jaygay kaj kore - chat, console ar premium.",
-        "\uD83E\uDDEA Creator-only 'test all features' command - Jarvis sob feature test kore report dey.",
-        "\uD83E\uDD16 Jarvis ekhon nijer creator (Ayan Sir, 16) ar full feature list jane.",
-        "\uD83E\uDD16 2D animated avatar - Home screen pe ab orb ki jagah animated Jarvis face hai.",
-        "\u2709\uFE0F Gmail aur Calendar ab in-app chalte hain - external app khulta hi nahi.",
-        "\uD83D\uDCCE Chat me image/file attach karke Jarvis ko bhej sakte ho, wo process karta hai.",
-        "\uD83D\uDDA5\uFE0F Background terminal - sab shell/package commands chupchap chalte hain, koi UI nahi.",
-        "\uD83D\uDD24 Hindi-first Jarvis: ab har reply Hindi me aata hai.",
-        "\u2699\uFE0F Multi-command sentences: ek hi sentence me kai kaam ek ke baad ek ho jate hain.",
-        "\uD83D\uDD17 Google Workspace: Chat > Google Workspace se ek baar connect karo, phir Gmail/Calendar/Drive sab chalenge."
+        "Creator key chat me likhlei Jarvis turant creator mode on kore - Ayan Sir recognized.",
+        "Offline reply switch ekhon local model downloader er thik niche.",
+        "Local model downloader: Hugging Face theke GGUF model search, pause/resume download, set active.",
+        "Scanner er bottom bar ekhon main dock er moto - torch ar gallery button boro size.",
+        "Sub agent gulo nijer real state bole ar setup step jane - WhatsApp ar Email auto reply.",
+        "Jarvis ekhon nijer sob feature ar kivabe use korte hoy ta jane, user ke korte bole na.",
+        "10000+ multilingual command pack - instant fast responses (English, Bangla, Banglish, Hindi, Hinglish).",
+        "Pastel rainbow edge lighting - 'Hey Jarvis' bollei screen er charpashe glow.",
+        "Gmail aur Calendar in-app chalte hain - external app khulta hi nahi.",
+        "Chat me image/file attach karke Jarvis ko bhej sakte ho.",
+        "Background terminal - shell/package commands chupchap chalte hain.",
+        "Hindi-first Jarvis: har reply Hindi me aata hai.",
+        "Multi-command sentences: ek hi sentence me kai kaam ek ke baad ek.",
+        "Google Workspace: ek baar connect karo, phir Gmail/Calendar/Drive sab chalenge."
     )
 
     /** Detects "what's new / naya feature kya hai" style questions about app updates. */
@@ -301,7 +332,7 @@ When a request maps to a feature, explain in 1-2 short Hindi lines how it works 
 
     /** Hindi announcement of the latest added features. */
     private fun whatsNewAnswer(): String =
-        "\uD83C\uDD95 \u0928\u092F\u093E \u0905\u092A\u0921\u0947\u091F \u0906 \u0917\u092F\u093E \u0939\u0948! \u092F\u0947 \u0928\u092E \u092B\u093C\u0940\u091A\u0930\u094D\u0938 \u0932\u093F\u0938\u094D\u091F \u0939\u0948:\n" +
+        "\u0928\u092F\u093E \u0905\u092A\u0921\u0947\u091F \u0906 \u0917\u092F\u093E \u0939\u0948! \u092F\u0947 \u0928\u092F\u0947 \u092B\u093C\u0940\u091A\u0930\u094D\u0938 \u0915\u0940 \u0932\u093F\u0938\u094D\u091F \u0939\u0948:\n" +
         whatsNew.joinToString("\n") { "\u2022 $it" } + "\n\n" +
         "\u0915\u094B\u0908 \u092D\u0940 \u092B\u093C\u0940\u091A\u0930 \u0926\u094B\u0916\u093C \u0926\u094B \u0924\u094B \u092C\u0924\u093E\u092E\u0901, \u092E\u0948\u0902 \u0909\u0938\u0947 \u091A\u0932\u093E\u0928\u093E \u0938\u093F\u0916\u093E \u0926\u0942\u0902\u0917\u093E \u0938\u0930\u0964"
 

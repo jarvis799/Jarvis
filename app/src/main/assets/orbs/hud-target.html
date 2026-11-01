@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JARVIS HUD Target</title>
+<style>
+  :root{
+    --ink:#f4ffe9;
+    --accent:#a8ff57;
+  }
+  html[data-theme="light"]{
+    --ink:#122a1c;
+  }
+  html,body{
+    margin:0;padding:0;width:100%;height:100%;
+    background:transparent;
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;
+  }
+  canvas{display:block;width:100%;height:100%;background:transparent;}
+</style>
+</head>
+<body>
+<canvas id="hud"></canvas>
+<script>
+(function () {
+  "use strict";
+
+  var canvas = document.getElementById("hud");
+  var ctx = canvas.getContext("2d", { alpha: true });
+  var root = document.documentElement;
+
+  var query = new URLSearchParams(location.search || "");
+  var theme = (query.get("theme") || "dark").toLowerCase();
+  root.setAttribute("data-theme", theme === "light" ? "light" : "dark");
+
+  var ACCENTS = {
+    idle: "#a8ff57",
+    listening: "#c5ff78",
+    thinking: "#8ef0c0",
+    speaking: "#65e04a"
+  };
+
+  var STATE = "idle";
+  var SPEED = { idle: 1, listening: 1.35, thinking: 2.1, speaking: 1.7 };
+
+  var w = 0, h = 0, dpr = 1, cx = 0, cy = 0, R = 0;
+  var clock = 0;
+  var angles = { outer: 0, dashed: 0, ticks: 0, arcs1: 0, arcs2: 0, radar: 0, extra: 0, segments: 0, think: 0 };
+  var audio = { amp: 0, bass: 0, high: 0 };
+  var target = { amp: 0, bass: 0, high: 0 };
+  var running = true;
+
+  var particles = [];
+  for (var p = 0; p < 26; p++) {
+    particles.push({
+      x: (Math.random() - 0.5) * 2,
+      y: (Math.random() - 0.5) * 2,
+      r: Math.random() * 1.4 + 0.5,
+      vx: (Math.random() - 0.5) * 0.0016,
+      vy: (Math.random() - 0.5) * 0.0016,
+      a: Math.random() * 0.5 + 0.2
+    });
+  }
+
+  function ink() {
+    return getComputedStyle(root).getPropertyValue("--ink").trim() || "#f4ffe9";
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = Math.max(1, window.innerWidth);
+    h = Math.max(1, window.innerHeight);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = w / 2;
+    cy = h / 2;
+    R = Math.min(w, h) * 0.41;
+  }
+
+  function setState(name) {
+    var next = String(name || "").toLowerCase();
+    if (next === "working") next = "speaking";
+    if (next === "off") next = "idle";
+    if (!SPEED[next]) next = "idle";
+    STATE = next;
+  }
+
+  function setAudio(amp, bass, high) {
+    target.amp = Math.max(0, Math.min(1, Number(amp) || 0));
+    target.bass = Math.max(0, Math.min(1, Number(bass) || 0));
+    target.high = Math.max(0, Math.min(1, Number(high) || 0));
+  }
+
+  function strokeInk(alpha) {
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = ink();
+    ctx.fillStyle = ink();
+    ctx.setLineDash([]);
+  }
+
+  function ring(radius, alpha, lineWidth, dash) {
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = lineWidth;
+    ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    var speed = SPEED[STATE] || 1;
+    clock += 0.016 * speed;
+
+    audio.amp += (target.amp - audio.amp) * 0.18;
+    audio.bass += (target.bass - audio.bass) * 0.18;
+    audio.high += (target.high - audio.high) * 0.18;
+
+    var accent = ACCENTS[STATE] || ACCENTS.idle;
+    var glow = STATE === "idle" ? 6 : 13;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.lineCap = "round";
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = accent;
+
+    ctx.save();
+    for (var i = 0; i < particles.length; i++) {
+      var pt = particles[i];
+      pt.x += pt.vx * speed;
+      pt.y += pt.vy * speed;
+      if (pt.x < -1.2) pt.x = 1.2;
+      if (pt.x > 1.2) pt.x = -1.2;
+      if (pt.y < -1.2) pt.y = 1.2;
+      if (pt.y > 1.2) pt.y = -1.2;
+      ctx.globalAlpha = pt.a * (0.35 + Math.sin(clock * 1.4 + i) * 0.35);
+      ctx.beginPath();
+      ctx.arc(pt.x * R * 1.15, pt.y * R * 1.15, pt.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    strokeInk(0.95);
+    ring(R, 0.95, 1.4);
+    ctx.save();
+    ctx.rotate(angles.extra);
+    ring(R * 1.03, 0.35, 1, [4, 12]);
+    for (var b = 0; b < Math.PI * 2; b += Math.PI / 2) {
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 1.06, b - 0.045, b + 0.045);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(angles.outer);
+    var dots = 64;
+    for (var d = 0; d < dots; d++) {
+      var ang = (d / dots) * Math.PI * 2;
+      ctx.globalAlpha = d % 2 === 0 ? 0.9 : 0.45;
+      ctx.beginPath();
+      ctx.arc(Math.cos(ang) * R * 0.94, Math.sin(ang) * R * 0.94, d % 2 === 0 ? 2.3 : 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    strokeInk(0.7);
+    ring(R * 0.88, 0.7, 1);
+    ctx.save();
+    ctx.rotate(angles.dashed);
+    ring(R * 0.86, 0.55, 1.3, [2, 4]);
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(angles.segments);
+    for (var s = 0; s < Math.PI * 2; s += Math.PI / 4) {
+      ctx.globalAlpha = 0.75;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.81, s, s + 0.28);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(angles.ticks);
+    var ticks = 120;
+    for (var k = 0; k < ticks; k++) {
+      if ((k > 5 && k < 25) || (k > 35 && k < 55) || (k > 65 && k < 85) || (k > 95 && k < 115)) {
+        var a = (k / ticks) * Math.PI * 2;
+        var co = Math.cos(a), si = Math.sin(a);
+        ctx.globalAlpha = k % 5 === 0 ? 0.9 : 0.45;
+        ctx.lineWidth = k % 5 === 0 ? 1.9 : 0.8;
+        ctx.beginPath();
+        ctx.moveTo(co * R * 0.72, si * R * 0.72);
+        ctx.lineTo(co * R * 0.765, si * R * 0.765);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(angles.arcs1);
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.65, -Math.PI * 0.4, Math.PI * 0.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.65, Math.PI * 0.6, Math.PI * 1.4);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(angles.arcs2);
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.575, Math.PI * 0.1, Math.PI * 0.8);
+    ctx.stroke();
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.575, Math.PI * 1.1, Math.PI * 1.8);
+    ctx.stroke();
+    ctx.restore();
+
+    if (STATE === "listening") {
+      ctx.save();
+      var bars = 44;
+      var live = 0.35 + audio.amp * 0.65;
+      for (var v = 0; v < bars; v++) {
+        var va = (v / bars) * Math.PI * 2;
+        var len = (Math.sin(clock * 6 + v * 0.5) * 0.5 + 0.5) * R * 0.11 * live + R * 0.012;
+        ctx.globalAlpha = 0.55 + live * 0.4;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(va) * (R * 0.5 - len / 2), Math.sin(va) * (R * 0.5 - len / 2));
+        ctx.lineTo(Math.cos(va) * (R * 0.5 + len / 2), Math.sin(va) * (R * 0.5 + len / 2));
+        ctx.stroke();
+      }
+      ctx.restore();
+    } else if (STATE === "thinking") {
+      ctx.save();
+      ctx.rotate(angles.think);
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 3.4;
+      ctx.setLineDash([7, 8]);
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.5, 0, Math.PI * 1.55);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    } else if (STATE === "speaking") {
+      ctx.save();
+      var pulse = 1 + Math.sin(clock * 7) * (0.02 + audio.bass * 0.05);
+      ctx.scale(pulse, pulse);
+      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([11, 6, 2, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    } else {
+      ring(R * 0.5, 0.32, 1);
+    }
+
+    ctx.save();
+    ctx.rotate(angles.radar);
+    var spokes = 8;
+    for (var q2 = 0; q2 < spokes; q2++) {
+      var sa = (q2 / spokes) * Math.PI * 2 + 0.2;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(sa) * R * 0.12, Math.sin(sa) * R * 0.12);
+      ctx.lineTo(Math.cos(sa) * R * 0.35, Math.sin(sa) * R * 0.35);
+      ctx.stroke();
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(Math.cos(sa) * R * 0.35, Math.sin(sa) * R * 0.35, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.24, 0); ctx.lineTo(-R * 0.075, 0);
+    ctx.moveTo(R * 0.075, 0); ctx.lineTo(R * 0.24, 0);
+    ctx.moveTo(0, -R * 0.24); ctx.lineTo(0, -R * 0.075);
+    ctx.moveTo(0, R * 0.075); ctx.lineTo(0, R * 0.24);
+    ctx.stroke();
+
+    var bo = R * 0.14, bs = R * 0.035;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-bo, -bo - bs); ctx.lineTo(-bo, -bo); ctx.lineTo(-bo - bs, -bo);
+    ctx.moveTo(bo, -bo - bs); ctx.lineTo(bo, -bo); ctx.lineTo(bo + bs, -bo);
+    ctx.moveTo(-bo, bo + bs); ctx.lineTo(-bo, bo); ctx.lineTo(-bo - bs, bo);
+    ctx.moveTo(bo, bo + bs); ctx.lineTo(bo, bo); ctx.lineTo(bo + bs, bo);
+    ctx.stroke();
+
+    var size = Math.max(11, Math.round(R * 0.135));
+    ctx.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.globalAlpha = STATE === "idle" ? 0.75 : 0.6 + Math.sin(clock * 4) * 0.25;
+    ctx.fillText("J A R V I S", 0, 0);
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
+
+  function step() {
+    if (!running) return;
+    var speed = SPEED[STATE] || 1;
+    var base = 0.011 * speed;
+    angles.outer += base * 0.4;
+    angles.dashed -= base * 0.7;
+    angles.ticks += base * 0.3;
+    angles.arcs1 -= base * 1.15;
+    angles.arcs2 += base * 1.7;
+    angles.radar += base * 0.9;
+    angles.extra += base * 0.22;
+    angles.segments -= base * 0.55;
+    angles.think += base * 3.4;
+    draw();
+    window.requestAnimationFrame(step);
+  }
+
+  window.JarvisHud = {
+    setState: setState,
+    setAudio: setAudio,
+    refresh: resize
+  };
+  window.JarvisOrb = window.JarvisHud;
+
+  window.addEventListener("message", function (event) {
+    var data = event && event.data;
+    if (!data || typeof data !== "object") return;
+    if (data.type === "jarvis:state") setState(data.state);
+    else if (data.type === "jarvis:audio") setAudio(data.amp, data.bass, data.high);
+    else if (data.type === "jarvis:say") setState("speaking");
+    else if (data.type === "jarvis:say-end") setState("idle");
+  });
+
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", function () {
+    running = !document.hidden;
+    if (running) step();
+  });
+
+  resize();
+  step();
+})();
+</script>
+</body>
+</html>

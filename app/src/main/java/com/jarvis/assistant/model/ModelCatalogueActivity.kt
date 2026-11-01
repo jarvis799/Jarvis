@@ -8,6 +8,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
 import com.jarvis.assistant.util.ThemeManager
 import kotlinx.coroutines.launch
@@ -44,7 +45,25 @@ class ModelCatalogueActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 24, 24, 24)
         }
-        root.addView(TextView(this).apply { text = "Local AI Models"; textSize = 22f })
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val backIcon = android.widget.ImageView(this).apply {
+            setImageResource(com.jarvis.assistant.R.drawable.ic_back_arrow)
+            contentDescription = "Back"
+            setOnClickListener { finish() }
+        }
+        val density = resources.displayMetrics.density
+        val backSize = (28 * density).toInt()
+        header.addView(
+            backIcon,
+            LinearLayout.LayoutParams(backSize, backSize).apply {
+                marginEnd = (16 * density).toInt()
+            }
+        )
+        header.addView(TextView(this).apply { text = "Local AI Models"; textSize = 22f })
+        root.addView(header)
         root.addView(TextView(this).apply {
             text = LocalModelRuntime.statusMessage
             textSize = 11f
@@ -85,6 +104,36 @@ class ModelCatalogueActivity : AppCompatActivity() {
             )
             addView(resultsContainer)
         })
+
+        // DEV STYLE 2.0.2: Offline reply sits directly below the model downloader.
+        val offlineCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 16, 0, 0)
+        }
+        val offlineHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        offlineHeader.addView(TextView(this).apply {
+            text = "Offline reply"
+            textSize = 15f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        val offlineSwitch = SwitchCompat(this).apply {
+            isChecked = store.offlineFallback()
+            contentDescription = "Offline reply"
+            setOnCheckedChangeListener { _, checked -> store.setOfflineFallback(checked) }
+        }
+        offlineHeader.addView(offlineSwitch)
+        offlineCard.addView(offlineHeader)
+        offlineCard.addView(TextView(this).apply {
+            text = "When the network or the API is unreachable, Jarvis answers with the installed model. " +
+                "Needs one model installed and set active."
+            textSize = 11f
+            setPadding(0, 4, 0, 0)
+        })
+        root.addView(offlineCard)
+
         setContentView(root)
     }
 
@@ -136,8 +185,8 @@ class ModelCatalogueActivity : AppCompatActivity() {
             Toast.makeText(this, "This model is already installed.", Toast.LENGTH_SHORT).show()
             return
         }
-        button.isEnabled = true
-        button.text = "Pause"
+        button.isEnabled = false
+        button.text = "Downloading…"
         note.text = "Starting…"
         downloader.start(
             model = model,
@@ -165,7 +214,6 @@ class ModelCatalogueActivity : AppCompatActivity() {
                             )
                         )
                         button.text = "Installed"
-                        button.isEnabled = false
                         note.text = "Saved. Pick it under Installed."
                         refreshInstalled()
                     } else {

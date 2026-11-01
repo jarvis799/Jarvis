@@ -17,6 +17,8 @@ val releaseCertSha256 = configuredValue("JARVIS_RELEASE_CERT_SHA256")?.replace("
 val developerName = configuredValue("JARVIS_DEVELOPER_NAME")?.ifBlank { null } ?: "Ayan Ahamed"
 val copyrightOwner = configuredValue("JARVIS_COPYRIGHT_OWNER")?.ifBlank { null } ?: "Ayan Ahamed"
 val verificationEndpoint = configuredValue("JARVIS_VERIFICATION_ENDPOINT").orEmpty()
+// Creator key is supplied by the build (Gradle property or CI secret) - never committed to source.
+val creatorKey = configuredValue("JARVIS_CREATOR_KEY").orEmpty().trim()
 val releaseSigningReady = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 
 android {
@@ -27,14 +29,15 @@ android {
         applicationId = "com.jarvis.assistant"
         minSdk = 26
         targetSdk = 28
-        versionCode = 201
-        versionName = "2.0.1"
+        versionCode = 202
+        versionName = "2.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "DEVELOPER_NAME", buildConfigString(developerName.ifBlank { "Unverified developer" }))
         buildConfigField("String", "COPYRIGHT_OWNER", buildConfigString(copyrightOwner.ifBlank { "Unconfigured" }))
         buildConfigField("String", "PINNED_RELEASE_CERT_SHA256", buildConfigString(releaseCertSha256))
         buildConfigField("String", "VERIFICATION_ENDPOINT", buildConfigString(verificationEndpoint))
+        buildConfigField("String", "CREATOR_KEY", buildConfigString(creatorKey))
     }
 
     signingConfigs {

@@ -26,7 +26,8 @@ object LlmRouter {
         val localReady = model != null && model.exists() && LocalModelRuntime.isAvailable()
 
         if (!isOnline(context)) {
-            if (localReady) {
+            // The Offline reply switch decides this too - it is not a fallback that ignores the setting.
+            if (localReady && store.offlineFallback()) {
                 LocalModelRuntime.generate(model!!.filePath, prompt)?.let { return it }
             }
             throw IllegalStateException("No internet and no working on-device model is installed.")

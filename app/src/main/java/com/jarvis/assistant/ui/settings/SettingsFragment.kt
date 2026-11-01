@@ -160,6 +160,7 @@ class SettingsFragment : Fragment() {
         }
 
         binding.tvOrbStyleSubtitle.text = "Now: " + when (preferences.orbStyle) {
+            "hud-target" -> "HUD Target"
             "voice-orb" -> "Voice Orb"
             "face-flow" -> "Face Flow 3D"
             "hud-hologram" -> "HUD Hologram"
@@ -237,10 +238,6 @@ class SettingsFragment : Fragment() {
             startActivity(Intent(requireContext(), VoiceUnlockActivity::class.java))
         }
 
-        binding.rowOverlayAvatars.setOnClickListener {
-            startActivity(Intent(requireContext(), OverlayAvatarActivity::class.java))
-        }
-
         binding.rowApplications.setOnClickListener {
             startActivity(Intent(requireContext(), HandsFreeActivity::class.java))
         }
@@ -304,7 +301,7 @@ class SettingsFragment : Fragment() {
             "Share to Jarvis", "Notification Briefing", "Camera Scanner", "Battery Intelligence",
             "Media Library", "Screen Context", "Project Planner", "Prompt Lab", "Personality",
             "Photo Memory", "Browser Agent", "Decision DNA", "Debate Chamber", "Time Machine",
-            "Failure Autopsy", "Google Workspace", "Overlay Avatar",
+            "Failure Autopsy", "Google Workspace",
             "Gmail Auto Reply (IMAP)", "Email Inbox (read & reply)", "Local AI Models"
         )
         val scroll = android.widget.ScrollView(ctx)
@@ -365,10 +362,9 @@ class SettingsFragment : Fragment() {
             21 -> startActivity(Intent(requireContext(), TimeMachineActivity::class.java))
             22 -> startActivity(Intent(requireContext(), FailureAutopsyActivity::class.java))
             23 -> startActivity(Intent(requireContext(), com.jarvis.assistant.google.GoogleWorkspaceActivity::class.java))
-            24 -> startActivity(Intent(requireContext(), OverlayAvatarActivity::class.java))
-            25 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.GmailSettingsActivity::class.java))
-            26 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.InboxActivity::class.java))
-            27 -> startActivity(Intent(requireContext(), com.jarvis.assistant.model.ModelCatalogueActivity::class.java))
+            24 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.GmailSettingsActivity::class.java))
+            25 -> startActivity(Intent(requireContext(), com.jarvis.assistant.email.InboxActivity::class.java))
+            26 -> startActivity(Intent(requireContext(), com.jarvis.assistant.model.ModelCatalogueActivity::class.java))
         }
     }
 
@@ -555,7 +551,7 @@ class SettingsFragment : Fragment() {
             setPadding(0, 0, 0, 24)
             container.addView(this)
         }
-        val phrase = android.widget.EditText(ctx).apply { hint = "Creator greeting phrase (e.g. AHONA-I-LOVE-YOU)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; setText(preferences.creatorSecretPhrase) }
+        val phrase = android.widget.EditText(ctx).apply { hint = "Creator key (min 8 characters, stored on this device only)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; setText(preferences.creatorSecretPhrase) }
         val name = android.widget.EditText(ctx).apply { hint = "Creator name (e.g. Ayan Sir)"; inputType = android.text.InputType.TYPE_CLASS_TEXT; setText(preferences.creatorName) }
         val email = android.widget.EditText(ctx).apply { hint = "Creator email (optional)"; inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; setText(preferences.creatorEmail) }
         for (et in listOf(phrase, name, email)) {
@@ -615,7 +611,7 @@ class SettingsFragment : Fragment() {
 
 
     private fun installVoiceExperienceRow() {
-        val anchor = binding.rowOverlayAvatars
+        val anchor = binding.rowVoiceUnlock
         val parent = anchor.parent as? ViewGroup ?: return
         if (parent.findViewWithTag<android.view.View>(voiceRowTag) != null) return
         val activity = requireContext()

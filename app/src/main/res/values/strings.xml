@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="overlay_edges">
-        <item>Right</item>
-        <item>Left</item>
-        <item>Top</item>
-        <item>Bottom</item>
-    </string-array>
     <string name="app_name">JARVIS</string>
     <string name="jarvis_title">JARVIS</string>
 
@@ -56,4 +50,3 @@
     <string name="category_routines">Routines</string>
     <string name="category_notes">Notes</string>
 </resources>
-

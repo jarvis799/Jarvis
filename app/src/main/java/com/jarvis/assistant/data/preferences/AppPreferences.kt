@@ -64,17 +64,11 @@ class AppPreferences(context: Context) {
     const val ORB_FACE = "face-flow"
     const val ORB_HUD = "hud-hologram"
     const val ORB_NEURAL = "neural"
+    const val ORB_HUD_TARGET = "hud-target"
         private const val KEY_OWNER_VOICE_THRESHOLD = "key_owner_voice_threshold"
         private const val KEY_OWNER_VOICE_SAMPLE_COUNT = "key_owner_voice_sample_count"
         private const val KEY_LANGUAGE = "key_language"
         private const val KEY_SILENT_EXECUTION_MODE = "key_silent_execution_mode"
-        private const val KEY_TASK_OVERLAY_ENABLED = "key_task_overlay_enabled"
-        private const val KEY_TASK_OVERLAY_AVATAR = "key_task_overlay_avatar"
-        private const val KEY_TASK_OVERLAY_MODE = "key_task_overlay_mode"
-        private const val KEY_TASK_OVERLAY_EDGE = "key_task_overlay_edge"
-        private const val KEY_TASK_OVERLAY_FREE_POSITION = "key_task_overlay_free_position"
-        private const val KEY_TASK_OVERLAY_X = "key_task_overlay_x"
-        private const val KEY_TASK_OVERLAY_Y = "key_task_overlay_y"
     private const val KEY_EDGE_LIGHTING_ENABLED = "key_edge_lighting_enabled"
     private const val KEY_VOICE_OVERLAY_ENABLED = "key_voice_overlay_enabled"
     private const val KEY_VOICE_OVERLAY_KEYBOARD = "key_voice_overlay_keyboard_enabled"
@@ -86,8 +80,6 @@ class AppPreferences(context: Context) {
         private const val KEY_ORB_GLOW = "key_orb_glow"
         private const val KEY_ORB_SCALE = "key_orb_scale"
         private const val KEY_ORB_HUE = "key_orb_hue"
-        private const val KEY_ORB_PARTICLES = "key_orb_particles"
-        private const val KEY_OFFLINE_REPLIES = "key_offline_replies"
         private const val KEY_CUSTOM_ENDPOINT = "key_custom_endpoint"
         private const val KEY_WAKE_WORD = "key_wake_word"
         private const val KEY_THIEF_GUARD = "key_thief_guard"
@@ -336,7 +328,7 @@ class AppPreferences(context: Context) {
         if (!prefs.getBoolean("holographic_hud_ui_v4", false)) {
             prefs.edit()
                 .putString(KEY_APP_THEME, "light")
-                .putString(KEY_ORB_STYLE, "neural")
+                .putString(KEY_ORB_STYLE, ORB_HUD_TARGET)
                 .putBoolean("liquid_glass_ui_v2", true)
                 .putBoolean("holographic_hud_ui_v4", true)
                 .commit()
@@ -345,11 +337,11 @@ class AppPreferences(context: Context) {
 
     var orbStyle: String
         get() {
-            val stored = prefs.getString(KEY_ORB_STYLE, ORB_NEURAL) ?: ORB_NEURAL
-            return if (stored == ORB_VOICE || stored == ORB_FACE || stored == ORB_HUD || stored == ORB_NEURAL) stored else ORB_SPEAKING
+            val stored = prefs.getString(KEY_ORB_STYLE, ORB_HUD_TARGET) ?: ORB_HUD_TARGET
+            return if (stored == ORB_HUD_TARGET || stored == ORB_VOICE || stored == ORB_FACE || stored == ORB_HUD || stored == ORB_NEURAL) stored else ORB_SPEAKING
         }
         set(value) {
-            val safe = if (value == ORB_VOICE || value == ORB_FACE || value == ORB_HUD || value == ORB_NEURAL) value else ORB_SPEAKING
+            val safe = if (value == ORB_HUD_TARGET || value == ORB_VOICE || value == ORB_FACE || value == ORB_HUD || value == ORB_NEURAL) value else ORB_SPEAKING
             prefs.edit().putString(KEY_ORB_STYLE, safe).apply()
         }
 
@@ -395,17 +387,6 @@ class AppPreferences(context: Context) {
     var orbHue: Float
         get() = prefs.getFloat(KEY_ORB_HUE, -1f)
         set(value) = prefs.edit().putFloat(KEY_ORB_HUE, value).apply()
-
-    /** How many particles the orb draws (20,000 - 200,000). */
-    var orbParticles: Int
-        get() = prefs.getInt(KEY_ORB_PARTICLES, com.jarvis.assistant.util.OrbDensity.DEFAULT_PARTICLES)
-            .coerceIn(com.jarvis.assistant.util.OrbDensity.MIN_PARTICLES, com.jarvis.assistant.util.OrbDensity.MAX_PARTICLES)
-        set(value) = prefs.edit().putInt(KEY_ORB_PARTICLES, value.coerceIn(com.jarvis.assistant.util.OrbDensity.MIN_PARTICLES, com.jarvis.assistant.util.OrbDensity.MAX_PARTICLES)).apply()
-
-    /** When the phone has no internet, answer from the on-device engine instead of failing. */
-    var offlineReplies: Boolean
-        get() = prefs.getBoolean(KEY_OFFLINE_REPLIES, true)
-        set(value) = prefs.edit().putBoolean(KEY_OFFLINE_REPLIES, value).apply()
 
     var customEndpoint: String
         get() = prefs.getString(KEY_CUSTOM_ENDPOINT, "")?.trim().orEmpty()
@@ -458,39 +439,6 @@ class AppPreferences(context: Context) {
     var isSilentExecutionMode: Boolean
         get() = prefs.getBoolean(KEY_SILENT_EXECUTION_MODE, false)
         set(value) = prefs.edit().putBoolean(KEY_SILENT_EXECUTION_MODE, value).apply()
-
-    var isTaskOverlayEnabled: Boolean
-        get() = prefs.getBoolean(KEY_TASK_OVERLAY_ENABLED, true)
-        set(value) = prefs.edit().putBoolean(KEY_TASK_OVERLAY_ENABLED, value).apply()
-
-    var taskOverlayAvatar: String
-        get() = prefs.getString(KEY_TASK_OVERLAY_AVATAR, "ghost") ?: "ghost"
-        set(value) {
-            val available = listOf("alien", "blob", "cat", "circle", "cloud", "droid", "drop", "flower", "ghost", "hexagon", "mech", "pebble", "pill", "puddle", "square", "star", "triangle")
-            prefs.edit().putString(KEY_TASK_OVERLAY_AVATAR, value.takeIf { it in available } ?: "ghost").apply()
-        }
-
-    /** always keeps the avatar visible while the service is alive; working limits it to active tasks. */
-    var taskOverlayMode: String
-        get() = prefs.getString(KEY_TASK_OVERLAY_MODE, "always") ?: "always"
-        set(value) = prefs.edit().putString(KEY_TASK_OVERLAY_MODE, if (value == "working") "working" else "always").apply()
-
-    /** Preferred dock edge. Dragging the overlay updates this to the closest edge. */
-    var taskOverlayEdge: String
-        get() = prefs.getString(KEY_TASK_OVERLAY_EDGE, "right") ?: "right"
-        set(value) = prefs.edit().putString(KEY_TASK_OVERLAY_EDGE, value.takeIf { it in setOf("left", "right", "top", "bottom") } ?: "right").apply()
-
-    var taskOverlayFreePosition: Boolean
-        get() = prefs.getBoolean(KEY_TASK_OVERLAY_FREE_POSITION, false)
-        set(value) = prefs.edit().putBoolean(KEY_TASK_OVERLAY_FREE_POSITION, value).apply()
-
-    var taskOverlayX: Int
-        get() = prefs.getInt(KEY_TASK_OVERLAY_X, -1)
-        set(value) = prefs.edit().putInt(KEY_TASK_OVERLAY_X, value.coerceAtLeast(0)).apply()
-
-    var taskOverlayY: Int
-        get() = prefs.getInt(KEY_TASK_OVERLAY_Y, -1)
-        set(value) = prefs.edit().putInt(KEY_TASK_OVERLAY_Y, value.coerceAtLeast(0)).apply()
 
     /** DEV STYLE: pastel rainbow edge-lighting on "Hey Jarvis" wake. */
     var isEdgeLightingEnabled: Boolean
