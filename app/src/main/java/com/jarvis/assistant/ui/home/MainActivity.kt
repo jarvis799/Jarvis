@@ -179,6 +179,11 @@ class MainActivity : AppCompatActivity() {
         // Do not show the admin-contact popup when opening the app.
         com.jarvis.assistant.JarvisApp.instance.preferences.pendingAdminContactPopup = false
 
+        // First launch: collect the Gemini API key before the dashboard is used.
+        if (savedInstanceState == null && !prefs.geminiOnboardingCompleted) {
+            startActivity(Intent(this, com.jarvis.assistant.ui.onboarding.GeminiOnboardingActivity::class.java))
+        }
+
         currentTab = savedInstanceState?.getInt("CURRENT_TAB", TAB_HOME) ?: TAB_HOME
 
         // Clear any old restored fragments to prevent ghost overlapping

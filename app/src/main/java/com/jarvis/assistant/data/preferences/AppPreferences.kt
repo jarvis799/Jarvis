@@ -89,6 +89,7 @@ class AppPreferences(context: Context) {
         private const val KEY_DEV_EMAIL = "key_dev_email"
         private const val KEY_EMAIL_APP_PASSWORD = "key_email_app_password"
         private const val KEY_SITE_AGENTS = "key_site_agents"
+        private const val KEY_GEMINI_ONBOARDING_DONE = "key_gemini_onboarding_done"
     }
 
     var isOwnerVoiceEnabled: Boolean
@@ -193,6 +194,11 @@ class AppPreferences(context: Context) {
         }
 
     val canStoreApiKeySecurely: Boolean get() = secureApiPrefs != null
+
+    /** True once the Gemini key onboarding screen has been saved or skipped. */
+    var geminiOnboardingCompleted: Boolean
+        get() = prefs.getBoolean(KEY_GEMINI_ONBOARDING_DONE, false)
+        set(value) = prefs.edit().putBoolean(KEY_GEMINI_ONBOARDING_DONE, value).apply()
 
     private fun migrateApiKeyToEncryptedStorage() {
         val legacyKey = prefs.getString(KEY_API_KEY, null)?.trim().orEmpty()

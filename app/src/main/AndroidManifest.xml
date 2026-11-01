@@ -77,6 +77,12 @@
         </activity>
 
         <activity
+            android:name=".ui.onboarding.GeminiOnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.JarvisAssistant.Light"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.settings.SettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait"
