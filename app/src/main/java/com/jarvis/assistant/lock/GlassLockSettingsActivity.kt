@@ -46,7 +46,7 @@ class GlassLockSettingsActivity : AppCompatActivity() {
             store.setLockEnabled(enabled)
             if (enabled) GlassLockNotifications.show(this) else GlassLockNotifications.cancel(this)
             status.text = if (enabled) {
-                "Enabled. Open it from Preview lock screen below; no notification is posted."
+                "Enabled. No notification and no preview are posted anywhere."
             } else {
                 "Disabled. Android's own lock screen is untouched."
             }
@@ -63,10 +63,6 @@ class GlassLockSettingsActivity : AppCompatActivity() {
             GlassWallpaper.clear(this)
             status.text = "Wallpaper removed."
         })
-        column.addView(MonoUi.actionRow(this, "Preview lock screen", "Open the full lock surface now") {
-            startActivity(Intent(this, GlassLockActivity::class.java))
-        })
-
         column.addView(MonoUi.label(this, "Security"))
         column.addView(MonoUi.actionRow(
             this,

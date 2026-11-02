@@ -120,7 +120,6 @@ class SettingsFragment : Fragment() {
         com.jarvis.assistant.util.ThemeManager.applyDynamicBackground(binding.root)
 
         loadUserData()
-        com.jarvis.assistant.lock.LockSettingsRow.install(binding)
         setupClickListeners()
     }
 

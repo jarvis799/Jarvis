@@ -352,7 +352,6 @@ ${creatorStatusBlock()}
         "Sub agent gulo nijer real state bole ar setup step jane - WhatsApp ar Email auto reply.",
         "Jarvis ekhon nijer sob feature ar kivabe use korte hoy ta jane, user ke korte bole na.",
         "10000+ multilingual command pack - instant fast responses (English, Bangla, Banglish, Hindi, Hinglish).",
-        "Pastel rainbow edge lighting - 'Hey Jarvis' bollei screen er charpashe glow.",
         "Gmail aur Calendar in-app chalte hain - external app khulta hi nahi.",
         "Chat me image/file attach karke Jarvis ko bhej sakte ho.",
         "Background terminal - shell/package commands chupchap chalte hain.",

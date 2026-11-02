@@ -30,7 +30,7 @@ object FeatureKnowledge {
         "Photo memory, weather card, live web search, screen share visual tasks",
         "QR/barcode scanner with OCR, multi-command sentences",
         "On-Guard thief watch and official device lock (Device Administrator)",
-        "Custom Voice Unlock phrases and private reference samples in Settings; Android PIN, pattern, password or biometrics remain required. Separate monochrome Liquid Glass lock-screen companion with Gallery wallpaper, camera and flashlight",
+        "Custom Voice Unlock phrases and private reference samples in Settings; Android PIN, pattern, password or biometrics remain required",
         "Every feature is free and unlimited for every user - no licence key, no daily limit",
         "Plugin Lab: install extra skills as JSON plugins",
         "In-app media viewer: YouTube and Instagram play right inside Jarvis",
@@ -64,10 +64,7 @@ object FeatureKnowledge {
         "Gemini app kholе prompt likhe image create, download kore Files theke khola",
         "Daraz/AliExpress/Amazon e product search kore best match khule dey",
         "Knowledge core boro holo: science, code, math, health, money, law, bhasha, duniya - sob eksathe",
-        "Lock screen ekhon premium: boro thin clock, date, glass weather card, battery ar real unlock",
-        "Lock screen theke Unlock chaple Android er nijer biometric ba PIN confirm hoy - kono fake pass nei",
         "Voice phrase mile gele o Android security confirm kortei hoy; microphone auto start hoy screen khola matro",
-        "Flashlight ar camera shortcut lock screen theke sotti kaj kore",
         "Chat e kichu likhe send korlei message sathe sathe chat e ashe - ar kono 'kichu hoy na' nei",
         "Jotogulo Gemini key chan add korun: ekta key er limit sesh hole porer key te automatic switch hoy",
         "Gmail settings e ekhon nijer HTML reply template set kora jay, sathe HTML design switch",
@@ -129,7 +126,7 @@ object FeatureKnowledge {
         results += "Camera" to granted(Manifest.permission.CAMERA)
         results += "Microphone" to granted(Manifest.permission.RECORD_AUDIO)
         results += "Contacts" to granted(Manifest.permission.READ_CONTACTS)
-        results += "Display over other apps (edge lighting)" to Settings.canDrawOverlays(context)
+        results += "Display over other apps (floating tools)" to Settings.canDrawOverlays(context)
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val admin = android.content.ComponentName(context, DeviceLockReceiver::class.java)
         results += "Device admin (phone lock)" to dpm.isAdminActive(admin)

@@ -32,9 +32,6 @@ class VoiceUnlockPanel(private val activity: android.app.Activity, column: Linea
         editor = VoicePhraseEditor(activity, column, withMic) { status.text = it }
         column.addView(MonoUi.text(activity, "Backup authentication: always available through Android's original lock screen."))
         column.addView(MonoUi.button(activity, "Open Android security settings") { activity.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)) })
-        column.addView(MonoUi.button(activity, "Liquid Glass Lock Screen") {
-            activity.startActivity(Intent(activity, GlassLockSettingsActivity::class.java))
-        })
     }
     fun refresh() { refreshing = true; enabled.isChecked = UnlockManager.isEnabled(activity); refreshing = false }
     fun close() = editor.close()
