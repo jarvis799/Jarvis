@@ -253,6 +253,9 @@ class JarvisConversationService : Service() {
                     if (r != null) {
                         _liveUserTranscript.value = text; _liveAssistantResponse.value = r
                         _events.emit(r); JarvisApp.instance.chatRepository.addTurn(text, r)
+                        // A device-side command answers in text only, so speak it here: typing
+                        // "open YouTube" used to get a written reply and no voice at all.
+                        com.jarvis.assistant.voice.ChatSpeech.speak(JarvisApp.instance, r)
                     } else {
                         val s = activeInstance
                         val http = s?.httpSession
@@ -731,6 +734,27 @@ class JarvisConversationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Anything failing while the mic comes up used to escape to the main thread and close the
+        // app. The boot path now reports the problem inside the app and keeps the process alive.
+        return try {
+            handleStartCommand(intent, startId)
+        } catch (t: Throwable) {
+            Log.e("JarvisService", "Session start failed: ${t.message}", t)
+            com.jarvis.assistant.util.CrashGuard.record(this, "session-start", t)
+            _isSessionOn.value = false
+            runCatching {
+                setLiveError(JarvisLiveError(
+                    title = "COULD NOT START",
+                    message = "Jarvis could not open the microphone on this phone. Close other apps using the mic and retry.",
+                    errorCode = "START_FAILED",
+                    actionText = "RETRY"
+                ))
+            }
+            START_STICKY
+        }
+    }
+
+    private fun handleStartCommand(intent: Intent?, startId: Int): Int {
         if (!com.jarvis.assistant.security.AppIdentityVerifier.isTrustedRelease(this)) {
             Log.e("JarvisService", "Blocked service start: release signing certificate did not match the configured pin")
             stopSelf(startId)
@@ -845,14 +869,15 @@ class JarvisConversationService : Service() {
         startInactivityTimer()
         setConversationState(ConversationState.IDLE)
         updateNotification()
-        headsetAudioRouter?.start()
+        runCatching { headsetAudioRouter?.start() }
 
         val httpEndpoint = com.jarvis.assistant.network.EndpointConfig.httpEndpoint(apiKey, preferences.customEndpoint)
         if (httpEndpoint != null || apiKey.isBlank() || (!com.jarvis.assistant.model.LlmRouter.isOnline(this) && com.jarvis.assistant.model.LlmRouter.localReady(this))) {
             startHttpConversation(httpEndpoint ?: ""); return
         }
 
-        audioPlayer = AudioPlayer(
+        audioPlayer = runCatching {
+            AudioPlayer(
             onPlaybackStateChanged = { isPlaying ->
                 if (isPlaying) {
                     setConversationState(ConversationState.SPEAKING)
@@ -877,6 +902,10 @@ class JarvisConversationService : Service() {
                 }
             }
         ).apply { start() }
+        }.getOrElse { error ->
+            Log.e("JarvisService", "Speaker unavailable: ${error.message}")
+            null
+        }
 
         serviceScope.launch(Dispatchers.IO) {
             val systemPrompt = generateCurrentSystemPrompt()
@@ -943,8 +972,10 @@ class JarvisConversationService : Service() {
                             // Silent execution applies to task narration, while leaving ordinary
                             // conversation audible. Read the preference dynamically so toggling
                             // it during a session takes effect immediately.
+                            // Only the turn that is actually running a command stays silent. A task
+                            // finished earlier in the session must never mute ordinary conversation.
                             if (preferences.isSilentExecutionMode &&
-                                (isAutonomousTaskRunning || hasExecutedCommandInCurrentTurn || !lastCompletedTaskSummary.isNullOrBlank())
+                                (isAutonomousTaskRunning || hasExecutedCommandInCurrentTurn)
                             ) {
                                 audioPlayer?.flush()
                                 return
