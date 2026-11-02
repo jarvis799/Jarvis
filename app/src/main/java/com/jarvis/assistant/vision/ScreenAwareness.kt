@@ -80,6 +80,51 @@ object ScreenAwareness {
             ". Use this instead of asking the user what is on screen."
     }
 
+    /**
+     * One spoken answer about where something sits on screen ("top right", "middle centre"),
+     * read from the real accessibility bounds - not a guess and not "start Screen Share".
+     */
+    fun describeLayout(target: String = ""): String {
+        val root = runCatching { UiActionExecutor.activeRoot() }.getOrNull()
+            ?: return "Accessibility access is off, so I cannot see the screen right now."
+        val elements = runCatching { engine.scanScreen(root) }.getOrDefault(emptyList())
+        if (elements.isEmpty()) return "This screen exposes no readable elements yet."
+        val screen = runCatching { android.graphics.Rect().also { root.getBoundsInScreen(it) } }.getOrNull()
+        val width = if (screen != null && screen.width() > 0) screen.width().toFloat() else 1080f
+        val height = if (screen != null && screen.height() > 0) screen.height().toFloat() else 1920f
+
+        fun place(element: UiElementInfo): String {
+            val vertical = when {
+                element.center.y < height / 3f -> "top"
+                element.center.y < height * 2f / 3f -> "middle"
+                else -> "bottom"
+            }
+            val horizontal = when {
+                element.center.x < width / 3f -> "left"
+                element.center.x < width * 2f / 3f -> "centre"
+                else -> "right"
+            }
+            return vertical + " " + horizontal
+        }
+
+        val wanted = target.trim().lowercase()
+        if (wanted.isNotEmpty()) {
+            val hit = elements.firstOrNull { it.primaryLabel.lowercase() == wanted }
+                ?: elements.firstOrNull { it.primaryLabel.lowercase().contains(wanted) }
+                ?: elements.firstOrNull { it.primaryLabel.length > 2 && wanted.contains(it.primaryLabel.lowercase()) }
+            if (hit == null) {
+                val visible = elements.map { it.primaryLabel }.filter { it.length in 2..40 }.distinct().take(12)
+                return if (visible.isEmpty()) "That is not on this screen." else
+                    "I cannot see that here. Visible now: " + visible.joinToString(", ")
+            }
+            return hit.primaryLabel + " is at the " + place(hit) + " of the screen."
+        }
+
+        val described = elements.filter { it.primaryLabel.length in 2..40 }.distinctBy { it.primaryLabel }
+            .take(12).joinToString("; ") { it.primaryLabel + " - " + place(it) }
+        return "On this screen: " + described
+    }
+
     private fun appLabel(packageName: String): String {
         if (packageName.isBlank()) return ""
         return runCatching {
