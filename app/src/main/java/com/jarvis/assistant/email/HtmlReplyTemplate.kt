@@ -101,7 +101,7 @@ object HtmlReplyTemplate {
 
     /** "Rahim Ahmed" -> "Rahim"; an address -> the part before @. */
     fun firstName(raw: String): String {
-        val clean = raw.trim().trim('<', '>')
+        val clean = raw.trim()
         val beforeAt = clean.substringBefore("@")
         val first = beforeAt.trim('"', ' ', '\u0027').split(Regex("[\\s.]+")).firstOrNull { it.isNotBlank() }.orEmpty()
         return first.ifBlank { "there" }
