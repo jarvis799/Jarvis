@@ -287,7 +287,7 @@ class ChatFragment : Fragment() {
         root.layoutThinking.visibility = View.VISIBLE
         root.viewThinkingDots.start()
         root.root.removeCallbacks(thinkingTimeout)
-        root.root.postDelayed(thinkingTimeout, 90_000L)
+        root.root.postDelayed(thinkingTimeout, 30_000L)
     }
 
     private fun hideThinking() {
