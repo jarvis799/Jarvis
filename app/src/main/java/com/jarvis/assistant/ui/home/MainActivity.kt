@@ -247,6 +247,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.refreshSettings()
         com.jarvis.assistant.background.JarvisConversationService.maybeSendBossGreeting()
         showWelcomeBackGreeting()
+        com.jarvis.assistant.automation.accessibility.AccessibilityWatchdog.ensureUsable(this)
         val prefs = com.jarvis.assistant.JarvisApp.instance.preferences
         if (appliedThemeKey != prefs.appTheme || appliedCustomHex != prefs.customThemeColor) {
             appliedThemeKey = prefs.appTheme
