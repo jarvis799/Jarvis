@@ -15,6 +15,14 @@ object LiveNativeTools {
 
     suspend fun execute(context: Context, name: String, args: JSONObject): JSONObject {
         when (name) {
+            "website_api" -> {
+                val action = args.optString("action")
+                val extra = runCatching {
+                    JSONObject(args.optString("params").ifBlank { "{}" })
+                }.getOrDefault(JSONObject())
+                return com.jarvis.assistant.website.WebsiteControl.run(context, action, extra)
+            }
+
             "get_email_status" -> return JSONObject().apply {
                 put("credentials_saved", GmailStore.isConnected(context))
                 put("connection_verified", GmailStore.connectionVerified(context))

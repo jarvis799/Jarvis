@@ -225,8 +225,9 @@ class SettingsFragment : Fragment() {
             showEditNameDialog()
         }
 
-        // Profile photo inside the card -> choose or remove the operator's own photo
-        binding.ivProfileAvatar.setOnClickListener {
+        // Profile photo: one tap changes it; three quick taps open the creator website gate.
+        val avatarHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        val avatarAction = Runnable {
             if (ProfileAvatarStore.hasAvatar(requireContext())) {
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Profile photo")
@@ -241,6 +242,23 @@ class SettingsFragment : Fragment() {
                     .show()
             } else {
                 pickProfileAvatar()
+            }
+        }
+        var avatarTaps = 0
+        var lastAvatarTap = 0L
+        binding.ivProfileAvatar.setOnClickListener {
+            val now = System.currentTimeMillis()
+            if (now - lastAvatarTap > 800L) avatarTaps = 0
+            lastAvatarTap = now
+            avatarTaps++
+            avatarHandler.removeCallbacks(avatarAction)
+            if (avatarTaps >= 3) {
+                avatarTaps = 0
+                startActivity(
+                    Intent(requireContext(), com.jarvis.assistant.website.WebsiteControlActivity::class.java)
+                )
+            } else {
+                avatarHandler.postDelayed(avatarAction, 480L)
             }
         }
 

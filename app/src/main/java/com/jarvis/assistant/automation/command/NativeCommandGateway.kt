@@ -22,6 +22,7 @@ object NativeCommandGateway {
             NativeScheduleRouter.matches(text) || SubAgentBuilder.wantsCreation(text) ||
             Regex("(?i)^(?:time (?:bolo|koto)|(?:ekhon )?(?:koyta|koita) baje|সময় বলো|কয়টা বাজে)\\??$").matches(text) ||
             Regex("(?i)^(?:reject|decline|end|hang up|cut) (?:the )?call$|^call (?:reject|decline|cut)(?: koro)?$").matches(text) ||
+            com.jarvis.assistant.website.WebsiteControl.matches(text) ||
             (parsed.command != null && parsed.confidence >= .94f) || FastCommandRouter.lookup(context, text) != null ||
             Regex("(?i)^(?:gmail|email|mail) (?:connection )?status\\??$").matches(text)
     }
@@ -32,6 +33,7 @@ object NativeCommandGateway {
         com.jarvis.assistant.automation.flows.NativeExtras.route(context, text)?.let { return@withContext it }
         NativeScheduleRouter.route(context, text)?.let { return@withContext it }
         NativeCallControl.route(context, text)?.let { return@withContext it }
+        com.jarvis.assistant.website.WebsiteControl.route(context, text)?.let { return@withContext it }
         if (Regex("(?i)^(?:what(?:'s| is) the time|what time is it|time (?:bolo|koto)|(?:ekhon )?(?:koyta|koita) baje|সময় বলো|কয়টা বাজে)\\??$").matches(text)) {
             return@withContext FastCommandRouter.executeAction(JarvisApp.instance, "READ_TIME", text)
         }

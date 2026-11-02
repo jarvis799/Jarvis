@@ -780,6 +780,25 @@ class GeminiLiveWebSocket(
                         })
 
                         put(JSONObject().apply {
+                            put("name", "website_api")
+                            put("description", "Controls Jarvis's own website (jarvis-asistantt.base44.app) through its live API. Use whenever the user asks about the website: health, download count, stats, latest release, site content, or - for the verified creator only - dashboard, users, devices, setDeviceStatus, releases, saveRelease, publishRelease, reports, audit, saveConfig, saveSite. Public actions need no key.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject().apply {
+                                    put("action", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "health, docs, config, version, latestRelease, siteContent, stats, register, verify, heartbeat, report, incrementDownload, creatorVerify, dashboard, users, devices, setDeviceStatus, releases, saveRelease, publishRelease, reports, audit, saveConfig, saveSite")
+                                    })
+                                    put("params", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "Optional extra JSON for the action, for example version_code 217. Leave empty for reads.")
+                                    })
+                                })
+                                put("required", JSONArray().put("action"))
+                            })
+                        })
+
+                        put(JSONObject().apply {
                             put("name", "run_python_snippet")
                             put("description", "Runs one of the user's saved Python snippets by name (Python Automation screen). Use when the user says run my script, my bot, my python snippet.")
                             put("parameters", JSONObject().apply {

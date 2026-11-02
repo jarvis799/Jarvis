@@ -12,6 +12,7 @@ object LocalToolNames {
         "screen_awareness",
         "run_python",
         "run_python_snippet",
-        "run_app_flow"
+        "run_app_flow",
+        "website_api"
     )
 }
