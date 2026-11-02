@@ -55,11 +55,11 @@ class LiveInputGate {
     }
 
     private companion object {
-        const val MIN_VOICED = 0.05f
-        const val NOISE_MULTIPLIER = 2.0f
-        const val MAX_FLOOR = 0.08f
+        const val MIN_VOICED = 0.032f
+        const val NOISE_MULTIPLIER = 1.6f
+        const val MAX_FLOOR = 0.06f
         const val WINDOW_FRAMES = 40
-        const val ONSET_MS = 260f
-        const val TAIL_MS = 700f
+        const val ONSET_MS = 170f
+        const val TAIL_MS = 600f
     }
 }
