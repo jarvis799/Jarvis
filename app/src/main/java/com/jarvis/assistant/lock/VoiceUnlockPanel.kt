@@ -19,6 +19,7 @@ class VoiceUnlockPanel(private val activity: android.app.Activity, column: Linea
         enabled = MonoUi.toggle(activity, "Enable Voice Unlock", UnlockManager.isEnabled(activity)) { on ->
             if (!refreshing && on) withMic {
                 UnlockManager.setEnabled(activity, true)
+                JarvisConversationService.setPoweredOff(activity, false)
                 ContextCompat.startForegroundService(activity, Intent(activity, JarvisConversationService::class.java).setAction(JarvisConversationService.ACTION_ENTER_STANDBY))
                 status.text = "Background listener enabled. Keep Jarvis's microphone notification active."
             } else if (!refreshing) { UnlockManager.setEnabled(activity, false); status.text = "Voice Unlock disabled." }
