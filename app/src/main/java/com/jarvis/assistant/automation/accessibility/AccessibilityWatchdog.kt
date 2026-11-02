@@ -15,17 +15,20 @@ import android.provider.Settings
 object AccessibilityWatchdog {
     private var prompted = false
 
-    fun isEnabled(context: Context): Boolean = runCatching {
-        val component = ComponentName(context, JarvisAccessibilityService::class.java)
-        val raw = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-        raw.split(':').any { entry ->
-            entry.equals(component.flattenToString(), true) ||
-                entry.endsWith("JarvisAccessibilityService", true)
-        }
-    }.getOrDefault(false)
+    fun isEnabled(context: Context): Boolean {
+        return runCatching {
+            val component = ComponentName(context, JarvisAccessibilityService::class.java)
+            val raw = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ).orEmpty()
+            if (raw.isEmpty()) false
+            else raw.split(':').any { entry ->
+                entry.equals(component.flattenToString(), true) ||
+                    entry.endsWith("JarvisAccessibilityService", true)
+            }
+        }.getOrDefault(false)
+    }
 
     fun ensureUsable(activity: Activity) {
         if (isEnabled(activity) || prompted) return
