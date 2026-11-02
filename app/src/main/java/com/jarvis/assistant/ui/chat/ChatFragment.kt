@@ -268,7 +268,9 @@ class ChatFragment : Fragment() {
         binding.etMessageInput.hint = "Jarvis is thinking offline…"
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val reply = com.jarvis.assistant.model.OfflineReply.answer(app, text)
+                val reply = com.jarvis.assistant.background.AgentTurn.run(app, text) {
+                    com.jarvis.assistant.model.OfflineReply.answer(app, it)
+                }
                 app.chatRepository.addTurn(text, reply)
             } catch (error: kotlinx.coroutines.CancellationException) { throw error }
             catch (error: Exception) { app.chatRepository.addTurn(text, "Offline reply failed: ${error.message}") }
