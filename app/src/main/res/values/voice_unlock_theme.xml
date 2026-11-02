@@ -15,4 +15,24 @@
         <item name="android:windowLightNavigationBar">true</item>
         <item name="colorError">#000000</item>
     </style>
+
+    <!-- Premium monochrome surface for the Jarvis lock screen and its settings page. -->
+    <style name="Theme.JarvisLock" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">#FFFFFF</item>
+        <item name="colorPrimaryVariant">#FFFFFF</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorSecondary">#FFFFFF</item>
+        <item name="colorOnSecondary">#000000</item>
+        <item name="colorAccent">#FFFFFF</item>
+        <item name="android:colorAccent">#FFFFFF</item>
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="colorControlActivated">#FFFFFF</item>
+        <item name="colorControlHighlight">#33FFFFFF</item>
+        <item name="colorError">#FFFFFF</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>

@@ -19,6 +19,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -213,8 +215,8 @@
             android:stopWithTask="false"
             android:foregroundServiceType="microphone|mediaPlayback|mediaProjection" />
 
-        <activity android:name=".lock.GlassLockActivity" android:theme="@style/Theme.JarvisVoiceUnlock" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
-        <activity android:name=".lock.GlassLockSettingsActivity" android:theme="@style/Theme.JarvisVoiceUnlock" android:exported="false" />
+        <activity android:name=".lock.GlassLockActivity" android:theme="@style/Theme.JarvisLock" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
+        <activity android:name=".lock.GlassLockSettingsActivity" android:theme="@style/Theme.JarvisLock" android:exported="false" />
 <service
             android:name=".security.ThiefGuardService"
             android:exported="false"
