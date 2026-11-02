@@ -90,6 +90,23 @@ class JarvisConversationService : Service() {
         const val ACTION_START_CONVERSATION = "com.jarvis.assistant.START_CONVERSATION"
         const val ACTION_STOP_ALL = "com.jarvis.assistant.STOP_ALL"
         const val ACTION_ENTER_STANDBY = "com.jarvis.assistant.ENTER_STANDBY"
+
+        // Power state. Once the owner taps Stop, no boot, lock-screen or accessibility path may
+        // start the listener again - only a deliberate Start does.
+        private const val POWER_STATE_PREFS = "jarvis_power_state"
+        private const val KEY_POWERED_OFF = "powered_off"
+
+        fun isPoweredOff(context: android.content.Context): Boolean = runCatching {
+            context.getSharedPreferences(POWER_STATE_PREFS, android.content.Context.MODE_PRIVATE)
+                .getBoolean(KEY_POWERED_OFF, false)
+        }.getOrDefault(false)
+
+        fun setPoweredOff(context: android.content.Context, off: Boolean) {
+            runCatching {
+                context.getSharedPreferences(POWER_STATE_PREFS, android.content.Context.MODE_PRIVATE)
+                    .edit().putBoolean(KEY_POWERED_OFF, off).apply()
+            }
+        }
         fun pauseForLocalCapture(ready: () -> Unit) = com.jarvis.assistant.lock.SharedMicrophone.pause(_isSessionOn.value, _isStandby.value, { activeInstance?.stopActiveConversation(); activeInstance?.exitStandbyListening() }, { mode -> if (mode == "active") activeInstance?.beginActiveConversation() else if (mode == "standby") activeInstance?.enterStandby(announce = false) }, ready)
         private const val CHANNEL_ID = "jarvis_conversation"
         private const val NOTIFICATION_ID = 41
@@ -770,11 +787,21 @@ class JarvisConversationService : Service() {
             stopSelf(startId)
             return START_NOT_STICKY
         }
+        // A stopped Jarvis stays stopped: the system, the lock screen and the accessibility
+        // service all used to restart the standby listener seconds after the Stop tap.
+        if (isPoweredOff(this) && intent?.action != ACTION_START_CONVERSATION) {
+            Log.i("JarvisService", "Ignored start request while powered off (${intent?.action})")
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
         ensureMicrophoneForegroundService()
         acquireWakeLock()
 
         when (intent?.action) {
             ACTION_START_CONVERSATION -> {
+                setPoweredOff(this, false)
                 com.jarvis.assistant.audio.JarvisSoundEffects.playWakeSound()
                 beginActiveConversation()
             }
@@ -3788,6 +3815,8 @@ class JarvisConversationService : Service() {
     // ---------------------------------------------------------------------
 
     private fun fullStop() {
+        // Remember the stop so nothing auto-starts the listener again.
+        setPoweredOff(this, true)
         stopActiveConversation()
         exitStandbyListening()
         _isStandby.value = false
