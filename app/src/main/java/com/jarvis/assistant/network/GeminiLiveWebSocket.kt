@@ -62,6 +62,7 @@ class GeminiLiveWebSocket(
 
     private var sessionRenewalJob: Job? = null
     private var reconnectJob: Job? = null
+    private var reconnectAttempts = 0
     var promptProvider: (() -> String)? = null
 
     fun isSessionReady(): Boolean = isConnected.get() && isSetupComplete.get()
@@ -134,8 +135,8 @@ class GeminiLiveWebSocket(
                     if (isQuotaError) {
                         if (trySwitchToNextKey()) { scheduleReconnect(); return }
                         Log.w(TAG, "Gemini rate-limited or connection collision (code=$code, reason=$reason). Retrying in cooldown...")
-                        listener.onConnectionStateChanged("COOLDOWN • RETRYING")
-                        scheduleReconnect()
+                        listener.onConnectionStateChanged("RATE LIMIT • RETRYING SOON")
+                        scheduleReconnect(quota = true)
                         return
                     }
 
@@ -202,9 +203,10 @@ class GeminiLiveWebSocket(
 
                     if (isQuotaError) {
                         if (trySwitchToNextKey()) { scheduleReconnect(); return }
+                        val retryAfterMs = response?.header("Retry-After")?.trim()?.toLongOrNull()?.times(1000L) ?: 0L
                         Log.w(TAG, "Quota / rate limit hit (HTTP $code: $errorMsg). Retrying in cooldown...")
-                        listener.onConnectionStateChanged("COOLDOWN • RETRYING")
-                        scheduleReconnect()
+                        listener.onConnectionStateChanged("RATE LIMIT • RETRYING SOON")
+                        scheduleReconnect(quota = true, hintMs = retryAfterMs)
                         return
                     }
 
@@ -791,7 +793,7 @@ class GeminiLiveWebSocket(
                                     })
                                     put("params", JSONObject().apply {
                                         put("type", "STRING")
-                                        put("description", "Optional extra JSON for the action, for example version_code 217. Leave empty for reads.")
+                                        put("description", "Optional extra JSON for the action, for example {\\\"version_code\\\":217}. Leave empty for reads.")
                                     })
                                 })
                                 put("required", JSONArray().put("action"))
@@ -911,6 +913,7 @@ class GeminiLiveWebSocket(
             if (json.has("setupComplete")) {
                 Log.i(TAG, "Server acknowledged setup: setupComplete received. Session is now LIVE!")
                 if (!isSetupComplete.getAndSet(true)) {
+                    markSessionLive()
                     listener.onConnectionStateChanged("LIVE")
                     startSessionRenewal()
                 }
@@ -920,6 +923,7 @@ class GeminiLiveWebSocket(
             // Ensure session is marked ready if server sends content before explicit setupComplete
             if (!isSetupComplete.get() && (json.has("serverContent") || json.has("toolCall"))) {
                 isSetupComplete.set(true)
+                markSessionLive()
                 listener.onConnectionStateChanged("LIVE")
                 startSessionRenewal()
             }
@@ -1184,15 +1188,29 @@ class GeminiLiveWebSocket(
         }
     }
 
-    private fun scheduleReconnect() {
+    private fun scheduleReconnect(quota: Boolean = false, hintMs: Long = 0L) {
         reconnectJob?.cancel()
+        reconnectAttempts++
+        // Exponential backoff. Retrying every 500 ms is what kept the session stuck on
+        // "COOLDOWN • RETRYING": every attempt spent one more request against the key's
+        // per-minute Live quota, so the cooldown never had a chance to expire.
+        val base = if (quota) 15_000L else 1_500L
+        val grown = base shl (reconnectAttempts - 1).coerceAtMost(4)
+        val ceiling = if (quota) 120_000L else 30_000L
+        val waitMs = maxOf(hintMs, grown).coerceAtMost(ceiling)
         reconnectJob = coroutineScope?.launch(Dispatchers.IO) {
-            delay(500)
+            delay(waitMs)
             if (!isManuallyStopped.get()) {
-                Log.d(TAG, "Attempting auto-reconnect...")
+                Log.d(TAG, "Auto-reconnect attempt $reconnectAttempts after ${waitMs}ms")
                 initiateConnection()
             }
         }
+    }
+
+    /** A live session resets the backoff, so one bad moment never slows the next connection. */
+    private fun markSessionLive() {
+        reconnectAttempts = 0
+        keySwitchAttempts = 0
     }
 
     private fun stopTimers() {
