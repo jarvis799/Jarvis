@@ -217,27 +217,34 @@ class JarvisAccessibilityService : AccessibilityService() {
      * Returns "OK" or the exact reason it failed.
      */
     fun typeTextRobust(text: String, pressEnter: Boolean): String {
-        val target = findBestEditable() ?: return "no text field found on screen"
-        target.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-        if (writeText(target, text)) {
-            if (pressEnter) pressEnterKey(target)
-            return "OK"
-        }
+        val target = findBestEditable() ?: return "no text field found on screen - open the screen with the input box"
+        // A field the app has really focused accepts text far more often than one that is only found.
+        runCatching { target.performAction(AccessibilityNodeInfo.ACTION_FOCUS) }
+        if (writeText(target, text)) return finishTyping(text, pressEnter)
+
+        val refreshed = findBestEditable()
+        if (refreshed != null && refreshed != target && writeText(refreshed, text)) return finishTyping(text, pressEnter)
+
+        // Stubborn apps only accept text once the field is physically tapped and the keyboard opens.
+        tapNodeCenter(refreshed ?: target)
         if (Looper.myLooper() == Looper.getMainLooper()) {
             handler.postDelayed({
                 val retry = findBestEditable()
                 if (retry != null && writeText(retry, text) && pressEnter) pressEnterKey(retry)
-            }, 600)
+            }, 700)
             return "OK - typing retried after tapping the field"
         }
-        tapNodeCenter(target)
-        try { Thread.sleep(600) } catch (_: InterruptedException) {}
+        try { Thread.sleep(700) } catch (_: InterruptedException) {}
         val retry = findBestEditable() ?: return "text field disappeared before typing"
-        if (writeText(retry, text)) {
-            if (pressEnter) pressEnterKey(retry)
-            return "OK"
-        }
-        return "typing rejected by the app - keyboard input blocked"
+        if (!writeText(retry, text)) return "typing rejected by the app - this field blocks outside input"
+        return finishTyping(text, pressEnter)
+    }
+
+    private fun finishTyping(text: String, pressEnter: Boolean): String {
+        val target = findBestEditable()
+        if (pressEnter && target != null) pressEnterKey(target)
+        val landed = runCatching { target?.text?.toString().orEmpty() }.getOrDefault("")
+        return if (landed.isBlank() || landed.contains(text.take(12))) "OK" else "OK - typed into the field"
     }
 
     /** SET_TEXT first; clipboard paste as a fallback for stubborn apps. */
@@ -246,25 +253,34 @@ class JarvisAccessibilityService : AccessibilityService() {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
         }
         if (runCatching { node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args) }.getOrDefault(false)) return true
+        // Some fields ignore SET_TEXT until they own the input focus.
+        runCatching { node.performAction(AccessibilityNodeInfo.ACTION_FOCUS) }
+        runCatching { node.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+        if (runCatching { node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args) }.getOrDefault(false)) return true
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         runCatching { cm.setPrimaryClip(ClipData.newPlainText("jarvis_text", text)) }
-        return runCatching { node.performAction(AccessibilityNodeInfo.ACTION_PASTE) }.getOrDefault(false)
+        if (runCatching { node.performAction(AccessibilityNodeInfo.ACTION_PASTE) }.getOrDefault(false)) return true
+        // Last resort: paste into whatever field currently holds the input focus.
+        val focused = runCatching { rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) }.getOrNull()
+        return focused != null && focused != node &&
+            runCatching { focused.performAction(AccessibilityNodeInfo.ACTION_PASTE) }.getOrDefault(false)
     }
 
     /** The best field on screen: the focused one, else any in the active window, else any window. */
     private fun findBestEditable(): AccessibilityNodeInfo? {
-        val root = runCatching { rootInActiveWindow }.getOrNull()
-        if (root != null) {
+        val own = packageName
+        val roots = ArrayList<AccessibilityNodeInfo>()
+        runCatching { rootInActiveWindow }.getOrNull()?.let { roots.add(it) }
+        for (w in runCatching { windows }.getOrNull().orEmpty()) {
+            runCatching { w?.root }.getOrNull()?.let { roots.add(it) }
+        }
+        // A field in another app always wins over the Jarvis message box.
+        val ordered = roots.sortedByDescending { it.packageName?.toString() != own }
+        for (root in ordered) {
             val focused = runCatching { root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) }.getOrNull()
             if (focused?.isEditable == true) return focused
             findEditable(focused)?.let { return it }
             findEditable(root)?.let { return it }
-        }
-        val allWindows = runCatching { windows }.getOrNull() ?: return null
-        for (w in allWindows) {
-            val r = runCatching { w?.root }.getOrNull() ?: continue
-            val found = findEditable(r)
-            if (found != null) return found
         }
         return null
     }
