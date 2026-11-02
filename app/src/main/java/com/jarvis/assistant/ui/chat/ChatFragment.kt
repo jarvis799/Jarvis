@@ -32,6 +32,10 @@ class ChatFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: MainViewModel get() = (requireActivity() as MainActivity).viewModel
 
+    // True from the moment a message goes out until the reply actually lands in the list.
+    private var awaitingReply = false
+    private val thinkingTimeout = Runnable { hideThinking() }
+
     private val chatAdapter = JarvisChatAdapter(
         onEditUserMessage = { text ->
             binding.etMessageInput.setText(text)
@@ -230,6 +234,7 @@ class ChatFragment : Fragment() {
         app.chatRepository.addTurn(text, "")
         binding.etMessageInput.text?.clear()
         hideKeyboard()
+        showThinking()
 
         val preferences = app.preferences
         val remoteConfigured = preferences.apiKey.isNotBlank() ||
@@ -270,8 +275,27 @@ class ChatFragment : Fragment() {
             finally {
                 _binding?.btnSendMessage?.isEnabled = true
                 _binding?.etMessageInput?.hint = "Message Jarvis…"
+                hideThinking()
             }
         }
+    }
+
+    /** Shows the animated dots until a real reply arrives (or the safety timeout fires). */
+    private fun showThinking() {
+        awaitingReply = true
+        val root = _binding ?: return
+        root.layoutThinking.visibility = View.VISIBLE
+        root.viewThinkingDots.start()
+        root.root.removeCallbacks(thinkingTimeout)
+        root.root.postDelayed(thinkingTimeout, 90_000L)
+    }
+
+    private fun hideThinking() {
+        awaitingReply = false
+        val root = _binding ?: return
+        root.root.removeCallbacks(thinkingTimeout)
+        root.viewThinkingDots.stop()
+        root.layoutThinking.visibility = View.GONE
     }
 
     private fun hideKeyboard() {
@@ -285,6 +309,9 @@ class ChatFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.chatTurns.collect { turns ->
+                    if (awaitingReply && turns.lastOrNull()?.jarvisResponse?.isNotBlank() == true) {
+                        hideThinking()
+                    }
                     chatAdapter.submitList(turns) {
                         if (turns.isNotEmpty()) {
                             binding.rvChatMessages.smoothScrollToPosition(turns.size - 1)

@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.1.4"
+    const val APP_VERSION = "2.1.5"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -38,6 +38,11 @@ object FeatureKnowledge {
         "APK Agent: import an APK and read its manifest, permissions and structure",
         "In-app music player: songs, favourites and playlists from this device play inside Jarvis",
         "Skill registry: verified native skills + reviewed external skill libraries",
+        "Screen awareness without Screen Share: Jarvis reads the foreground app's text and buttons through accessibility, anytime, and answers from it",
+        "Python Automation: paste any Python script and Jarvis runs it with real python3 + pip3 inside its own Alpine Linux - on demand or automatically every 15 minutes. Open it from Settings or say 'Python Automation'",
+        "App flows: TikTok video upload with caption and hashtags, Instagram post and story, Facebook post and story, Gemini image creation and download, and shopping search on Daraz, AliExpress or Amazon",
+        "Thinking indicator: while a reply is being produced the chat shows live pulsing dots, so a slow model never looks dead",
+        "Knowledge core: expert depth across science, engineering, code, mathematics, health, money, law, languages, creative work and the world - plus Bangladesh and India local detail",
         "Runtime Feature Updates: feature packs install from GitHub Releases without a new APK",
         "Sub Agents: WhatsApp auto reply agent and Gmail email auto reply agent, both Kotlin native - no Python needed",
         "Sub agent banano: ek sentence e bolo - 'sub agent banao, jokhon keu price bole reply: ...' - Jarvis real agent toiri kore rule store e rakhe; kono 'tool nai' na",
@@ -52,6 +57,13 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Chat e message pathanor sathe sathe thinking dots ashe - reply ashar age app dead lage na",
+        "Screen Share charao Jarvis ekhon screen pore: accessibility diye app er text, button sob dekhe kaj kore",
+        "Python Automation: nijer script paste kore save korun, Jarvis python3 + pip3 diye sotti chalaibe - auto run o hobe",
+        "TikTok e video upload + caption + hashtag diye post, Instagram/Facebook e post ar story - sob on-device flow",
+        "Gemini app kholе prompt likhe image create, download kore Files theke khola",
+        "Daraz/AliExpress/Amazon e product search kore best match khule dey",
+        "Knowledge core boro holo: science, code, math, health, money, law, bhasha, duniya - sob eksathe",
         "Lock screen ekhon premium: boro thin clock, date, glass weather card, battery ar real unlock",
         "Lock screen theke Unlock chaple Android er nijer biometric ba PIN confirm hoy - kono fake pass nei",
         "Voice phrase mile gele o Android security confirm kortei hoy; microphone auto start hoy screen khola matro",

@@ -756,6 +756,74 @@ class GeminiLiveWebSocket(
                         })
 
                         put(JSONObject().apply {
+                            put("name", "screen_awareness")
+                            put("description", "Reads the CURRENT screen of any app through Android accessibility - foreground app name and the visible text, buttons and fields. Works without Screen Share. Use it before asking the user what is on screen, and to keep working on a task across apps.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject())
+                            })
+                        })
+
+                        put(JSONObject().apply {
+                            put("name", "run_python")
+                            put("description", "Runs real Python code with python3 inside Jarvis's own Alpine Linux and returns the actual output. Use for scripts, bots, scraping, calculations, file work and automation. Write complete code - it runs as a file.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject().apply {
+                                    put("code", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "The full Python source to execute.")
+                                    })
+                                })
+                                put("required", JSONArray().put("code"))
+                            })
+                        })
+
+                        put(JSONObject().apply {
+                            put("name", "run_python_snippet")
+                            put("description", "Runs one of the user's saved Python snippets by name (Python Automation screen). Use when the user says run my script, my bot, my python snippet.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject().apply {
+                                    put("name", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "Saved snippet name, or part of it.")
+                                    })
+                                })
+                                put("required", JSONArray().put("name"))
+                            })
+                        })
+
+                        put(JSONObject().apply {
+                            put("name", "run_app_flow")
+                            put("description", "Drives another app on the phone through accessibility. Flows: tiktok_upload (needs video, caption, hashtags), instagram_post, instagram_story, facebook_post, facebook_story, gemini_image (needs prompt: creates, downloads and opens the image), shop (needs product: searches Daraz/AliExpress/Amazon and opens the best match). Use whenever the user asks to post, upload, create an image in Gemini, or find and buy a product.")
+                            put("parameters", JSONObject().apply {
+                                put("type", "OBJECT")
+                                put("properties", JSONObject().apply {
+                                    put("flow", JSONObject().apply { put("type", "STRING") })
+                                    put("video", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "File name or keyword of the video/photo already on the phone.")
+                                    })
+                                    put("caption", JSONObject().apply { put("type", "STRING") })
+                                    put("hashtags", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "Space or comma separated tags, with or without #.")
+                                    })
+                                    put("prompt", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "Image prompt for gemini_image.")
+                                    })
+                                    put("product", JSONObject().apply {
+                                        put("type", "STRING")
+                                        put("description", "Product to find for the shop flow.")
+                                    })
+                                })
+                                put("required", JSONArray().put("flow"))
+                            })
+                        })
+
+                        put(JSONObject().apply {
                             put("name", "create_sub_agent")
                             put("description", "Save an auto-reply rule only when explicitly requested. Include the user's trigger and exact reply text in instruction. Missing details produce a question, not a fabricated agent. Read the returned setup state; never claim a reply was delivered.")
                             put("parameters", JSONObject().apply {

@@ -2432,7 +2432,7 @@ class JarvisConversationService : Service() {
                     }
 
 
-                    "run_native_command", "create_sub_agent", "get_email_status" -> {
+                    in LocalToolNames.ALL -> {
                         val local = LiveNativeTools.execute(this@JarvisConversationService, name, args)
                         local.keys().forEach { key -> result.put(key, local.get(key)) }
                     }

@@ -593,6 +593,10 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
 - Current on-device status: ${com.jarvis.assistant.model.OfflineModelStatus.promptDescription()}
 
 ${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
+
+${com.jarvis.assistant.knowledge.JarvisKnowledge.promptBlock()}
+
+[LIVE SCREEN STATE]: ${com.jarvis.assistant.vision.ScreenAwareness.promptLine()}
 """.trimIndent()
     }
 }

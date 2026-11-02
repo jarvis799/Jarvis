@@ -18,7 +18,8 @@ object NativeCommandGateway {
     fun canHandle(context: Context, input: String): Boolean {
         val text = clean(input)
         val parsed = CommandParser.parse(text, isAwaitingConfirmation = GmailVoiceCommands.draftPending())
-        return NativeScheduleRouter.matches(text) || SubAgentBuilder.wantsCreation(text) ||
+        return com.jarvis.assistant.automation.flows.NativeExtras.matches(text) ||
+            NativeScheduleRouter.matches(text) || SubAgentBuilder.wantsCreation(text) ||
             Regex("(?i)^(?:time (?:bolo|koto)|(?:ekhon )?(?:koyta|koita) baje|সময় বলো|কয়টা বাজে)\\??$").matches(text) ||
             Regex("(?i)^(?:reject|decline|end|hang up|cut) (?:the )?call$|^call (?:reject|decline|cut)(?: koro)?$").matches(text) ||
             (parsed.command != null && parsed.confidence >= .94f) || FastCommandRouter.lookup(context, text) != null ||
@@ -28,6 +29,7 @@ object NativeCommandGateway {
     suspend fun execute(context: Context, input: String): String? = withContext(Dispatchers.Main) {
         val text = clean(input)
         if (text.isBlank()) return@withContext null
+        com.jarvis.assistant.automation.flows.NativeExtras.route(context, text)?.let { return@withContext it }
         NativeScheduleRouter.route(context, text)?.let { return@withContext it }
         NativeCallControl.route(context, text)?.let { return@withContext it }
         if (Regex("(?i)^(?:what(?:'s| is) the time|what time is it|time (?:bolo|koto)|(?:ekhon )?(?:koyta|koita) baje|সময় বলো|কয়টা বাজে)\\??$").matches(text)) {
