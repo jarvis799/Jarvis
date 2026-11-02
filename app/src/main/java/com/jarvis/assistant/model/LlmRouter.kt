@@ -6,9 +6,9 @@ import android.net.NetworkCapabilities
 
 /**
  * DEV STYLE routing rule:
- *  - internet available  -> the configured API answers first
- *  - API unreachable     -> the active on-device model answers, when offline fallback is on
- *  - no internet         -> the on-device model answers directly (when one is installed)
+ *  - a Gemini key is set and the phone is online -> Gemini answers first
+ *  - no key, or no internet                     -> the on-device model answers
+ *  - Gemini fails while a local model is ready  -> the on-device model answers instead
  */
 object LlmRouter {
 
@@ -31,7 +31,7 @@ object LlmRouter {
         val model = store.activeModel()
             ?: throw IllegalStateException("No local model is ready. Open Settings > Offline AI Models and use Download & auto-setup.")
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val reference = if (isOnline(context) && com.jarvis.assistant.lock.VoiceUnlockStore(context).webEnabled()) {
+            val reference = if (isOnline(context)) {
                 com.jarvis.assistant.tools.GoogleSearchService.searchWithFallback(context, input.take(300))
             } else null
             val webContext = if (reference?.success == true) {
@@ -40,6 +40,26 @@ object LlmRouter {
             val answer = LocalModelRuntime.reply(model.filePath, system + webContext, input)
             if (reference != null && !reference.success) answer + "\n\nWeb lookup unavailable; this reply is based on local model knowledge."
             else answer
+        }
+    }
+
+    /**
+     * Same local model, but the answer is delivered piece by piece as it is generated, so the
+     * chat shows words straight away. Web lookup is skipped here on purpose: it would delay the
+     * first word, and the local model answers from what it already knows.
+     */
+    suspend fun localAnswerStream(
+        context: Context,
+        input: String,
+        onDelta: (String) -> Unit,
+        system: String = LocalJarvisPrompt.system(context)
+    ): String {
+        val store = ModelStore(context)
+        check(store.offlineFallback()) { "Offline fallback is off. Enable it in Settings > Offline AI Models." }
+        val model = store.activeModel()
+            ?: throw IllegalStateException("No local model is ready. Open Settings > Offline AI Models and use Download & auto-setup.")
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            LocalModelRuntime.replyStream(model.filePath, system, input) { partial -> onDelta(partial) }
         }
     }
 
@@ -53,10 +73,10 @@ object LlmRouter {
         if (!isOnline(context) || (noRemote && localReady(context))) return localAnswer(context, input, system)
         return try { remote() }
         catch (error: kotlinx.coroutines.CancellationException) { throw error }
-        catch (error: java.io.IOException) {
-            val store = ModelStore(context)
-            if (store.offlineFallback() && store.activeModel()?.exists() == true) localAnswer(context, input, system)
-            else throw error
+        catch (error: Exception) {
+            // Gemini first, but a dead key, quota wall or dropped network must never leave the
+            // owner without an answer: the on-device model takes over when it is ready.
+            if (localReady(context)) localAnswer(context, input, system) else throw error
         }
     }
 }

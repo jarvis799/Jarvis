@@ -2,7 +2,6 @@ package com.jarvis.assistant.model
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.widget.EditText
 import android.widget.ScrollView
 import androidx.appcompat.widget.SwitchCompat
@@ -15,12 +14,12 @@ class OfflineModelScreen(context: Context, back: () -> Unit) : ScrollView(contex
     val results = OfflineModelStyle.column(context)
     val archive = ModelArchiveControls(context)
     val searchField = EditText(context).apply {
-        hint = "Search other GGUF models"; setTextColor(Color.WHITE); setHintTextColor(OfflineModelStyle.mint)
+        hint = "Search other GGUF models"; setTextColor(OfflineModelStyle.ink); setHintTextColor(OfflineModelStyle.mint)
         isSingleLine = true; textSize = 14f
     }
     val searchButton = OfflineModelStyle.button(context, "Search catalogue") {}
     val fallback = SwitchCompat(context).apply {
-        text = "Offline fallback"; setTextColor(Color.WHITE)
+        text = "Offline fallback"; setTextColor(OfflineModelStyle.ink)
         thumbTintList = ColorStateList.valueOf(OfflineModelStyle.lime)
         setPadding(0, OfflineModelStyle.dp(context, 12), 0, OfflineModelStyle.dp(context, 12))
     }
@@ -29,7 +28,7 @@ class OfflineModelScreen(context: Context, back: () -> Unit) : ScrollView(contex
         content.setPadding(OfflineModelStyle.dp(context, 20), OfflineModelStyle.dp(context, 24), OfflineModelStyle.dp(context, 20), OfflineModelStyle.dp(context, 32))
         addView(content); content.addView(OfflineModelHeader(context, back))
         content.addView(status); content.addView(fallback)
-        content.addView(OfflineModelStyle.text(context, "Configured online AI stays first choice. With no API configured, a ready local model works without a Gemini key, even while connected to Wi-Fi.", 12f))
+        content.addView(OfflineModelStyle.text(context, "Gemini is used first whenever a key is set and the phone is online. With no key, or no internet, a ready local model answers by itself.", 12f))
         content.addView(LocalWebSettings(context))
         content.addView(archive)
         content.addView(OfflineModelStyle.text(context, "Recommended models", 20f, true)); content.addView(recommended)

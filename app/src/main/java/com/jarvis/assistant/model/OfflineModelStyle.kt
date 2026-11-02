@@ -9,14 +9,15 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 object OfflineModelStyle {
-    val background = Color.BLACK
-    val surface = Color.rgb(24, 24, 24)
-    val lime = Color.WHITE
-    val mint = Color.LTGRAY
+    val background = Color.WHITE
+    val surface = Color.rgb(246, 246, 246)
+    val ink = Color.rgb(17, 17, 17)
+    val lime = Color.rgb(17, 17, 17)
+    val mint = Color.rgb(96, 96, 96)
     fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density).toInt()
     fun column(context: Context) = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     fun text(context: Context, value: String, size: Float = 14f, primary: Boolean = false) = TextView(context).apply {
-        text = value; textSize = size; setTextColor(if (primary) Color.WHITE else mint)
+        text = value; textSize = size; setTextColor(if (primary) ink else mint)
         if (primary) setTypeface(typeface, Typeface.BOLD)
         setPadding(0, dp(context, 6), 0, dp(context, 6))
     }
@@ -24,7 +25,7 @@ object OfflineModelStyle {
         view.setPadding(dp(context, 18), dp(context, 16), dp(context, 18), dp(context, 16))
         view.background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
             intArrayOf(surface, background)).apply {
-            cornerRadius = dp(context, 24).toFloat(); setStroke(dp(context, 1), Color.argb(65, 255, 255, 255))
+            cornerRadius = dp(context, 24).toFloat(); setStroke(dp(context, 1), Color.argb(28, 0, 0, 0))
         }
         view.layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(context, 14) }
     }
