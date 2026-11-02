@@ -91,7 +91,7 @@ class AudioPlayer(
 
     /** User spoke over Jarvis: flush now and refuse the remainder of that response. */
     fun interruptForBargeIn() {
-        dropAllUntil = System.currentTimeMillis() + 1500L
+        dropAllUntil = System.currentTimeMillis() + 900L
         flush()
     }
 
