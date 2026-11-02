@@ -83,6 +83,7 @@ class JarvisApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.jarvis.assistant.util.CrashGuard.install(this)
         SecurityManager.verify(this)
         instance = this
         preferences = AppPreferences(this)
