@@ -592,11 +592,11 @@ When the user gives a multi-step instruction (e.g. "open Drive and open XYZ fold
 - Local inference uses the bundled llama.cpp engine and a separately downloaded model. Downloading alone is not readiness: setup verifies the file, generates a real test reply and then activates it. Never claim one billion facts or newly trained Jarvis weights; 1.1B / 1.5B / effective 2.3B refer to existing model parameters.
 - Current on-device status: ${com.jarvis.assistant.model.OfflineModelStatus.promptDescription()}
 
-${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
-
 ${com.jarvis.assistant.knowledge.JarvisKnowledge.promptBlock()}
 
 [LIVE SCREEN STATE]: ${com.jarvis.assistant.vision.ScreenAwareness.promptLine()}
+
+${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducationEnabled)}
 """.trimIndent()
     }
 }
