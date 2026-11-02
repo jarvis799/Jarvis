@@ -423,6 +423,16 @@ class JarvisAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
+    /**
+     * Android unbinds the service during an update or a system restart. Dropping the reference
+     * here means the watchdog sees a genuinely switched-off service instead of a dead instance
+     * that still claims to be running.
+     */
+    override fun onUnbind(intent: android.content.Intent?): Boolean {
+        if (instance === this) instance = null
+        return super.onUnbind(intent)
+    }
+
     // -------------------------------------------------------------
     // WhatsApp Send & Text Injection
     // -------------------------------------------------------------
