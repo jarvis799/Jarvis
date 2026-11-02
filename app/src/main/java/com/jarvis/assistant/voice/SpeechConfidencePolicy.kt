@@ -13,7 +13,7 @@ package com.jarvis.assistant.voice
  */
 class SpeechConfidencePolicy(
     private val unintelligibleBelow: Float = 0.35f,
-    private val uncertainBelow: Float = 0.65f,
+    private val uncertainBelow: Float = 0.80f,
     private val maxClarifications: Int = 2
 ) {
 
