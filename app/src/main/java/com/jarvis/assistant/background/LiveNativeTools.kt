@@ -41,6 +41,13 @@ object LiveNativeTools {
                 }
             }
 
+            "screen_layout" -> return JSONObject().apply {
+                put("handled", true)
+                put("verified", ScreenAwareness.isAvailable())
+                put("message", ScreenAwareness.describeLayout(args.optString("target")))
+                put("system_directive", "This is the real position of that element on the current screen. Answer where it is directly; do not ask the user to describe the screen.")
+            }
+
             "run_python" -> {
                 val code = args.optString("code")
                 val output = if (code.isBlank()) {
