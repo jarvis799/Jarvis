@@ -328,6 +328,8 @@ class JarvisAccessibilityService : AccessibilityService() {
     }
 
     private fun ensureJarvisServiceActive() {
+        // Nothing here may revive a listener the owner stopped on purpose.
+        if (com.jarvis.assistant.background.JarvisConversationService.isPoweredOff(this)) return
         try {
             if (!com.jarvis.assistant.background.JarvisConversationService.isSessionOn.value &&
                 !com.jarvis.assistant.background.JarvisConversationService.isStandby.value) {
