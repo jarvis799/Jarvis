@@ -18,6 +18,8 @@ class WakeBootReceiver : BroadcastReceiver() {
             action != "android.intent.action.QUICKBOOT_POWERON" &&
             action != Intent.ACTION_MY_PACKAGE_REPLACED
         ) return
+        // The owner tapped Stop: a reboot must not bring the listener back on its own.
+        if (JarvisConversationService.isPoweredOff(context)) return
         try {
             ContextCompat.startForegroundService(
                 context,
