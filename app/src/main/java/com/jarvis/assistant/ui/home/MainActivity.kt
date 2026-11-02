@@ -506,6 +506,15 @@ class MainActivity : AppCompatActivity() {
                     showUpdateGate(gate)
                 }
             }
+            val release = runCatching {
+                com.jarvis.assistant.update.ReleaseUpdate.check(this)
+            }.getOrNull()
+            if (release != null) {
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    com.jarvis.assistant.update.PremiumUpdateDialog.show(this, release)
+                }
+            }
         }.start()
     }
 
@@ -514,27 +523,18 @@ class MainActivity : AppCompatActivity() {
         binding.bottomDock.isEnabled = false
         binding.tabMic.isEnabled = false
         binding.tabMic.alpha = 0.4f
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Update required — JARVIS " + gate.latestVersion)
-            .setMessage(
-                gate.message.ifBlank {
-                    "This build (" + installedVersion() + ") can no longer be used. Update to JARVIS " +
-                        gate.latestVersion + " to keep using Jarvis."
-                }
-            )
-            .setCancelable(false)
-            .setPositiveButton("UPDATE NOW") { _, _ ->
-                runCatching {
-                    startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(gate.resolvedUrl())
-                        )
-                    )
-                }
-                finishAffinity()
-            }
-            .show()
+        val info = com.jarvis.assistant.update.ReleaseUpdate.Info(
+            versionName = gate.latestVersion,
+            versionCode = 0,
+            url = gate.resolvedUrl(),
+            notes = gate.message.ifBlank {
+                "This build (" + installedVersion() + ") can no longer be used. Update to JARVIS " + gate.latestVersion + " to keep using Jarvis."
+            },
+            mandatory = true,
+            checksum = "",
+            sizeBytes = 0L
+        )
+        com.jarvis.assistant.update.PremiumUpdateDialog.present(this, info, true)
     }
 
     // DEV STYLE: Jarvis calls the version API every 2 hours in the background too
