@@ -10,6 +10,7 @@ object LocalToolNames {
         "create_sub_agent",
         "get_email_status",
         "screen_awareness",
+        "screen_layout",
         "run_python",
         "run_python_snippet",
         "run_app_flow",
