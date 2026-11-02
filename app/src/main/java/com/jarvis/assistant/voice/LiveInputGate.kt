@@ -17,6 +17,7 @@ class LiveInputGate {
     private var voicedMs = 0f
     private var silentMs = 0f
     private var open = false
+    private var backgroundMs = 0f
 
     fun accept(pcm: ByteArray, rms: Float): Output {
         val ms = pcm.size * 1000f / 32000f
@@ -28,6 +29,18 @@ class LiveInputGate {
         noise = noise * 0.8f + target * 0.2f
         val threshold = maxOf(MIN_VOICED, noise * NOISE_MULTIPLIER)
         val voiced = level > threshold
+        if (voiced && !SpeechSpectrum.isSpeechLike(pcm)) {
+            // Loud but not a person: music, a fan or hiss. It never opens a turn, and the
+            // stream is dropped once it has gone on long enough to be background audio.
+            backgroundMs += ms
+            if (backgroundMs >= BACKGROUND_LIMIT_MS) {
+                reset()
+                backgroundMs = 0f
+                return Output(emptyList(), ended = true)
+            }
+            return Output(emptyList())
+        }
+        backgroundMs = 0f
         if (!open) {
             onset.addLast(pcm.copyOf())
             while (onset.sumOf { it.size } > 24000) onset.pollFirst()
@@ -52,6 +65,7 @@ class LiveInputGate {
         voicedMs = 0f
         silentMs = 0f
         open = false
+        backgroundMs = 0f
     }
 
     private companion object {
@@ -61,5 +75,6 @@ class LiveInputGate {
         const val WINDOW_FRAMES = 40
         const val ONSET_MS = 260f
         const val TAIL_MS = 700f
+        const val BACKGROUND_LIMIT_MS = 1400f
     }
 }
