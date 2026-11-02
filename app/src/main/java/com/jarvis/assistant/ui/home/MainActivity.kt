@@ -224,6 +224,20 @@ class MainActivity : AppCompatActivity() {
         observeViewModel()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // While the message box is in use, Back belongs to the keyboard. It used to switch
+                // to the Home tab, so typing then dismissing the keyboard looked like leaving chat.
+                val focused = currentFocus
+                val keyboard = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as? android.view.inputmethod.InputMethodManager
+                if (focused is android.widget.EditText || keyboard?.isActive == true) {
+                    if (focused is android.widget.EditText) {
+                        focused.clearFocus()
+                        keyboard?.hideSoftInputFromWindow(focused.windowToken, 0)
+                    } else {
+                        keyboard?.hideSoftInputFromWindow((focused ?: window.decorView).windowToken, 0)
+                    }
+                    return
+                }
                 if (currentTab != TAB_HOME) {
                     selectTab(TAB_HOME)
                 } else {
