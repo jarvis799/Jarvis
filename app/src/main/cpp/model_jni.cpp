@@ -3,6 +3,7 @@
 #include "ggml-backend.h"
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -62,7 +63,8 @@ llama_model *resident(const std::string &path) {
     return resident_model.get();
 }
 
-std::string generate(const std::string &path, const std::string &system, const std::string &user, int max_tokens) {
+std::string generate(const std::string &path, const std::string &system, const std::string &user, int max_tokens,
+                     const std::function<void(const std::string &)> &on_piece = nullptr) {
     std::call_once(backend_once, [] { llama_backend_init(); ggml_backend_load_all(); });
     std::lock_guard<std::mutex> guard(inference_mutex);
     llama_model *model = resident(path);
@@ -116,6 +118,7 @@ std::string generate(const std::string &path, const std::string &system, const s
         }
         if (size < 0) throw std::runtime_error("Could not decode the model's output.");
         output.append(piece.data(), size);
+        if (on_piece) on_piece(std::string(piece.data(), size));
         if (i + 1 < max_tokens) {
             auto batch = llama_batch_get_one(&token, 1);
             if (llama_decode(ctx.get(), batch) != 0) throw std::runtime_error("Local generation stopped. Free some memory and retry.");
@@ -161,7 +164,55 @@ Java_com_jarvis_assistant_model_LocalModelRuntime_generateNative(
         if (!raw) return nullptr;
         std::string model_path(raw);
         env->ReleaseStringUTFChars(path, raw);
-        const auto result = generate(model_path, utf8(env, system), utf8(env, user), std::max(1, std::min(160, static_cast<int>(max_tokens))));
+        const auto result = generate(model_path, utf8(env, system), utf8(env, user), std::max(1, std::min(240, static_cast<int>(max_tokens))));
+        auto bytes = env->NewByteArray(result.size());
+        if (bytes) env->SetByteArrayRegion(bytes, 0, result.size(), reinterpret_cast<const jbyte *>(result.data()));
+        return bytes;
+    } catch (const std::bad_alloc &) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Not enough free RAM. Close other apps or use the 1.1B model.");
+    } catch (const std::exception &error) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), error.what());
+    } catch (...) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "The offline engine failed. Reopen Offline AI Models and retry setup.");
+    }
+    return nullptr;
+}
+
+namespace {
+// Streams raw UTF-8 bytes back to Kotlin while the answer is still being generated,
+// so an offline reply appears little by little instead of after a long silence.
+struct JniSink {
+    JNIEnv *env;
+    jobject target;
+    jmethodID method;
+};
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_jarvis_assistant_model_LocalModelRuntime_generateStreamNative(
+        JNIEnv *env, jobject, jstring path, jbyteArray system, jbyteArray user, jint max_tokens, jobject sink) {
+    try {
+        const char *raw = env->GetStringUTFChars(path, nullptr);
+        if (!raw) return nullptr;
+        std::string model_path(raw);
+        env->ReleaseStringUTFChars(path, raw);
+        jclass sink_class = sink ? env->GetObjectClass(sink) : nullptr;
+        jmethodID emit = sink_class ? env->GetMethodID(sink_class, "onBytes", "([B)V") : nullptr;
+        JniSink target{env, sink, emit};
+        std::function<void(const std::string &)> on_piece;
+        if (sink && emit) {
+            on_piece = [&target](const std::string &piece) {
+                if (target.env->ExceptionCheck()) return;
+                auto length = static_cast<jsize>(piece.size());
+                jbyteArray bytes = target.env->NewByteArray(length);
+                if (!bytes) return;
+                target.env->SetByteArrayRegion(bytes, 0, length, reinterpret_cast<const jbyte *>(piece.data()));
+                target.env->CallVoidMethod(target.target, target.method, bytes);
+                target.env->DeleteLocalRef(bytes);
+            };
+        }
+        const auto result = generate(model_path, utf8(env, system), utf8(env, user),
+                                     std::max(1, std::min(240, static_cast<int>(max_tokens))), on_piece);
         auto bytes = env->NewByteArray(result.size());
         if (bytes) env->SetByteArrayRegion(bytes, 0, result.size(), reinterpret_cast<const jbyte *>(result.data()));
         return bytes;

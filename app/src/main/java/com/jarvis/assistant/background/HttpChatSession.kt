@@ -75,6 +75,11 @@ class HttpChatSession(
 
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
+    // Consecutive recoverable recognition failures. Reset the moment a turn is understood.
+    private var recognitionFailures = 0
+    // Set after a language-pack error: the next attempt drops the chosen language and uses the
+    // device default, which is what makes voice survive on phones without that offline pack.
+    private var useDeviceLanguage = false
     private var working = false
     private var muted = false
     private var closed = false
@@ -311,6 +316,8 @@ class HttpChatSession(
     private fun handleRecognitionResults(results: Bundle?) {
         if (!listening || closed) return
         listening = false
+        recognitionFailures = 0
+        useDeviceLanguage = false
 
         val alternatives = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
         val scores = results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
@@ -338,11 +345,60 @@ class HttpChatSession(
         if (!listening || closed) return
         listening = false
         onLevel(0f)
+
+        val silent: IntArray = intArrayOf(
+            SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+            SpeechRecognizer.ERROR_CLIENT, SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
+            SpeechRecognizer.ERROR_AUDIO
+        )
+        if (error in silent) {
+            // Nothing was said, or the engine was still finishing the previous turn: just
+            // listen again without scaring the user with a toast.
+            onState(ConversationState.IDLE)
+            retryOnce(if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) 600L else 900L)
+            return
+        }
+
+        // 12 = language not supported, 13 = language pack unavailable: the chosen voice language
+        // is what the phone cannot handle. Retry in the device language before giving up.
+        if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
+            error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+        ) {
+            if (!useDeviceLanguage || recognitionFailures < 2) {
+                useDeviceLanguage = true
+                recognitionFailures++
+                onState(ConversationState.IDLE)
+                retryOnce(200L)
+                return
+            }
+        }
+
+        // Server/network hiccups are worth one quiet retry as well - voice must not stop for good
+        // because Google's endpoint blinked.
+        if (error == SpeechRecognizer.ERROR_SERVER || error == SpeechRecognizer.ERROR_NETWORK ||
+            error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT || error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED
+        ) {
+            if (recognitionFailures < 2) {
+                recognitionFailures++
+                onState(ConversationState.IDLE)
+                retryOnce(1200L)
+                return
+            }
+        }
+
         onState(ConversationState.IDLE)
-        if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-            retry?.cancel()
-            retry = scope.launch { delay(1000); listen() }
-        } else onError("Android voice recognition failed (" + error + "). You can type in chat.")
+        val reason = when (error) {
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is missing for voice input."
+            SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> "Android is rate-limiting voice input. Give it a few seconds."
+            else -> "Android voice recognition is unavailable here (" + error + "). You can type in chat."
+        }
+        onError(reason)
+    }
+
+    /** Relistens after a short pause, keeping the state machine quiet in between. */
+    private fun retryOnce(delayMillis: Long) {
+        retry?.cancel()
+        retry = scope.launch { delay(delayMillis); listen() }
     }
 
     /** Speaks a clarification instead of guessing what the user said, then listens again. */
@@ -364,11 +420,15 @@ class HttpChatSession(
         if (closed || working || listening || speech.isPaused) return
         onLevel(0f)
         if (muted || recognizer == null) { onState(ConversationState.IDLE); return }
+        val spokenLanguage = if (useDeviceLanguage) java.util.Locale.getDefault().toLanguageTag()
+            else EndpointConfig.speechLocale(language).toLanguageTag()
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, EndpointConfig.speechLocale(language).toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, spokenLanguage)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, endpoint.isBlank())
+            // Never force the on-device recognizer. Phones without the downloaded language pack
+            // answer with error 13 and voice dies completely - the system service is the sane
+            // default, with the language fallback below covering the awkward devices.
             // More than one hypothesis is what lets the confidence policy spot a conflict.
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
@@ -377,7 +437,11 @@ class HttpChatSession(
         catch (e: Exception) {
             listening = false
             onState(ConversationState.IDLE)
-            onError(e.message ?: "Could not open the microphone.")
+            if (recognitionFailures < 2) {
+                recognitionFailures++
+                retry?.cancel()
+                retry = scope.launch { delay(400); listen() }
+            } else onError(e.message ?: "Could not open the microphone.")
         }
     }
 

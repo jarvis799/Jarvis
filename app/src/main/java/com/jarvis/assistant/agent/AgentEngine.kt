@@ -28,7 +28,10 @@ object AgentEngine {
         val router = com.jarvis.assistant.model.LlmRouter
         if (!router.isOnline(context) || endpoint.isBlank()) {
             com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
-            return router.localAnswer(context, userInput)
+            // Stream the on-device answer: the first sentence is spoken while the rest is still
+            // being generated, so a local reply never sits silent for a minute before speaking.
+            return if (onDelta != null) router.localAnswerStream(context, userInput, onDelta)
+            else router.localAnswer(context, userInput)
         }
         return router.answer(context, userInput, com.jarvis.assistant.model.LocalJarvisPrompt.system(context)) {
             processConnected(userInput, basePrompt, endpoint, apiKey, model, context, onDelta)
