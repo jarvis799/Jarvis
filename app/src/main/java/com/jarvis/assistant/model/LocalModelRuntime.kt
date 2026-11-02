@@ -42,6 +42,22 @@ object LocalModelRuntime {
         }
     }
 
+    /**
+     * Streaming entry point used by the offline router. This build ships the blocking native
+     * generator, so the finished answer is delivered as one delta - never a faked word-by-word.
+     */
+    fun replyStream(
+        modelPath: String,
+        system: String,
+        user: String,
+        maxTokens: Int = 200,
+        onDelta: (String) -> Unit
+    ): String {
+        val text = reply(modelPath, system, user, maxTokens)
+        onDelta(text)
+        return text
+    }
+
     fun generate(modelPath: String, prompt: String, maxTokens: Int = 120): String? =
         if (!isAvailable()) null else reply(modelPath, "You are JARVIS. Be concise and honest; do not invent tool results.", prompt, maxTokens)
 }
