@@ -257,9 +257,8 @@ class ChatFragment : Fragment() {
             return
         }
 
-        if (!JarvisConversationService.isServiceRunning()) {
-            (activity as? MainActivity)?.handleMicOrOrbClick()
-        }
+        // Typed text is answered in the background: the mic button flow asked for permissions and
+        // opened system screens, which threw the user out of the chat.
         JarvisConversationService.sendTextMessage(text)
     }
 
