@@ -32,10 +32,20 @@ class AudioPlayer(
     }
 
     private fun initAudioTrack() {
+        audioTrack = buildTrack() ?: buildTrack(fallback = true)
+    }
+
+    /**
+     * Some devices refuse the requested buffer size or channel mask and throw straight from the
+     * AudioTrack builder. That throw used to escape the constructor and close the app the moment
+     * the microphone was switched on, so the track is now built defensively: playback stays
+     * silent when the hardware refuses instead of taking the whole session down.
+     */
+    private fun buildTrack(fallback: Boolean = false): AudioTrack? = try {
         val minBufferSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
         // 96,000 bytes = 2 full seconds of 24kHz 16-bit mono PCM headroom.
         // Guarantees zero buffer underruns across network jitter and prevents deadlock.
-        val bufferSize = maxOf(minBufferSize * 8, 96000)
+        val bufferSize = if (fallback || minBufferSize <= 0) 96000 else maxOf(minBufferSize * 8, 96000)
 
         // USAGE_MEDIA maps to STREAM_MUSIC, ensuring audio plays strictly through the
         // phone's LOUDSPEAKER (or connected headphones), NEVER the call earpiece speaker.
@@ -58,7 +68,10 @@ class AudioPlayer(
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
-        audioTrack = track
+        track
+    } catch (t: Throwable) {
+        Log.e(TAG, "AudioTrack unavailable (fallback=$fallback): ${t.message}")
+        null
     }
 
     private val isTurnComplete = AtomicBoolean(false)
