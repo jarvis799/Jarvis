@@ -57,6 +57,23 @@ class ChatRepository(private val preferences: AppPreferences) {
         preferences.saveChatHistory(currentList)
     }
 
+    /**
+     * Fills the reply of the newest bubble that is still waiting for one, so an answer
+     * always lands in the bubble the user is looking at (and the typing dots stop).
+     */
+    @Synchronized
+    fun attachReply(jarvisText: String): Boolean {
+        val clean = jarvisText.trim()
+        if (clean.isEmpty()) return false
+        val currentList = _turns.value.toMutableList()
+        val last = currentList.lastOrNull() ?: return false
+        if (last.jarvisResponse.isNotBlank()) return false
+        currentList[currentList.lastIndex] = last.copy(jarvisResponse = clean)
+        _turns.value = currentList
+        preferences.saveChatHistory(currentList)
+        return true
+    }
+
     @Synchronized
     fun clearHistory() {
         _turns.value = emptyList()
