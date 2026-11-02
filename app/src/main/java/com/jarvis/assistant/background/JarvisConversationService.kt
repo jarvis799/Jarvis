@@ -3304,7 +3304,7 @@ class JarvisConversationService : Service() {
             if (isOwnerCheckPassed) {
                 // A typed message already has a bubble waiting for its answer: fill that one
                 // instead of adding a second bubble with a placeholder question beside it.
-                val attached = query.isEmpty() && app.chatRepository.attachReply(reply)
+                val attached = app.chatRepository.attachReply(reply)
                 if (!attached) {
                     app.chatRepository.addTurn(
                         userText = query.ifEmpty { "Spoken user query" },
