@@ -15,9 +15,22 @@ object WakePhraseMatcher {
         "hey", "hi", "hello", "ok", "okay", "wake", "up", "sun", "suno", "please"
     )
 
+    /**
+     * "Jarvis" said with a Bangla, Hindi or Hinglish accent lands on these spellings in the
+     * English recognition model, so every one of them has to wake the assistant too.
+     */
+    private val NAME_ALIASES = setOf(
+        "jarvis", "jarbis", "jervis", "jarwis", "zarvis", "zarbis", "javis", "jarvisss",
+        "jobis", "jabis", "javed", "jarvi", "jarvish", "jarvissss"
+    )
+
     /** The actual trigger words: "jarvis", a custom wake word, or the owner's name. */
-    fun triggerWords(wakePhrases: Set<String>): Set<String> =
-        wakePhrases.flatMap { it.split(" ") }.toSet() - FILLERS
+    fun triggerWords(wakePhrases: Set<String>): Set<String> {
+        val base = wakePhrases.flatMap { it.split(" ") }.toSet() - FILLERS
+        // The aliases only apply while "jarvis" itself is still a wake word, so renaming the
+        // assistant to something else never keeps the old name alive.
+        return if (base.contains("jarvis")) (base + NAME_ALIASES) - FILLERS else base
+    }
 
     fun containsWakeWord(words: List<String>, wakePhrases: Set<String>): Boolean {
         val triggers = triggerWords(wakePhrases)
