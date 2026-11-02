@@ -84,7 +84,7 @@ class EmailWatchService : Service() {
         const val ACTION_STOP = "com.jarvis.assistant.email.STOP"
         private const val CHANNEL_ID = "jarvis_email_watch"
         private const val NOTIFICATION_ID = 3061
-        private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
+        private const val POLL_INTERVAL_MS = 45_000L
         @Volatile private var polling = false
 
         fun start(context: Context) {
