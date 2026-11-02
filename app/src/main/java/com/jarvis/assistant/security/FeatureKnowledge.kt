@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 /** DEV STYLE: Jarvis's own knowledge - creator identity, full feature list, what's new, and a creator-only feature self-test. */
 object FeatureKnowledge {
 
-    const val APP_VERSION = "2.1.3"
+    const val APP_VERSION = "2.1.4"
 
     const val CREATOR_IDENTITY: String =
         "Amar creator Arian Ahamed Ayan, the mind behind DEV STYLE. Portfolio arian00001.site."
@@ -52,6 +52,10 @@ object FeatureKnowledge {
     )
 
     private val whatsNew = listOf(
+        "Lock screen ekhon premium: boro thin clock, date, glass weather card, battery ar real unlock",
+        "Lock screen theke Unlock chaple Android er nijer biometric ba PIN confirm hoy - kono fake pass nei",
+        "Voice phrase mile gele o Android security confirm kortei hoy; microphone auto start hoy screen khola matro",
+        "Flashlight ar camera shortcut lock screen theke sotti kaj kore",
         "Chat e kichu likhe send korlei message sathe sathe chat e ashe - ar kono 'kichu hoy na' nei",
         "Jotogulo Gemini key chan add korun: ekta key er limit sesh hole porer key te automatic switch hoy",
         "Gmail settings e ekhon nijer HTML reply template set kora jay, sathe HTML design switch",
