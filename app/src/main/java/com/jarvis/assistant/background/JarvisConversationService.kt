@@ -386,8 +386,8 @@ class JarvisConversationService : Service() {
     private var autonomousLoopJob: Job? = null
     private val MAX_AUTONOMOUS_STEPS = 25
     private val liveInputGate = com.jarvis.assistant.voice.LiveInputGate()
-    private val VAD_MIN_THRESHOLD = 0.05f
-    private val VAD_NOISE_MULTIPLIER = 2.0f
+    private val VAD_MIN_THRESHOLD = 0.030f
+    private val VAD_NOISE_MULTIPLIER = 1.6f
     private val VAD_START_FRAMES = 5
     private val VAD_MIN_UTTERANCE_FRAMES = 10
     // Loop guard: once tripped, ALL automation tools are refused until the user speaks again.
@@ -1469,7 +1469,7 @@ class JarvisConversationService : Service() {
                 // Acoustic Echo Decay Protection (AEDP):
                 // For 150ms after speaker audio stops, discard mic chunks so room reverberation
                 // does not bounce into Gemini Live and cause false self-interruption.
-                if (now - lastPlaybackEndTime < 150L) {
+                if (now - lastPlaybackEndTime < 60L) {
                     consecutiveVoicedFrames = 0
                     return@AudioRecorder
                 }
@@ -1485,9 +1485,9 @@ class JarvisConversationService : Service() {
                     // hits amplitudes of 0.8-1.0, which causes false self-interruption ("talks in middle and cuts off").
                     // Over loudspeaker, users tap mic/orb to interrupt, as prompted on screen.
                     if (hasHeadset) {
-                        if (amplitude > 0.25f) {
+                        if (amplitude > 0.35f) {
                             consecutiveVoicedFrames++
-                            if (consecutiveVoicedFrames >= 4) {
+                            if (consecutiveVoicedFrames >= 8) {
                                 Log.i("JarvisService", "Headset voice barge-in: user spoke over assistant (amp=$amplitude)")
                                 audioPlayer?.interruptForBargeIn()
                                 try { tts?.stop() } catch (_: Exception) {}
@@ -1600,7 +1600,7 @@ class JarvisConversationService : Service() {
                     consecutiveVoicedFrames = 0
                     val silentDuration = now - lastUserSpeechDetectedTime
 
-                    if (hasSpeechInCurrentUtterance && silentDuration < 450) {
+                    if (hasSpeechInCurrentUtterance && silentDuration < 320) {
                         // Keep buffering inter-word pauses so Vosk receives natural continuous audio
                         synchronized(currentUtteranceAudioStream) {
                             if (currentUtteranceAudioStream.size() < 480000) {
@@ -1614,7 +1614,7 @@ class JarvisConversationService : Service() {
                         _audioFrequency.value = frequencyData
 
                         // Conversational pause reached (~450ms — safe for natural Hinglish speech with inter-word pauses)
-                        if (silentDuration > 450) {
+                        if (silentDuration > 320) {
                             if (preferences.isOwnerVoiceEnabled && preferences.hasOwnerVoiceProfile()) {
                                 val isLeaseActive = (now - lastOwnerVerifiedTimestamp) < 120_000L
                                 if (isLeaseActive) {
@@ -1634,10 +1634,10 @@ class JarvisConversationService : Service() {
                                             Log.i("JarvisService", "Speech verification passed: Owner confirmed (dist: ${match.distance}, sim: ${match.similarityPercent}%)")
                                             processPendingToolCalls(verified = true)
                                         } else {
+                                            // A failed match no longer cuts an answer already in progress:
+                                            // room noise used to fail this check and silence Jarvis mid-sentence.
+                                            // Privileged tools stay blocked for this turn.
                                             isCurrentTurnOwnerVoiceVerified = false
-                                            audioPlayer?.flush()
-                                            currentTurnAssistantText.clear()
-                                            _liveAssistantResponse.value = ""
                                             Log.w("JarvisService", "Speech verification rejected: Non-owner (dist: ${match.distance}, thr: ${match.threshold})")
                                             processPendingToolCalls(verified = false)
                                         }
@@ -1651,7 +1651,7 @@ class JarvisConversationService : Service() {
                             }
 
                             if (totalVoicedFramesInCurrentUtterance >= VAD_MIN_UTTERANCE_FRAMES || currentTurnUserText.trim().isNotEmpty()) {
-                                if (preferences.isOwnerVoiceEnabled && preferences.hasOwnerVoiceProfile() && !isCurrentTurnOwnerVoiceVerified) {
+                                if (preferences.isOwnerVoiceEnabled && preferences.hasOwnerVoiceProfile() && !isCurrentTurnOwnerVoiceVerified && totalVoicedFramesInCurrentUtterance >= 20) {
                                     val nonOwnerQuery = currentTurnUserText.toString().trim()
                                     Log.w("JarvisService", "Non-owner speech ended: '$nonOwnerQuery'; IGNORING utterance, suppressing reply, and recording to history.")
                                     val app = application as? JarvisApp
@@ -1686,7 +1686,7 @@ class JarvisConversationService : Service() {
                                     setConversationState(ConversationState.THINKING)
                                     thinkingTimeoutJob?.cancel()
                                     thinkingTimeoutJob = serviceScope.launch {
-                                        delay(15000)
+                                        delay(8000)
                                         if (_conversationState.value == ConversationState.THINKING && (audioPlayer == null || !audioPlayer!!.isPlaying())) {
                                             Log.i("JarvisService", "Thinking timeout safety; returning to IDLE")
                                             setConversationState(ConversationState.IDLE)
@@ -3074,6 +3074,10 @@ class JarvisConversationService : Service() {
      */
     private fun announce(message: String) {
         lastAssistantActivityMs = System.currentTimeMillis()
+        _liveAssistantResponse.value = message
+        // Spoken answers must also be readable: the chat bubble waiting for a reply gets
+        // this text, which also stops the typing dots.
+        runCatching { (application as? JarvisApp)?.chatRepository?.attachReply(message) }
         serviceScope.launch { _events.emit(message) }
     }
 
@@ -3298,10 +3302,15 @@ class JarvisConversationService : Service() {
         if (reply.isNotEmpty() && app != null) {
             val isOwnerCheckPassed = !preferences.isOwnerVoiceEnabled || !preferences.hasOwnerVoiceProfile() || isCurrentTurnOwnerVoiceVerified
             if (isOwnerCheckPassed) {
-                app.chatRepository.addTurn(
-                    userText = query.ifEmpty { "Spoken user query" },
-                    jarvisText = reply
-                )
+                // A typed message already has a bubble waiting for its answer: fill that one
+                // instead of adding a second bubble with a placeholder question beside it.
+                val attached = query.isEmpty() && app.chatRepository.attachReply(reply)
+                if (!attached) {
+                    app.chatRepository.addTurn(
+                        userText = query.ifEmpty { "Spoken user query" },
+                        jarvisText = reply
+                    )
+                }
                 app.memoryManager.addShortTermTurn(
                     userText = query.ifEmpty { "Spoken user query" },
                     jarvisText = reply
