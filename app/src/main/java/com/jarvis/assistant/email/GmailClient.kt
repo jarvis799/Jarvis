@@ -146,6 +146,38 @@ object GmailClient {
         }
     }
 
+    /**
+     * Newest inbox messages with full bodies, read or unread - the catch-up list that lets
+     * older unanswered mail be answered too.
+     */
+    suspend fun fetchRecent(context: Context, limit: Int): List<GmailMessage> = withContext(Dispatchers.IO) {
+        val email = GmailStore.email(context)
+        val password = GmailStore.appPassword(context)
+        if (email.isBlank() || password.isBlank()) return@withContext emptyList<GmailMessage>()
+        val store = imapSession().getStore("imaps")
+        try {
+            store.connect(IMAP_HOST, email, password)
+            val inbox = store.getFolder("INBOX")
+            inbox.open(Folder.READ_ONLY)
+            val total = inbox.messageCount
+            if (total == 0) return@withContext emptyList<GmailMessage>()
+            val result = ArrayList<GmailMessage>()
+            var index = total
+            while (index >= 1 && result.size < limit.coerceIn(1, 40)) {
+                inbox.getMessage(index)?.let { message ->
+                    if (!GmailStore.isHandled(context, messageId(message))) {
+                        result.add(toGmailMessage(message, includeBody = true))
+                    }
+                }
+                index--
+            }
+            inbox.close(false)
+            result
+        } finally {
+            runCatching { store.close() }
+        }
+    }
+
     suspend fun markSeen(context: Context, uid: Long): Unit = withContext(Dispatchers.IO) {
         val store = imapSession().getStore("imaps")
         try {
