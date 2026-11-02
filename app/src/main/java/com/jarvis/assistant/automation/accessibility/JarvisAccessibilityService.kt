@@ -275,7 +275,7 @@ class JarvisAccessibilityService : AccessibilityService() {
             runCatching { w?.root }.getOrNull()?.let { roots.add(it) }
         }
         // A field in another app always wins over the Jarvis message box.
-        val ordered = roots.sortedByDescending { it.packageName?.toString() != own }
+        val ordered = roots.sortedByDescending { if (it.packageName?.toString() == own) 0 else 1 }
         for (root in ordered) {
             val focused = runCatching { root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) }.getOrNull()
             if (focused?.isEditable == true) return focused
