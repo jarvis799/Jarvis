@@ -632,10 +632,9 @@ class SettingsFragment : Fragment() {
             setPadding(0, 0, 0, 24)
             container.addView(this)
         }
-        val phrase = android.widget.EditText(ctx).apply { hint = "Creator key (min 8 characters, stored on this device only)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; setText(preferences.creatorSecretPhrase) }
         val name = android.widget.EditText(ctx).apply { hint = "Creator name (e.g. Ayan Sir)"; inputType = android.text.InputType.TYPE_CLASS_TEXT; setText(preferences.creatorName) }
         val email = android.widget.EditText(ctx).apply { hint = "Creator email (optional)"; inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; setText(preferences.creatorEmail) }
-        for (et in listOf(phrase, name, email)) {
+        for (et in listOf(name, email)) {
             (et.layoutParams as? android.widget.LinearLayout.LayoutParams)?.setMargins(0, 12, 0, 12)
             container.addView(et)
         }
@@ -643,7 +642,6 @@ class SettingsFragment : Fragment() {
             .setTitle("Wake Words & Creator Greeting")
             .setView(android.widget.ScrollView(ctx).apply { addView(container) })
             .setPositiveButton("Save") { _, _ ->
-                preferences.creatorSecretPhrase = phrase.text.toString().trim()
                 preferences.creatorName = name.text.toString().trim()
                 preferences.creatorEmail = email.text.toString().trim()
                 Toast.makeText(ctx, "Creator greeting saved. Android handles phone authentication; no phone PIN is stored.", Toast.LENGTH_LONG).show()

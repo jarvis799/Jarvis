@@ -15,6 +15,7 @@ object GmailAutoReplyScanner {
             GmailStore.recordScan(context, "Checking inbox...")
             val unread = GmailClient.fetchUnread(context, 50)
             var sent = 0
+            val replied = StringBuilder()
             val aiEnabled = GmailStore.aiReplyEnabled(context)
             val apiKey = GmailStore.geminiApiKey(context)
             val signature = GmailStore.replySignature(context)
@@ -26,7 +27,7 @@ object GmailAutoReplyScanner {
                     continue
                 }
                 if (!GmailStore.rateLimitAllows(context)) break
-                val plainTemplate = GmailStore.template(context).replace("{name}", mail.fromName)
+                val plainTemplate = GmailStore.template(context).replace("{name}", HtmlReplyTemplate.firstName(mail.fromName))
                 val replyBody = if (aiEnabled) {
                     try {
                         val ai = GeminiReplyEngine.createReply(apiKey, mail.fromEmail, mail.subject, mail.body, signature)
@@ -54,14 +55,16 @@ object GmailAutoReplyScanner {
                     )
                     GmailClient.sendHtml(context, mail.fromEmail, replySubject, html, mail.messageId)
                 } else {
-                    GmailClient.send(context, mail.fromEmail, replySubject, replyBody, mail.messageId)
+                    GmailClient.send(context, mail.fromEmail, replySubject, HtmlReplyTemplate.ensureGreeting(replyBody, mail.fromName), mail.messageId)
                 }
                 GmailStore.markHandled(context, mail.messageId)
                 GmailStore.recordAutoReply(context)
                 sent++
+                if (replied.isNotEmpty()) replied.append(" | ")
+                replied.append(mail.fromName.ifBlank { mail.fromEmail }).append(" - ").append(mail.subject.take(60))
                 GmailClient.markSeen(context, mail.uid)
             }
-            val status = "Inbox checked — " + sent + " auto reply sent"
+            val status = if (sent == 0) "Inbox checked — no new mail needed a reply" else "Inbox checked — " + sent + " auto reply sent: " + replied
             GmailStore.recordScan(context, status)
             ScanResult(sent, status, false)
         } catch (e: CancellationException) {

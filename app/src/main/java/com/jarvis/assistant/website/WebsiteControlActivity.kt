@@ -72,11 +72,19 @@ class WebsiteControlActivity : AppCompatActivity() {
             status.text = "Enter the creator pass first."
             return
         }
+        val lockLeft = CreatorAuthenticationService.lockRemainingMillis(this)
+        if (lockLeft > 0L) {
+            status.text = "Too many wrong passes. Try again in " + ((lockLeft / 1000L + 59L) / 60L) + " min."
+            return
+        }
         status.text = "Checking with the website..."
         lifecycleScope.launch {
             val reply = WebsiteApi.creatorVerify(pass)
             val verified = WebsiteApi.flag(reply, "verified")
-            if (reply.ok && verified) {
+            // The pass saved on this phone also works, so a network problem can never
+            // lock the creator out of their own console.
+            val localPass = !verified && CreatorAuthenticationService.verify(this@WebsiteControlActivity, pass)
+            if ((reply.ok && verified) || localPass) {
                 CreatorAuthenticationService.markCreatorVerified(this@WebsiteControlActivity)
                 val name = WebsiteApi.field(reply, "creator")
                 if (name.isNotBlank()) JarvisApp.instance.preferences.creatorName = name

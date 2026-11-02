@@ -8,13 +8,13 @@ object OwnerProfile {
     const val BRAND = "DEV STYLE"
     const val PRODUCT_NAME = "Jarvis AI"
 
-    const val CREATOR_NAME = "Arian Ahamed Ayan"
-    const val CREATOR_TITLE = "Junior Full-Stack Developer | Android & Web Application Developer"
+    const val CREATOR_NAME = "Ayan Ahamed"
+    const val CREATOR_TITLE = "Full-Stack Developer"
     const val CREATOR_COUNTRY = "Bangladesh"
     const val CREATOR_ALIAS = "Creator of Jarvis AI"
 
     const val CREATOR_BIO =
-        "I am Arian Ahamed Ayan, a junior full-stack developer from Bangladesh passionate about " +
+        "I am Ayan Ahamed, a full-stack developer from Bangladesh passionate about " +
             "building modern Android applications, responsive websites, web applications, and " +
             "AI-powered digital experiences. My focus is on creating practical, user-friendly, and " +
             "visually refined digital products that combine thoughtful UI/UX design with reliable " +
@@ -33,12 +33,12 @@ object OwnerProfile {
     const val MOTTO = "Building intelligent experiences for Android and the Web."
 
     const val COPYRIGHT_YEAR = "2026"
-    const val COPYRIGHT_NOTICE = "© 2026 Arian Ahamed Ayan — DEV STYLE. All Rights Reserved."
+    const val COPYRIGHT_NOTICE = "© 2026 Ayan Ahamed — DEV STYLE. All Rights Reserved."
 
     // Official links (no others may be invented or guessed)
     const val PORTFOLIO_URL = "https://arian00001.site"
     const val TELEGRAM_URL = "https://t.me/DevStyleHQ"
-    const val INSTAGRAM_URL = "https://www.instagram.com/dev_ayan00001"
+    const val INSTAGRAM_URL = "https://www.instagram.com/dev_ayan00001?psln=Z2gweDMxdzg4c210"
 
     // Official YouTube channel — DEV STYLE / JARVIS AI
     const val YOUTUBE_URL = "https://www.youtube.com/@JARVISAI-f3r"
@@ -47,13 +47,13 @@ object OwnerProfile {
     val WHATSAPP_NUMBER: String? = "+8801612509753"
 
     const val IDENTITY_ANSWER_EN =
-        "Jarvis AI was created by Arian Ahamed Ayan, a junior full-stack developer from Bangladesh. " +
+        "Jarvis AI was created by Ayan Ahamed, a full-stack developer from Bangladesh. " +
             "You can explore his work at arian00001.site."
     const val IDENTITY_ANSWER_BN =
-        "Boss, Jarvis AI তৈরি করেছেন Arian Ahamed Ayan। তিনি বাংলাদেশের একজন Junior Full-Stack Developer। " +
+        "Boss, Jarvis AI তৈরি করেছেন Ayan Ahamed। তিনি বাংলাদেশের একজন Full-Stack Developer। " +
             "তাঁর কাজ দেখতে পারেন arian00001.site-এ।"
     const val IDENTITY_ANSWER_HI =
-        "Boss, Jarvis AI को Arian Ahamed Ayan ने बनाया है। वह बांग्लादेश के एक Junior Full-Stack Developer हैं। " +
+        "Boss, Jarvis AI को Ayan Ahamed ने बनाया है। वह बांग्लादेश के एक Full-Stack Developer हैं। " +
             "आप उनका काम arian00001.site पर देख सकते हैं।"
 
     /**

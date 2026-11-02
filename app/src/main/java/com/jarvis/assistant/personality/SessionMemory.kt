@@ -66,6 +66,7 @@ class SessionMemoryStore(context: Context) {
 object SessionGreeter {
 
     private const val SHORT_ABSENCE_MS = 5 * 60 * 1000L
+    private const val LONG_ABSENCE_MS = 12 * 60 * 60 * 1000L
 
     /** "" for a brief app switch, so switching screens never repeats the greeting. */
     fun greeting(
@@ -78,6 +79,7 @@ object SessionGreeter {
         if (elapsedMs < SHORT_ABSENCE_MS) return ""
 
         val duration = formatDuration(elapsedMs)
+        if (elapsedMs >= LONG_ABSENCE_MS) return reunionGreeting(duration, language, addressName)
         val topicLine = if (topic.isBlank()) "" else topicHint(language, topic)
 
         return when (languageCode(language)) {
@@ -93,6 +95,14 @@ object SessionGreeter {
             "bn" -> "Boss, আমি এখানেই আছি। বলুন, কী করতে হবে?"
             "hi" -> "$addressName, मैं यहीं हूँ। बताइए, क्या करना है?"
             else -> "I'm here, $addressName. What would you like to do?"
+        }
+
+    /** Half a day or more away: Jarvis says it missed him, then gets to work. */
+    fun reunionGreeting(duration: String, language: String = "en", addressName: String = "Boss"): String =
+        when (languageCode(language)) {
+            "bn" -> "Boss, tumi to amake bhuley gecho! " + duration + " por firlo - ami opekkha korechilam. Bolun, ki niye kaj kori?"
+            "hi" -> addressName + ", aap to mujhe bhool hi gaye the! " + duration + " baad laute - main wait kar raha tha. Bataiye, kya karein?"
+            else -> "Boss, you forgot me! " + duration + " later you are back - I was waiting. What are we doing first?"
         }
 
     private fun topicHint(language: String, topic: String): String =

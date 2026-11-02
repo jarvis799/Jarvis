@@ -99,12 +99,30 @@ object HtmlReplyTemplate {
         return trimmed.startsWith("<") && trimmed.contains("<body", ignoreCase = true)
     }
 
+    /** "Rahim Ahmed" -> "Rahim"; an address -> the part before @. */
+    fun firstName(raw: String): String {
+        val clean = raw.trim().trim('<', '>')
+        val beforeAt = clean.substringBefore("@")
+        val first = beforeAt.trim('"', ' ', '\u0027').split(Regex("[\\s.]+")).firstOrNull { it.isNotBlank() }.orEmpty()
+        return first.ifBlank { "there" }
+    }
+
+    /** Plain-text replies always open with "Dear <first name>,". */
+    fun ensureGreeting(reply: String, name: String): String {
+        val body = reply.trim()
+        if (body.isEmpty()) return body
+        val first = firstName(name)
+        if (first == "there") return body
+        val hasGreeting = Regex("(?i)^(dear|hi|hello|hey|salam|namaskar|assalamu)\\b").containsMatchIn(body)
+        return if (hasGreeting) body else "Dear " + first + ",\n\n" + body
+    }
+
     /** Fills every placeholder. Blank name falls back to "there". */
     fun render(template: String, name: String, email: String, subject: String, reply: String): String {
         val base = if (template.isBlank()) STARTER else template
         val safeName = name.trim().ifBlank { "there" }
         return base
-            .replace(PLACEHOLDER_NAME, escape(safeName))
+            .replace(PLACEHOLDER_NAME, escape(firstName(safeName)))
             .replace(PLACEHOLDER_EMAIL, escape(email.trim()))
             .replace(PLACEHOLDER_SUBJECT, escape(subject.trim()))
             .replace(PLACEHOLDER_REPLY, paragraphHtml(reply))
