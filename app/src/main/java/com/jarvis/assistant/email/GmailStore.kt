@@ -38,9 +38,9 @@ object GmailStore {
     const val DEFAULT_TEMPLATE = "Hello {name},\n\nThank you for your email. I have received it and will get back to you soon.\n\nBest regards,\nAyan"
 
     // Respect Gmail: max 10 auto-replies per hour, 90 seconds apart, 60 per day.
-    const val MAX_PER_HOUR = 10
-    const val MAX_PER_DAY = 60
-    const val MIN_INTERVAL_MS = 90_000L
+    const val MAX_PER_HOUR = 40
+    const val MAX_PER_DAY = 200
+    const val MIN_INTERVAL_MS = 15_000L
     private const val MAX_HANDLED_IDS = 300
 
     private fun prefs(context: Context): SharedPreferences {
