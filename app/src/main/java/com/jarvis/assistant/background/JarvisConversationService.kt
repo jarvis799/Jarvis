@@ -757,6 +757,16 @@ class JarvisConversationService : Service() {
     private fun handleStartCommand(intent: Intent?, startId: Int): Int {
         if (!com.jarvis.assistant.security.AppIdentityVerifier.isTrustedRelease(this)) {
             Log.e("JarvisService", "Blocked service start: release signing certificate did not match the configured pin")
+            // Say it in the app instead of closing silently: a signature mismatch used to look
+            // exactly like the app crashing the moment the microphone was switched on.
+            runCatching {
+                setLiveError(JarvisLiveError(
+                    title = "BUILD NOT VERIFIED",
+                    message = "This copy of JARVIS is not the signed release build, so the microphone stays locked. Install the latest release from the studio.",
+                    errorCode = "UNVERIFIED_BUILD",
+                    actionText = "GET LATEST"
+                ))
+            }
             stopSelf(startId)
             return START_NOT_STICKY
         }
