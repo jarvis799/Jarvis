@@ -18,12 +18,12 @@ object ChatSpeech {
     private var engine: TextToSpeech? = null
 
     fun speak(context: Context, text: String) {
-        val spoken = text.trim().take(600)
+        val spoken = SpeechText.clean(text).take(600).trim()
         if (spoken.isEmpty()) return
         val ready = engine
         if (ready != null) {
             ready.stop()
-            applyLanguage(ready, spoken)
+            applyLanguage(context, ready, spoken)
             ready.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis-chat")
             return
         }
@@ -34,7 +34,7 @@ object ChatSpeech {
                 return@TextToSpeech
             }
             val created = engine ?: return@TextToSpeech
-            applyLanguage(created, spoken)
+            applyLanguage(app, created, spoken)
             created.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis-chat")
         }
     }
@@ -47,12 +47,13 @@ object ChatSpeech {
         return Locale.US
     }
 
-    private fun applyLanguage(target: TextToSpeech, spoken: String) {
+    private fun applyLanguage(context: Context, target: TextToSpeech, spoken: String) {
+        val app = context.applicationContext
         val wanted = localeFor(spoken)
-        val result = runCatching { target.setLanguage(wanted) }.getOrDefault(-2)
+        val result = runCatching { TtsDelivery.applyLanguage(app, target, wanted) }.getOrDefault(-2)
         // A phone without the Bangla/Hindi voice data falls back to English rather than silence.
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            runCatching { target.setLanguage(Locale.US) }
+            runCatching { TtsDelivery.applyLanguage(app, target, Locale.US) }
         }
     }
 }
