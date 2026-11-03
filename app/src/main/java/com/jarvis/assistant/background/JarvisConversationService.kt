@@ -3689,26 +3689,28 @@ class JarvisConversationService : Service() {
 
             Log.i("JarvisService", "Vosk candidate hypothesis: '$cleanPhrase' (words=$wordList, avgConf=$avgConf, duration=${duration}s)")
 
+            val wakeFactor = com.jarvis.assistant.voice.VoiceIntelligencePrefs(this).wakeConfidenceFactor()
+
             // 4. Acoustic Verification:
             // The wake trigger word ("jarvis", a premium custom word, or the
             // owner's chosen name) must be recognized with solid confidence.
             val triggerWords = com.jarvis.assistant.voice.WakePhraseMatcher.triggerWords(wakePhrases)
             val triggerConf = com.jarvis.assistant.voice.WakePhraseMatcher.confidence(triggerWords, wordConfMap)
-            if (triggerConf < 0.38) {
-                Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < 0.38). Ignored.")
+            if (triggerConf < 0.38 * wakeFactor) {
+                Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < " + (0.38 * wakeFactor) + "). Ignored.")
                 return
             }
 
             if (wordList.size == 1 && wordList[0] in triggerWords) {
                 // Standalone single-word trigger ("jarvis" or the owner's name)
-                if (avgConf < 0.45) {
-                    Log.w("JarvisService", "WAKE REJECTED: Standalone trigger failed checks (conf=$avgConf). Ignored.")
+                if (avgConf < 0.45 * wakeFactor) {
+                    Log.w("JarvisService", "WAKE REJECTED: Standalone trigger failed checks (conf=$avgConf, needs " + (0.45 * wakeFactor) + "). Ignored.")
                     return
                 }
             } else {
                 // Multi-word phrases like "hey jarvis", "wake up ahona"
-                if (avgConf < 0.38) {
-                    Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf). Ignored.")
+                if (avgConf < 0.38 * wakeFactor) {
+                    Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf, needs " + (0.38 * wakeFactor) + "). Ignored.")
                     return
                 }
             }
