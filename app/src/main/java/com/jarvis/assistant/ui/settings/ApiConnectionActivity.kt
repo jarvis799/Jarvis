@@ -45,6 +45,7 @@ class ApiConnectionActivity : AppCompatActivity() {
         loadCurrentPreferences()
         refreshOrbStyleStatus()
         setupListeners()
+        addProviderSection()
     }
 
     override fun onResume() {
@@ -183,6 +184,147 @@ class ApiConnectionActivity : AppCompatActivity() {
         } else {
             "No ImgBB key configured"
         }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun providerButton(label: String, onClick: () -> Unit): com.google.android.material.button.MaterialButton =
+        com.google.android.material.button.MaterialButton(this).apply {
+            text = label
+            isAllCaps = false
+            setOnClickListener { onClick() }
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(6) }
+        }
+
+    /** AI BRAINS: every saved Gemini key and custom endpoint, in the order they are tried. */
+    private fun addProviderSection() {
+        val parent = binding.btnImgbbKey.parent as? android.view.ViewGroup ?: return
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(0, dp(20), 0, dp(8))
+        }
+        parent.addView(box)
+        renderProviders(box)
+    }
+
+    private fun renderProviders(box: android.widget.LinearLayout) {
+        box.removeAllViews()
+        box.addView(android.widget.TextView(this).apply {
+            text = "AI BRAINS - AUTOMATIC FAILOVER"
+            textSize = 13f
+            letterSpacing = 0.06f
+            setTextColor(Color.parseColor("#22D3EE"))
+        })
+        box.addView(android.widget.TextView(this).apply {
+            text = "The first entry answers. A quota limit, dead key or timeout moves to the next one by itself."
+            textSize = 12f
+            setPadding(0, dp(4), 0, dp(6))
+        })
+
+        val providers = com.jarvis.assistant.network.AiProviderStore.loadAll(this)
+        if (providers.isEmpty()) {
+            box.addView(android.widget.TextView(this).apply {
+                text = "No AI brain yet - add a Gemini key or your own endpoint below."
+                textSize = 12f
+                setPadding(0, dp(6), 0, dp(6))
+            })
+        }
+        providers.forEach { provider ->
+            val row = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, dp(8))
+            }
+            val label = android.widget.TextView(this).apply {
+                text = provider.label + "\n" + provider.summary()
+                textSize = 13f
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+                )
+            }
+            val remove = com.google.android.material.button.MaterialButton(this).apply {
+                text = "Remove"
+                isAllCaps = false
+                textSize = 11f
+                setOnClickListener {
+                    com.jarvis.assistant.network.AiProviderStore.remove(this@ApiConnectionActivity, provider.id)
+                    renderProviders(box)
+                }
+            }
+            row.addView(label)
+            row.addView(remove)
+            box.addView(row)
+        }
+
+        box.addView(providerButton("+ Add Gemini key") { showAddProviderDialog(box, true) })
+        box.addView(providerButton("+ Add custom endpoint") { showAddProviderDialog(box, false) })
+        box.addView(android.widget.TextView(this).apply {
+            text = "Add as many as you want: Gemini keys, OpenAI-compatible endpoints or a {prompt} URL."
+            textSize = 11f
+            setPadding(0, dp(4), 0, dp(4))
+        })
+    }
+
+    private fun showAddProviderDialog(box: android.widget.LinearLayout, gemini: Boolean) {
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(20), dp(12), dp(20), dp(4))
+        }
+        val nameField = android.widget.EditText(this).apply {
+            hint = if (gemini) "Name (Gemini main)" else "Name (My API)"
+            setSingleLine()
+        }
+        val keyField = android.widget.EditText(this).apply {
+            hint = if (gemini) "Gemini API key (AIza...)" else "API key (optional)"
+            setSingleLine()
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        container.addView(nameField)
+        container.addView(keyField)
+        val endpointField = if (gemini) null else android.widget.EditText(this).apply {
+            hint = "https://your-endpoint  ({prompt} for GET)"
+            setSingleLine()
+        }
+        val modelField = if (gemini) null else android.widget.EditText(this).apply {
+            hint = "Model (optional)"
+            setSingleLine()
+        }
+        endpointField?.let { container.addView(it) }
+        modelField?.let { container.addView(it) }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(if (gemini) "Add Gemini key" else "Add custom endpoint")
+            .setView(android.widget.ScrollView(this).apply { addView(container) })
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Add") { _, _ ->
+                val entry = com.jarvis.assistant.network.AiProvider(
+                    id = (if (gemini) "gemini-" else "custom-") + System.currentTimeMillis(),
+                    label = nameField.text?.toString()?.trim().orEmpty().ifBlank {
+                        if (gemini) "Gemini key" else "Custom endpoint"
+                    },
+                    kind = if (gemini) com.jarvis.assistant.network.AiProvider.KIND_GEMINI
+                    else com.jarvis.assistant.network.AiProvider.KIND_CUSTOM,
+                    key = keyField.text?.toString()?.trim().orEmpty(),
+                    endpoint = endpointField?.text?.toString()?.trim().orEmpty(),
+                    model = modelField?.text?.toString()?.trim().orEmpty()
+                )
+                val problem = when {
+                    gemini && entry.key.isBlank() -> "Gemini key is empty."
+                    !gemini && !entry.endpoint.startsWith("https://", true) -> "Endpoint must start with https://"
+                    else -> null
+                }
+                if (problem != null) {
+                    Toast.makeText(this, problem, Toast.LENGTH_LONG).show()
+                } else {
+                    if (gemini && preferences.apiKey.isBlank()) runCatching { preferences.apiKey = entry.key }
+                    com.jarvis.assistant.network.AiProviderStore.add(this, entry)
+                    Snackbar.make(binding.root, entry.label + " added - failover is on.", Snackbar.LENGTH_SHORT).show()
+                    renderProviders(box)
+                }
+            }
+            .show()
     }
 
     private fun showImgbbKeyDialog() {
