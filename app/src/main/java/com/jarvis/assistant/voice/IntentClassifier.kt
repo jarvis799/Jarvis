@@ -177,6 +177,12 @@ object IntentClassifier {
         return PHRASE_VERBS.any { clause.contains(it) }
     }
 
+    /** The risky verb in an utterance ("send", "call", "delete"), if any - used to ask before acting. */
+    fun riskVerb(text: String): String? {
+        val padded = " " + normalise(text) + " "
+        return RISKY_VERBS.firstOrNull { padded.contains(" " + it + " ") }
+    }
+
     private fun firstVerb(text: String): String? {
         val padded = " " + text + " "
         return SINGLE_VERBS.firstOrNull { padded.contains(" " + it + " ") }
