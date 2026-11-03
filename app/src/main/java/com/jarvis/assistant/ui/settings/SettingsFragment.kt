@@ -146,6 +146,7 @@ class SettingsFragment : Fragment() {
 
     private fun loadUserData() {
         com.jarvis.assistant.email.GmailEntryPoint.bind(binding.btnGmailSetup.root as android.widget.TextView)
+        refreshVoiceAndAudioSummaries()
         binding.tvFooterCredit.text = "JARVIS v${com.jarvis.assistant.BuildConfig.VERSION_NAME} • build ${com.jarvis.assistant.BuildConfig.VERSION_CODE}\nEngineered by DEV STYLE"
         val userName = preferences.userName.ifBlank { "Arian" }
         binding.tvProfileName.text = userName
@@ -324,6 +325,14 @@ class SettingsFragment : Fragment() {
 
         binding.rowApplications.setOnClickListener {
             startActivity(Intent(requireContext(), HandsFreeActivity::class.java))
+        }
+
+        binding.rowVoiceActivation.setOnClickListener {
+            startActivity(Intent(requireContext(), VoiceActivationActivity::class.java))
+        }
+
+        binding.rowBluetoothAudio.setOnClickListener {
+            startActivity(Intent(requireContext(), BluetoothAudioActivity::class.java))
         }
 
         // Section 3: Appearance & Security
@@ -694,6 +703,21 @@ class SettingsFragment : Fragment() {
             if (value.resourceId != 0) ContextCompat.getColor(requireContext(), value.resourceId) else value.data
         } else {
             fallback
+        }
+    }
+
+    private fun refreshVoiceAndAudioSummaries() {
+        val hotword = com.jarvis.assistant.voice.hotword.HotwordCapabilities.probe(
+            requireContext(),
+            com.jarvis.assistant.background.JarvisConversationService.isStandby.value
+        )
+        binding.tvVoiceActivationStatus.text = hotword.detectionLabel + " • " + hotword.engine
+
+        val route = com.jarvis.assistant.audio.HeadsetAudioRouter(requireContext()).snapshot()
+        binding.tvBluetoothAudioStatus.text = if (route.bluetoothConnected) {
+            route.bluetoothName.ifBlank { "Bluetooth audio" } + " • " + route.outputKind
+        } else {
+            "No Bluetooth audio • phone speaker and phone mic"
         }
     }
 

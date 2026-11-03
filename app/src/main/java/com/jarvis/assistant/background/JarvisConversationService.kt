@@ -3488,11 +3488,13 @@ class JarvisConversationService : Service() {
             Log.e("JarvisService", "Error stopping Vosk SpeechService: ${e.message}")
         }
         voskSpeechService = null
+        com.jarvis.assistant.voice.hotword.HotwordStats.endStandby(this)
     }
 
     private fun startWakeListening() {
         if (!_isStandby.value) return
         if (voskSpeechService != null) return
+        com.jarvis.assistant.voice.hotword.HotwordStats.beginStandby(this)
 
         val model = VoskModelManager.model
         if (model == null) {
@@ -3783,6 +3785,7 @@ class JarvisConversationService : Service() {
         requestAudioDuckFocus()
         vibrateBriefly()
         com.jarvis.assistant.audio.JarvisSoundEffects.playWakeSound()
+        com.jarvis.assistant.voice.hotword.HotwordStats.recordActivation(this)
         exitStandbyListening()
         currentTurnAssistantText.clear()
         currentTurnUserText.clear()
