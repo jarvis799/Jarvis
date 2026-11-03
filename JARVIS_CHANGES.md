@@ -42,6 +42,17 @@ This ZIP contains the actual modified Android source, not a patch to apply and n
   9. Failure Autopsy: Diagnostic screen for errors and failed operations. Records with sensitive content redacted (API keys, emails, phone numbers, hex tokens). Categorizes errors (Network, Permission, NullReference, IO, ParseError, Memory). Suggests likely causes and troubleshooting steps from actual evidence. Copy/export reports. AI diagnosis with explicit consent. Never fabricates root causes. Access from Settings > Control Center > Failure Autopsy.
   New dependencies: Robolectric 4.12.2, androidx.test:core 1.5.0 (for local JVM unit tests). Version 2.4.0, build 150.
 
+## 2.1.20 (230)
+
+- **Creator verification always works.** The owner's phrase (`AHONA-I-LOVE-YOU`) now ships inside the app
+  (`CreatorKeyRules.BUILT_IN_KEY`), so verification succeeds even when the build, the CI variable or the
+  website is unavailable. A build-injected key and a device key are still accepted too.
+- **Creator console checks the phone first.** Three-tap console verification no longer needs a network
+  round trip, and it opens even when the website pass answers 401.
+- **Headset routing on Android 14.** The audio router registered its receiver without an export flag, which
+  Android 14 rejects - it now uses `ContextCompat.registerReceiver(..., RECEIVER_NOT_EXPORTED)`, so
+  headset plug/unplug and Bluetooth audio routing work again.
+
 ## Verification
 The editor serves these modified sources and includes them in this ZIP. Native APK compilation and real-device microphone, MediaProjection, TTS, wake-word, and permissions tests have not been run in the web workspace. Build with the project's normal Android toolchain and test on a device before release. No release signing or app identity checks were removed.
 
