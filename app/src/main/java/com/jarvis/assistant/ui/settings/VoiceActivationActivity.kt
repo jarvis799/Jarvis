@@ -41,6 +41,9 @@ class VoiceActivationActivity : AppCompatActivity() {
                 .onFailure { toast("This Android build has no digital assistant settings screen") }
         }
         binding.btnWakePhrase.setOnClickListener { editWakePhrase() }
+        binding.btnIntelligence.setOnClickListener {
+            startActivity(Intent(this, VoiceIntelligenceActivity::class.java))
+        }
         binding.btnTestWake.setOnClickListener {
             startConversation(JarvisConversationService.ACTION_START_CONVERSATION)
             toast("Listening — say your wake word or speak your command")
