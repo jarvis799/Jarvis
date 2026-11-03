@@ -26,8 +26,10 @@ import kotlin.coroutines.resumeWithException
 class HttpChatClient {
     companion object {
         private const val MAX_REPLY_BYTES = 65536L
-        private val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS).callTimeout(40, TimeUnit.SECONDS)
+        // A spoken answer has to arrive while the owner is still waiting: one attempt may take
+        // 18s at most, so a dead endpoint is abandoned instead of blocking the turn for minutes.
+        private val client = OkHttpClient.Builder().connectTimeout(6, TimeUnit.SECONDS)
+            .readTimeout(14, TimeUnit.SECONDS).callTimeout(18, TimeUnit.SECONDS)
             .followRedirects(false).followSslRedirects(false).build()
     }
 
@@ -176,14 +178,12 @@ class HttpChatClient {
         return if (EndpointConfig.usesGet(endpoint)) {
             listOf(
                 EndpointConfig.promptUrl(endpoint, prompt) to null,
-                endpoint to jsonBody(prompt, model, "prompt"),
-                endpoint to jsonBody(prompt, model, "input")
+                endpoint to jsonBody(prompt, model, "prompt")
             )
         } else {
             listOf(
                 endpoint to openAiBody(prompt, model),
-                endpoint to jsonBody(prompt, model, "prompt"),
-                endpoint to jsonBody(prompt, model, "input")
+                endpoint to jsonBody(prompt, model, "prompt")
             )
         }
     }
