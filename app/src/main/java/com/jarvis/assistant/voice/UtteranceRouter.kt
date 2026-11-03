@@ -84,7 +84,8 @@ class UtteranceRouter(
                 "recognition confidence " + acoustic + " is too low to act on"
             )
         }
-        if (utterance.alternatives.size >= 2 && classification.confidence < 0.80f) {
+        val riskyVerb = IntentClassifier.riskVerb(text)
+        if (utterance.alternatives.size >= 2 && (classification.confidence < 0.80f || riskyVerb != null)) {
             return RoutingDecision(
                 UtteranceRoute.CLARIFY, classification,
                 "several different transcripts could match - " + utterance.alternatives.take(2).joinToString(" / ")
