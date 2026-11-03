@@ -195,6 +195,22 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/btnIntelligence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_jarvis_pill_button"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:gravity="center"
+                android:text="Voice intelligence"
+                android:textColor="?attr/themeTextPrimary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
                 android:id="@+id/btnTestWake"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
