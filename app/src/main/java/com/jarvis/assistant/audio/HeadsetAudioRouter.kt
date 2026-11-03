@@ -77,7 +77,13 @@ class HeadsetAudioRouter(private val context: Context) {
                     addAction("android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED")
                     addAction("android.bluetooth.adapter.action.STATE_CHANGED")
                 }
-                context.registerReceiver(headsetReceiver, filter)
+                // Android 14 rejects a receiver registered without an export flag.
+                androidx.core.content.ContextCompat.registerReceiver(
+                    context,
+                    headsetReceiver,
+                    filter,
+                    androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+                )
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && audioDeviceCallback != null) {
                     audioManager.registerAudioDeviceCallback(audioDeviceCallback, null)
