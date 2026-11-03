@@ -22,7 +22,6 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     private var interrupted = false
     private var closed = false
     private val appContext = context.applicationContext
-    private var voiceApplied = false
     var isPaused = false
         private set
     private var engine: TextToSpeech? = null
@@ -40,22 +39,12 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
         })
     }
     suspend fun say(value: String, locale: Locale) {
-        if (closed || value.isBlank()) return
+        val spoken = com.jarvis.assistant.voice.SpeechText.clean(value)
+        if (closed || spoken.isBlank()) return
         if (withTimeoutOrNull(8000) { ready.await() } != true) { onError("Android TTS is unavailable; read the reply in chat."); return }
-        val result = engine?.setLanguage(locale)
+        val result = engine?.let { com.jarvis.assistant.voice.TtsDelivery.applyLanguage(appContext, it, locale) }
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) { onError("Install a TTS voice for " + locale.displayLanguage); return }
-        // Voice Studio selection (applied once per instance, after setLanguage so it wins).
-        if (!voiceApplied) {
-            voiceApplied = true
-            engine?.let { tts ->
-                com.jarvis.assistant.voice.TtsVoiceSelector.applyPreferred(appContext, tts)
-                com.jarvis.assistant.voice.VoiceStyles.current(appContext)?.let { style ->
-                    tts.setPitch(style.pitch)
-                    tts.setSpeechRate(style.rate)
-                }
-            }
-        }
-        text = value
+        text = spoken
         offset = 0
         interrupted = false
         isPaused = false
