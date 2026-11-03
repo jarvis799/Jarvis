@@ -9,6 +9,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import com.jarvis.assistant.voice.SpeechText
+import com.jarvis.assistant.voice.TtsDelivery
 import java.util.Locale
 import java.util.UUID
 
@@ -29,7 +31,7 @@ import java.util.UUID
  *    the session a real "speech ended" edge to return to listening.
  */
 class StreamingSpeechOutput(
-    context: Context,
+    private val context: Context,
     private val scope: CoroutineScope,
     private val onError: (String) -> Unit
 ) {
@@ -99,7 +101,10 @@ class StreamingSpeechOutput(
     /** Queues one speakable phrase. Suspends while the bounded queue is full. */
     suspend fun enqueue(text: String, locale: Locale?, token: Long) {
         if (closed || text.isBlank() || token != currentToken) return
-        queue.send(Phrase(text, locale, token))
+        // Spoken, not read: markdown, code and links would otherwise be pronounced.
+        val spoken = SpeechText.clean(text)
+        if (spoken.isBlank()) return
+        queue.send(Phrase(spoken, locale, token))
     }
 
     /** Waits until everything queued for [token] has been spoken. */
@@ -163,7 +168,8 @@ class StreamingSpeechOutput(
             onError("Android TTS is unavailable; read the reply in chat.")
             return
         }
-        val result = phrase.locale?.let { engine?.setLanguage(it) }
+        // Language, then the boss's chosen voice and prosody - the same delivery as the preview.
+        val result = engine?.let { TtsDelivery.applyLanguage(context, it, phrase.locale) }
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
             onError("Install a TTS voice for " + (phrase.locale?.displayLanguage ?: "this language"))
             return
