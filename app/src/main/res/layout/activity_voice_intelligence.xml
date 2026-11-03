@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingVertical="8dp"
+            android:text="Back"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Voice Intelligence"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="How Jarvis decides what is a request, what is background noise, and when it should ask instead of acting."
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.72"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="LISTENING PROFILE"
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.6"
+            android:textSize="10sp"
+            android:letterSpacing="0.14" />
+
+        <TextView
+            android:id="@+id/btnQuiet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_jarvis_pill_button"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:gravity="center"
+            android:text="Quiet room"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/btnNormal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_jarvis_pill_button"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:gravity="center"
+            android:text="Normal"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/btnPublic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_jarvis_pill_button"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:gravity="center"
+            android:text="Public place"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/tvProfileDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.72"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvWakeValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/seekWake"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="100" />
+
+        <TextView
+            android:id="@+id/tvNoiseValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/seekNoise"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="100" />
+
+        <TextView
+            android:id="@+id/tvInterruptValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/seekInterrupt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="100" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="HOW WOULD JARVIS READ THIS?"
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.6"
+            android:textSize="10sp"
+            android:letterSpacing="0.14" />
+
+        <EditText
+            android:id="@+id/editUtterance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Open YouTube"
+            android:inputType="text"
+            android:maxLines="3"
+            android:textColor="?attr/themeTextPrimary"
+            android:textColorHint="?attr/themeTextPrimary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/btnClassify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_jarvis_pill_button"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:gravity="center"
+            android:text="Classify"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/tvVerdict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvVerdictDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.72"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvHonestNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="What is real here: the classifier and the profiles run on this phone with no network call, and the thresholds above are the ones the wake-word gate actually uses. What is not claimed: perfect separation of a human voice from a television, or microphone access that Android does not allow in the background."
+            android:textColor="?attr/themeTextPrimary"
+            android:alpha="0.6"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
