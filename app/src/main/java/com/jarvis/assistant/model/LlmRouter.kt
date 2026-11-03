@@ -69,7 +69,8 @@ object LlmRouter {
     suspend fun answer(context: Context, input: String, system: String, remote: suspend () -> String): String {
         val prefs = com.jarvis.assistant.JarvisApp.instance.preferences
         val noRemote = prefs.apiKey.isBlank() &&
-            com.jarvis.assistant.network.EndpointConfig.httpEndpoint(prefs.apiKey, prefs.customEndpoint) == null
+            com.jarvis.assistant.network.EndpointConfig.httpEndpoint(prefs.apiKey, prefs.customEndpoint) == null &&
+            !com.jarvis.assistant.network.AiGateway.hasProviders(context)
         if (!isOnline(context) || (noRemote && localReady(context))) return localAnswer(context, input, system)
         return try { remote() }
         catch (error: kotlinx.coroutines.CancellationException) { throw error }
