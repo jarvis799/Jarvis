@@ -24,6 +24,10 @@ jobs:
     name: Build release APK
     runs-on: ubuntu-latest
 
+    env:
+      # Creator key comes from a repository variable, never from committed source.
+      JARVIS_CREATOR_KEY: ${{ vars.JARVIS_CREATOR_KEY }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
