@@ -24,9 +24,11 @@ object AgentEngine {
         apiKey: String, model: String, context: Context,
         onDelta: ((String) -> Unit)? = null
     ): String {
+        // A greeting is answered right here, in one step: no prompt building, no network, no wait.
+        com.jarvis.assistant.agent.QuickGreetings.reply(userInput)?.let { return it }
         com.jarvis.assistant.automation.command.NativeCommandGateway.execute(context, userInput)?.let { return it }
         val router = com.jarvis.assistant.model.LlmRouter
-        if (!router.isOnline(context) || endpoint.isBlank()) {
+        if (!router.isOnline(context) || (endpoint.isBlank() && !com.jarvis.assistant.network.AiGateway.hasProviders(context))) {
             com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
             // Stream the on-device answer: the first sentence is spoken while the rest is still
             // being generated, so a local reply never sits silent for a minute before speaking.
@@ -44,15 +46,16 @@ object AgentEngine {
         onDelta: ((String) -> Unit)?
     ): String {
         val adultEducationEnabled = com.jarvis.assistant.JarvisApp.instance.preferences.adultEducationEnabled
-        if (endpoint.isBlank()) {
+        if (endpoint.isBlank() && !com.jarvis.assistant.network.AiGateway.hasProviders(context)) {
             com.jarvis.assistant.util.OfflineEngine.localAnswer(context, userInput)?.let { return it }
             return com.jarvis.assistant.model.LlmRouter.localAnswer(context, userInput)
         }
         if (!FeatureFlags.engineEnabled) {
             CapabilityRouter.route(context, userInput)?.let { return it }
-            return HttpChatClient().ask(
-                endpoint, com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(basePrompt, adultEducationEnabled), apiKey, model
-            )
+            val shortPrompt = com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(basePrompt, adultEducationEnabled)
+            return if (com.jarvis.assistant.network.AiGateway.hasProviders(context))
+                com.jarvis.assistant.network.AiGateway.ask(context, shortPrompt, model)
+            else HttpChatClient().ask(endpoint, shortPrompt, apiKey, model)
         }
 
         val sb = StringBuilder(basePrompt)
@@ -200,13 +203,18 @@ object AgentEngine {
         // Voice pipeline: every device-command, plugin, permission and web-search path above
         // has already returned, so this is the plain conversational answer - the only place
         // where streaming is safe. Deltas go straight to the speech pipeline.
-        val streamed = if (onDelta != null && !com.jarvis.assistant.network.EndpointConfig.usesGet(endpoint)) {
+        // The provider list walks itself: a quota wall, a dead key or a timeout hands the turn
+        // to the next saved brain instead of leaving the owner without an answer.
+        val failover = com.jarvis.assistant.network.AiGateway.hasProviders(context)
+        val streamed = if (onDelta != null && (failover || !com.jarvis.assistant.network.EndpointConfig.usesGet(endpoint))) {
             runCatching {
-                HttpChatClient().stream(endpoint, enhancedPrompt, apiKey, model) { delta -> onDelta.invoke(delta) }
+                if (failover) com.jarvis.assistant.network.AiGateway.stream(context, enhancedPrompt, model) { delta -> onDelta.invoke(delta) }
+                else HttpChatClient().stream(endpoint, enhancedPrompt, apiKey, model) { delta -> onDelta.invoke(delta) }
             }.getOrNull()?.takeIf { it.isNotBlank() }
         } else null
 
         var reply = if (streamed != null) streamed
+        else if (failover) com.jarvis.assistant.network.AiGateway.ask(context, enhancedPrompt, model)
         else if (FeatureFlags.isEnabled(FeatureFlags.errorRecovery) &&
             !(com.jarvis.assistant.model.OfflineModelStatus.ready(context) && com.jarvis.assistant.model.ModelStore(context).offlineFallback()))
             ErrorRecovery.execute { HttpChatClient().ask(endpoint, enhancedPrompt, apiKey, model) }
@@ -216,11 +224,7 @@ object AgentEngine {
         // the prompt confuses them - retry once with the plain user text.
         // Skipped after streaming: the first answer has already been spoken and cannot be
         // taken back, so a second answer would talk over itself.
-        if (streamed == null && isCannedFailure(reply)) {
-            val retryInput = com.jarvis.assistant.personality.AdultEducationPolicy.applyTo(request, adultEducationEnabled)
-            val plain = runCatching { ErrorRecovery.execute { HttpChatClient().ask(endpoint, retryInput, apiKey, model) } }.getOrNull()
-            if (!plain.isNullOrBlank() && !isCannedFailure(plain)) reply = plain
-        }
+        // No silent second ask: a retry nobody hears only made the owner wait longer.
 
         // Auto-save bugs: when the user asks for something and Jarvis replies it cannot
         // do it, record the failure so the creator can review it later.
@@ -243,14 +247,8 @@ object AgentEngine {
             )
         }
 
-        if (streamed == null && FeatureFlags.isEnabled(FeatureFlags.resultVerification)) {
-            val verification = ResultVerifier.verify(userInput, reply)
-            if (!verification.passed) {
-                val retryPrompt = ResultVerifier.issuesBlock(verification) + enhancedPrompt
-                val retryReply = ErrorRecovery.execute { HttpChatClient().ask(endpoint, retryPrompt, apiKey, model) }
-                if (ResultVerifier.isAcceptable(userInput, retryReply)) return retryReply
-            }
-        }
+        // Verification retry removed: it doubled every answer's wait time. ReplyCleaner still
+        // collapses repeated lines, so a looping answer never reaches the owner twice.
         // A model that says the same line twice reads as broken and feels slow: collapse it.
         return com.jarvis.assistant.util.ReplyCleaner.clean(reply)
     }
