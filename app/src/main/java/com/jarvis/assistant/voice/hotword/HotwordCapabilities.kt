@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import android.service.voice.VoiceInteractionService
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 
@@ -44,7 +43,10 @@ object HotwordCapabilities {
         } else {
             false
         }
-        val assistant = runCatching { VoiceInteractionService.isActive() }.getOrDefault(false)
+        val selected = runCatching {
+            android.provider.Settings.Secure.getString(app.contentResolver, "voice_interaction_service")
+        }.getOrNull().orEmpty()
+        val assistant = selected.contains(app.packageName)
         val unrestricted = runCatching {
             val power = app.getSystemService(Context.POWER_SERVICE) as PowerManager
             power.isIgnoringBatteryOptimizations(app.packageName)

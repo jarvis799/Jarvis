@@ -220,7 +220,9 @@ class HeadsetAudioRouter(private val context: Context) {
         ) return ""
         return runCatching {
             val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as android.bluetooth.BluetoothManager
-            manager.adapter?.getBondedDevices()?.firstOrNull { it.isConnected }?.name.orEmpty()
+            val connected = manager.getConnectedDevices(android.bluetooth.BluetoothProfile.A2DP)
+                .ifEmpty { manager.getConnectedDevices(android.bluetooth.BluetoothProfile.HEADSET) }
+            connected.firstOrNull()?.name.orEmpty()
         }.getOrDefault("")
     }
 
