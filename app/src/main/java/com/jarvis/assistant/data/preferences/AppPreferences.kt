@@ -82,6 +82,7 @@ class AppPreferences(context: Context) {
         private const val KEY_ORB_SCALE = "key_orb_scale"
         private const val KEY_ORB_HUE = "key_orb_hue"
         private const val KEY_CUSTOM_ENDPOINT = "key_custom_endpoint"
+        private const val KEY_AI_PROVIDERS = "key_ai_providers"
         private const val KEY_WAKE_WORD = "key_wake_word"
         private const val KEY_THIEF_GUARD = "key_thief_guard"
         private const val KEY_GITHUB_TOKEN = "key_github_token"
@@ -224,6 +225,14 @@ class AppPreferences(context: Context) {
             val clean = value.trim()
             val saved = if (clean.isEmpty()) setApiKeys(emptyList()) else setApiKeys(listOf(clean))
             check(saved) { "Could not save API key to encrypted storage." }
+        }
+
+    /** The ordered AI brain list (Gemini keys and custom endpoints) as JSON. */
+    var aiProvidersJson: String
+        get() = secureApiPrefs?.getString(KEY_AI_PROVIDERS, "")?.trim().orEmpty()
+        set(value) {
+            val editor = (secureApiPrefs ?: prefs).edit().putString(KEY_AI_PROVIDERS, value)
+            if (secureApiPrefs != null) editor.commit() else editor.apply()
         }
 
     val canStoreApiKeySecurely: Boolean get() = secureApiPrefs != null
