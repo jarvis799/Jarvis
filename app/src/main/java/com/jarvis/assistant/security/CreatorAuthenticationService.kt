@@ -7,9 +7,10 @@ import com.jarvis.assistant.JarvisApp
 /**
  * Creator authentication.
  *
- * The expected key is never hardcoded in the APK source. It comes from
- * BuildConfig.CREATOR_KEY, injected at build time from the JARVIS_CREATOR_KEY
- * Gradle property / CI secret, or from the key the owner sets on this device.
+ * The owner's phrase ships with the app as CreatorKeyRules.BUILT_IN_KEY, so the
+ * creator can always verify themselves - offline, and whatever CI supplies.
+ * BuildConfig.CREATOR_KEY (JARVIS_CREATOR_KEY Gradle property / CI variable) and
+ * the key the owner sets on this device are accepted as well.
  * Wrong entries are rate limited; successful verification persists the Creator role.
  *
  * Creator verification does not bypass normal authorization checks or grant
@@ -35,8 +36,13 @@ object CreatorAuthenticationService {
         CreatorKeyRules.normalize(JarvisApp.instance.preferences.creatorSecretPhrase)
     }.getOrDefault("")
 
+    /** The owner's phrase that ships with the app - the reason verification cannot break. */
+    private fun builtInKey(): String = CreatorKeyRules.normalize(CreatorKeyRules.BUILT_IN_KEY)
+
     fun isConfigured(): Boolean =
-        CreatorKeyRules.usable(buildKey()) || CreatorKeyRules.usable(deviceKey())
+        CreatorKeyRules.usable(builtInKey()) ||
+            CreatorKeyRules.usable(buildKey()) ||
+            CreatorKeyRules.usable(deviceKey())
 
     fun lockRemainingMillis(ctx: Context): Long {
         val until = prefs(ctx).getLong(KEY_LOCK_UNTIL, 0L)
@@ -47,7 +53,8 @@ object CreatorAuthenticationService {
     fun verify(ctx: Context, key: String): Boolean {
         if (lockRemainingMillis(ctx) > 0L) return false
         val candidate = CreatorKeyRules.normalize(key)
-        val accepted = CreatorKeyRules.matches(buildKey(), candidate) ||
+        val accepted = CreatorKeyRules.matches(builtInKey(), candidate) ||
+            CreatorKeyRules.matches(buildKey(), candidate) ||
             CreatorKeyRules.matches(deviceKey(), candidate)
         if (accepted) {
             clearFailures(ctx)
@@ -64,7 +71,9 @@ object CreatorAuthenticationService {
      * driven by [verify].
      */
     fun matchesConfiguredKey(text: String): Boolean =
-        CreatorKeyRules.matches(buildKey(), text) || CreatorKeyRules.matches(deviceKey(), text)
+        CreatorKeyRules.matches(builtInKey(), text) ||
+            CreatorKeyRules.matches(buildKey(), text) ||
+            CreatorKeyRules.matches(deviceKey(), text)
 
     fun markCreatorVerified(ctx: Context) {
         prefs(ctx).edit()
