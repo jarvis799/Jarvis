@@ -160,6 +160,70 @@ class HeadsetAudioRouter(private val context: Context) {
         }
     }
 
+    /** Truthful picture of the active output, active input and Bluetooth state. */
+    fun snapshot(): AudioRouteSnapshot {
+        val outputs: Array<AudioDeviceInfo> = runCatching {
+            audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        }.getOrDefault(arrayOf())
+        val inputs: Array<AudioDeviceInfo> = runCatching {
+            audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+        }.getOrDefault(arrayOf())
+
+        val external = findExternalOutput()
+        val output = external ?: outputs.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } ?: outputs.firstOrNull()
+
+        val communication = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            runCatching { audioManager.communicationDevice }.getOrNull()
+        } else null
+        val phoneMic = inputs.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+        val scoMic = inputs.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+        val input = if (audioManager.mode == AudioManager.MODE_IN_COMMUNICATION && communication != null) {
+            communication
+        } else {
+            phoneMic ?: scoMic ?: inputs.firstOrNull()
+        }
+
+        val inputType = input?.type ?: -1
+        return AudioRouteSnapshot(
+            bluetoothConnected = external != null,
+            bluetoothName = bluetoothDeviceName(),
+            outputName = output?.productName?.toString()?.takeIf { it.isNotBlank() } ?: "no output device",
+            outputKind = audioKindLabel(output?.type ?: -1),
+            inputName = input?.productName?.toString()?.takeIf { it.isNotBlank() } ?: "no input device",
+            inputKind = audioKindLabel(inputType),
+            bluetoothMic = inputType == AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            micAvailable = input != null
+        )
+    }
+
+    private fun audioKindLabel(type: Int): String = when (type) {
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Phone speaker"
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Phone earpiece"
+        AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Phone microphone"
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth audio (A2DP)"
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth headset (SCO)"
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired headphones"
+        AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired headset"
+        AudioDeviceInfo.TYPE_USB_HEADSET -> "USB headset"
+        AudioDeviceInfo.TYPE_USB_DEVICE -> "USB audio device"
+        AudioDeviceInfo.TYPE_HEARING_AID -> "Hearing aid"
+        AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE headset"
+        AudioDeviceInfo.TYPE_BLE_SPEAKER -> "Bluetooth LE speaker"
+        else -> "Audio device"
+    }
+
+    /** Name of the connected Bluetooth device, when the owner allowed Bluetooth control. */
+    private fun bluetoothDeviceName(): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.BLUETOOTH_CONNECT
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) return ""
+        return runCatching {
+            val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as android.bluetooth.BluetoothManager
+            manager.adapter?.getBondedDevices()?.firstOrNull { it.isConnected }?.name.orEmpty()
+        }.getOrDefault("")
+    }
+
     fun stop() {
         try {
             if (isRegistered) {
