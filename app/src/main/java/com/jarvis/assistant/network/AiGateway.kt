@@ -57,9 +57,9 @@ object AiGateway {
         if (all.isEmpty()) throw IllegalStateException(
             "No AI brain is set up. Settings > API Connection > add a Gemini key or your own endpoint."
         )
-        val fresh = fresh(context)
+        val available = fresh(context)
         // Everything cooling down? Give them one more honest try instead of staying mute.
-        return attemptFirst(if (fresh.isEmpty()) all else fresh, prompt, model, onDelta)
+        return attemptFirst(if (available.isEmpty()) all else available, prompt, model, onDelta)
     }
 
     private suspend fun attemptFirst(
