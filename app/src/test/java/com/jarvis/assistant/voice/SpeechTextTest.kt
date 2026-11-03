@@ -22,7 +22,7 @@ class SpeechTextTest {
     @Test
     fun linksKeepTheirLabel() {
         assertEquals("Open the site now.", SpeechText.clean("Open [the site](https://example.com) now."))
-        assertEquals("Read more.", SpeechText.clean("Read more https://example.com/a?b=1."))
+        assertEquals("Read more now.", SpeechText.clean("Read more https://example.com/a?b=1 now."))
     }
 
     @Test
