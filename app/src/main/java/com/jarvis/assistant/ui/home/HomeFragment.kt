@@ -437,6 +437,24 @@ class HomeFragment : Fragment() {
                         sayToOrb(latest.jarvisResponse)
                     }
                 }
+                // Live transcript: stream Jarvis's reply onto the orb as it is
+                // generated (not only the finalized turn), and show what the boss
+                // just said on the hint line while listening/processing.
+                launch {
+                    viewModel.liveAssistantResponse.collect { reply ->
+                        if (reply.isNotBlank()) sayToOrb(reply)
+                    }
+                }
+                launch {
+                    viewModel.liveUserTranscript.collect { you ->
+                        if (_binding == null) return@collect
+                        val state = viewModel.conversationState.value
+                        if (you.isNotBlank() && (state == ConversationState.LISTENING || state == ConversationState.THINKING)) {
+                            binding.tvHoldHint.text = "You: $you"
+                            binding.tvHoldHint.visibility = View.VISIBLE
+                        }
+                    }
+                }
                 launch {
                     combine(
                         viewModel.isSessionOn,
