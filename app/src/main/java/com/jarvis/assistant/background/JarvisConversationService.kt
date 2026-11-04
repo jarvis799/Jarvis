@@ -683,9 +683,9 @@ class JarvisConversationService : Service() {
     }
 
     private fun handleTtsDone(utteranceId: String?) {
-        // The live assistant voice is the Android TextToSpeech engine (the same engine used for
-        // the charging announcement). When a Jarvis response finishes speaking, leave SPEAKING so
-        // the UI and microphone return to listening.
+        // TTS here is only for system announcements (task confirmations / idle check-ins), not
+        // the live assistant voice — that comes from Gemini's native neural TTS. When an
+        // announcement finishes, leave SPEAKING so the UI and microphone return to listening.
         if (utteranceId == "jarvis_response" || utteranceId == "tts_fallback" || utteranceId == "task_done") {
             if (_conversationState.value == ConversationState.SPEAKING) {
                 setConversationState(ConversationState.IDLE)
@@ -694,35 +694,17 @@ class JarvisConversationService : Service() {
     }
 
     /**
-     * The single live voice of Jarvis. Speaks an AI response with the phone's own Android
-     * TextToSpeech engine - the exact same engine, voice, pitch, speech rate and language
-     * selection the charging/battery announcement uses (TtsDelivery + TtsVoiceSelector), so the
-     * assistant and the charger sound identical. Gemini TTS is never used for normal speech;
-     * only the AI text generation is kept. Falls back to the shared ChatSpeech engine if the
-     * service engine is not ready yet, so a response is never lost.
+     * DEV STYLE raw-voice policy: the live assistant voice is Gemini's native neural TTS,
+     * streamed from the Live WebSocket into the AudioPlayer (see onAudioDataReceived). The
+     * phone's Android TextToSpeech engine is NOT used for the assistant voice. This method is
+     * kept only as a raw diagnostic hook: if a turn produced text but no Gemini audio, we log
+     * the raw state instead of swapping in a different TTS, so the failure is visible and
+     * fixable. No fallback TTS, no friendly message.
      */
     private fun speakJarvisResponse(text: String) {
         val spoken = com.jarvis.assistant.voice.SpeechText.clean(text).take(900).trim()
         if (spoken.isEmpty()) return
-        val engine = tts
-        if (engine == null) {
-            Log.w("JarvisService", "Service TTS not ready, using shared Android TTS for Jarvis response")
-            com.jarvis.assistant.voice.ChatSpeech.speak(applicationContext, spoken)
-            return
-        }
-        val locale = com.jarvis.assistant.voice.ChatSpeech.localeFor(spoken)
-        val result = runCatching {
-            com.jarvis.assistant.voice.TtsDelivery.applyLanguage(applicationContext, engine, locale)
-        }.getOrDefault(TextToSpeech.LANG_NOT_SUPPORTED)
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            runCatching { com.jarvis.assistant.voice.TtsDelivery.applyLanguage(applicationContext, engine, Locale.US) }
-        }
-        setConversationState(ConversationState.SPEAKING)
-        if (engine.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis_response") == TextToSpeech.ERROR) {
-            Log.w("JarvisService", "Android TTS rejected the Jarvis response; trying shared engine")
-            com.jarvis.assistant.voice.ChatSpeech.speak(applicationContext, spoken)
-            setConversationState(ConversationState.IDLE)
-        }
+        Log.w("JarvisService", "[RAW] speakJarvisResponse: Gemini neural TTS is the only voice; no Android TTS fallback. textLen=${spoken.length} head=${spoken.take(120)}")
     }
 
     private fun ensureMicrophoneForegroundService() {
@@ -1041,13 +1023,10 @@ class JarvisConversationService : Service() {
                             thinkingTimeoutJob?.cancel()
                             thinkingTimeoutJob = null
                             lastResponseTimedOut = false
-                            // JARVIS voice policy: the live assistant voice is the phone's own
-                            // Android TextToSpeech engine - the same engine, voice, pitch and
-                            // speech rate used for the charging/battery announcement. Gemini
-                            // neural TTS audio is never played; only the AI text is kept and
-                            // spoken by speakJarvisResponse() on turn complete. Dropping chunks
-                            // here keeps audioArrivedThisTurn false so the Android TTS path runs.
-                            return
+                            // JARVIS voice policy: the live assistant voice is Gemini's native
+                            // neural TTS delivered through the Live WebSocket (this callback).
+                            // The phone's Android TextToSpeech engine is NOT used for the
+                            // assistant voice. PCM chunks stream straight to the AudioPlayer.
                             if (suppressAudioUntilTurnComplete) {
                                 Log.w("JarvisService", "onAudioDataReceived: Audio suppressed (suppressAudioUntilTurnComplete=true)")
                                 return
@@ -1324,24 +1303,15 @@ class JarvisConversationService : Service() {
                                     tts?.speak(summaryToSpeak, TextToSpeech.QUEUE_FLUSH, null, "task_done")
                                 }
                             }
-                            // TTS FALLBACK + repeat guard: if Gemini produced a text response but sent
-                            // no neural audio this turn, speak it via Android TTS so the user is never
-                            // left silent. Skip confusion replies to empty input ("I didn't catch that")
-                            // so the assistant does not repeat the same error over and over.
+                            // RAW VOICE DIAGNOSTIC: if Gemini produced text but no neural audio this
+                            // turn, the assistant stays silent (Gemini is the only voice). Log the raw
+                            // state so the missing-audio case is visible and fixable. No Android TTS
+                            // fallback, no friendly confusion reply.
                             if (!audioArrivedThisTurn && assistantTurnText.isNotEmpty() &&
                                 !preferences.isSilentExecutionMode && !isAutonomousTaskRunning &&
                                 audioPlayer?.isPlaying() != true) {
-                                val lowerReply = assistantTurnText.lowercase(Locale.ROOT)
-                                val isConfusedReply = userUtterance.isEmpty() && (
-                                    lowerReply.contains("didn't catch") || lowerReply.contains("say again") ||
-                                    lowerReply.contains("didn't understand") || lowerReply.contains("didn't get") ||
-                                    lowerReply.contains("couldn't catch") || lowerReply.contains("didn't hear"))
-                                if (!isConfusedReply) {
-                                    Log.i("JarvisService", "Jarvis voice: speaking via Android TTS (same engine as charging announcement): '" + assistantTurnText.take(80) + "'")
-                                    speakJarvisResponse(assistantTurnText)
-                                } else {
-                                    Log.i("JarvisService", "Repeat guard: suppressing confused reply to empty input (no TTS, no repeat)")
-                                }
+                                Log.w("JarvisService", "[RAW] turn produced text but NO Gemini neural audio. textLen=${assistantTurnText.length} userUtteranceLen=${userUtterance.length} head=${assistantTurnText.take(120)}")
+                                speakJarvisResponse(assistantTurnText)
                             }
 
                             val engineStatus = com.jarvis.assistant.automation.agent.AgentTaskEngine.current()?.status
@@ -3171,12 +3141,9 @@ class JarvisConversationService : Service() {
                 setConversationState(ConversationState.IDLE)
                 lastResponseTimedOut = true
                 updateNotification()
-                val prompt = "I didn't catch that, boss. Say it again."
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
-                    announce(prompt)
-                    runCatching { com.jarvis.assistant.voice.ChatSpeech.speak(this@JarvisConversationService, prompt) }
-                }
-                _events.emit(prompt)
+                val rawError = "[NO_INPUT] answerOverRest: empty utterance, mic produced no speech. state=${_conversationState.value} session=${_isSessionOn.value}"
+                Log.w("JarvisService", rawError)
+                _events.emit(rawError)
                 return@launch
             }
             val context = this@JarvisConversationService
