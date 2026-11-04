@@ -1715,11 +1715,8 @@ class JarvisConversationService : Service() {
                                     thinkingTimeoutJob = serviceScope.launch {
                                         delay(8000)
                                         if (_conversationState.value == ConversationState.THINKING && (audioPlayer == null || !audioPlayer!!.isPlaying())) {
-                                            Log.i("JarvisService", "Thinking timeout safety; returning to IDLE")
-                                            setConversationState(ConversationState.IDLE)
-                                            lastResponseTimedOut = true
-                                            updateNotification()
-                                            serviceScope.launch { _events.emit("Jarvis did not receive a reply. Check the connection and repeat your request.") }
+                                            Log.i("JarvisService", "Live reply silent after 8s; answering over REST")
+                                            answerOverRest(currentTurnUserText.toString())
                                         }
                                     }
                                 }
@@ -3091,6 +3088,55 @@ class JarvisConversationService : Service() {
                 if (skippedParts.isNotEmpty()) {
                     announce("Ei ta bujhlam na: " + skippedParts.joinToString(", "))
                 }
+            }
+        }
+    }
+
+    /**
+     * The live session sometimes stays silent even though the microphone is heard locally.
+     * Instead of leaving the boss with nothing, the same turn is answered once over the plain
+     * REST brain (saved Gemini key or custom endpoint) and spoken through TTS.
+     */
+    private fun answerOverRest(spoken: String) {
+        val question = spoken.trim()
+        serviceScope.launch {
+            if (currentTurnAssistantText.isNotBlank() || audioPlayer?.isPlaying() == true) return@launch
+            if (question.isEmpty()) {
+                setConversationState(ConversationState.IDLE)
+                lastResponseTimedOut = true
+                updateNotification()
+                _events.emit("Jarvis did not receive a reply. Check the connection and repeat your request.")
+                return@launch
+            }
+            val context = this@JarvisConversationService
+            try {
+                if (!com.jarvis.assistant.network.AiGateway.hasProviders(context)) {
+                    setConversationState(ConversationState.IDLE)
+                    lastResponseTimedOut = true
+                    updateNotification()
+                    _events.emit("No AI brain is set up. Settings > API Connection > add a Gemini key or your own endpoint.")
+                    return@launch
+                }
+                val reply = com.jarvis.assistant.network.AiGateway.ask(
+                    context,
+                    "You are Jarvis. Answer the boss's spoken request in one or two short spoken sentences, plain words, no markdown.\nRequest: " + question
+                ).trim()
+                if (reply.isEmpty() || currentTurnAssistantText.isNotBlank()) return@launch
+                lastResponseTimedOut = false
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                    announce(reply)
+                    (application as? JarvisApp)?.chatRepository?.addTurn(question, reply)
+                    runCatching { com.jarvis.assistant.voice.ChatSpeech.speak(context, reply) }
+                    setConversationState(ConversationState.IDLE)
+                    updateNotification()
+                }
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (error: Exception) {
+                setConversationState(ConversationState.IDLE)
+                lastResponseTimedOut = true
+                updateNotification()
+                _events.emit(error.message ?: "Jarvis could not reach any AI brain. Check Settings > API Connection.")
             }
         }
     }
