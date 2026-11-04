@@ -1147,11 +1147,23 @@ class GeminiLiveWebSocket(
     }
 
     /**
-     * In Gemini Live BidiGenerateContent, streaming audio via realtimeInput handles turn-taking
-     * natively via server-side neural VAD. Sending empty client_content cancels active generation.
+     * Signals the local VAD's confident end-of-speech to Gemini so it begins
+     * generating the reply immediately, instead of waiting for the slower
+     * server-side neural silence detector. Without this signal the reply can
+     * arrive several seconds late and trip the response-timeout REST fallback,
+     * which the user sees as a "connection error" even on a good connection.
+     * The local VAD only calls this after sustained silence, so mid-sentence
+     * pauses are not cut off.
      */
     fun sendAudioStreamEnd() {
-        // No-op: server-side VAD handles turn completion smoothly
+        if (!isConnected.get() || !isSetupComplete.get()) return
+        try {
+            val json = "{\"realtimeInput\":{\"audioStreamEnd\":true}}"
+            webSocket?.send(json)
+            Log.d(TAG, "Sent audioStreamEnd (local VAD end-of-speech)")
+        } catch (e: Exception) {
+            Log.e(TAG, "sendAudioStreamEnd failed: ${e.message}")
+        }
     }
 
     /**
