@@ -345,6 +345,9 @@ class JarvisConversationService : Service() {
     private var totalVoicedFramesInCurrentUtterance = 0
     private var ambientNoiseFloor = 0.03f
     private var thinkingTimeoutJob: Job? = null
+    // How long to wait for a Gemini Live reply before falling back to REST. Generous on purpose:
+    // a short 2.5s window raced delayed Live transcription and produced false "I didn't catch that" replies.
+    private val RESPONSE_TIMEOUT_MS = 12_000L
     private var isPendingBackgroundTransition = false
     @Volatile
     private var suppressAudioUntilTurnComplete = false
@@ -683,10 +686,16 @@ class JarvisConversationService : Service() {
     }
 
     private fun handleTtsDone(utteranceId: String?) {
-        // TTS here is only for system announcements (task confirmations / idle check-ins), not
-        // the live assistant voice — that comes from Gemini's native neural TTS. When an
-        // announcement finishes, leave SPEAKING so the UI and microphone return to listening.
-        if (utteranceId == "jarvis_response" || utteranceId == "tts_fallback" || utteranceId == "task_done") {
+        // The live assistant voice is Android TTS. When a Jarvis response finishes speaking,
+        // finalize the turn (persist chat, clear buffers) and return to listening — mirroring what
+        // the neural-audio playback path did via onPlaybackStateChanged(false).
+        if (utteranceId == "jarvis_response" || utteranceId == "tts_fallback") {
+            lastPlaybackEndTime = System.currentTimeMillis()
+            finalizeTurn()
+            if (_isSessionOn.value && _conversationState.value == ConversationState.SPEAKING) {
+                setConversationState(ConversationState.IDLE)
+            }
+        } else if (utteranceId == "task_done" || utteranceId == "idle_checkin") {
             if (_conversationState.value == ConversationState.SPEAKING) {
                 setConversationState(ConversationState.IDLE)
             }
@@ -704,7 +713,23 @@ class JarvisConversationService : Service() {
     private fun speakJarvisResponse(text: String) {
         val spoken = com.jarvis.assistant.voice.SpeechText.clean(text).take(900).trim()
         if (spoken.isEmpty()) return
-        Log.w("JarvisService", "[RAW] speakJarvisResponse: Gemini neural TTS is the only voice; no Android TTS fallback. textLen=${spoken.length} head=${spoken.take(120)}")
+        // Voice policy: Jarvis speaks through the SAME Android TextToSpeech engine used by the
+        // charging announcement (configured by TtsVoiceSelector in initTts). Gemini neural audio
+        // is NOT played; the output transcription is the single text source for this TTS path.
+        try { tts?.stop() } catch (_: Exception) {}
+        setConversationState(ConversationState.SPEAKING)
+        val utteranceId = "jarvis_response"
+        val params = android.os.Bundle().apply {
+            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+        }
+        val queued = tts?.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, utteranceId) == android.speech.tts.TextToSpeech.SUCCESS
+        Log.i("JarvisService", "speakJarvisResponse via Android TTS: queued=$queued len=${spoken.length} head=${spoken.take(120)}")
+        if (!queued) {
+            Log.e("JarvisService", "[VOICE_ERROR] Android TTS speak() failed; finalizing turn without voice")
+            lastPlaybackEndTime = System.currentTimeMillis()
+            finalizeTurn()
+            if (_isSessionOn.value) setConversationState(ConversationState.IDLE)
+        }
     }
 
     private fun ensureMicrophoneForegroundService() {
@@ -1020,43 +1045,18 @@ class JarvisConversationService : Service() {
                         private var audioChunksReceivedInTurn = 0
 
                         override fun onAudioDataReceived(pcmData: ByteArray) {
+                            // A response started: cancel the REST-fallback timeout so a valid Live reply is
+                            // never raced by answerOverRest.
                             thinkingTimeoutJob?.cancel()
                             thinkingTimeoutJob = null
                             lastResponseTimedOut = false
-                            // JARVIS voice policy: the live assistant voice is Gemini's native
-                            // neural TTS delivered through the Live WebSocket (this callback).
-                            // The phone's Android TextToSpeech engine is NOT used for the
-                            // assistant voice. PCM chunks stream straight to the AudioPlayer.
-                            if (suppressAudioUntilTurnComplete) {
-                                Log.w("JarvisService", "onAudioDataReceived: Audio suppressed (suppressAudioUntilTurnComplete=true)")
-                                return
-                            }
-                            // Silent execution applies to task narration, while leaving ordinary
-                            // conversation audible. Read the preference dynamically so toggling
-                            // it during a session takes effect immediately.
-                            // Only the turn that is actually running a command stays silent. A task
-                            // finished earlier in the session must never mute ordinary conversation.
-                            if (preferences.isSilentExecutionMode &&
-                                (isAutonomousTaskRunning || hasExecutedCommandInCurrentTurn)
-                            ) {
-                                audioPlayer?.flush()
-                                return
-                            }
-                            if (isAutonomousContinuationTurn) {
-                                synchronized(autonomousAudioLock) {
-                                    if (autonomousAudioBufferBytes + pcmData.size <= 2_000_000) {
-                                        autonomousAudioBuffer += pcmData.copyOf()
-                                        autonomousAudioBufferBytes += pcmData.size
-                                    }
-                                }
-                                return
-                            }
-                            audioChunksReceivedInTurn++
-                            if (audioChunksReceivedInTurn % 25 == 1) {
-                                Log.d("JarvisService", "Streaming audio chunk #$audioChunksReceivedInTurn (${pcmData.size} bytes) to AudioPlayer")
-                            }
-                            setConversationState(ConversationState.SPEAKING)
-                            audioPlayer?.enqueueAudio(pcmData)
+                            // Voice policy: Gemini neural audio is intentionally NOT played. Jarvis speaks
+                            // through the Android TextToSpeech engine using the OUTPUT TRANSCRIPTION text
+                            // (see speakJarvisResponse / onTurnCompleted). Dropping the PCM chunks here does
+                            // NOT affect turn completion: turnComplete is a separate server signal.
+                            // Diagnostic E: a chunk arriving proves mic capture, the Live connection and
+                            // AI generation all work; any missing voice is a TTS issue, not a Gemini issue.
+                            Log.d("JarvisService", "onAudioDataReceived: neural audio dropped (Android TTS is the voice); ${pcmData.size} bytes")
                         }
 
                         override fun onAssistantTextReceived(textChunk: String) {
@@ -1215,9 +1215,10 @@ class JarvisConversationService : Service() {
                                 }
                                 val finalResult = !isAutonomousTaskRunning || !lastCompletedTaskSummary.isNullOrBlank()
                                 val speakUpdate = shouldSpeakAutonomousUpdate(assistantTurnText, finalResult)
-                                if (speakUpdate && bufferedAudio.isNotEmpty()) {
-                                    bufferedAudio.forEach { audioPlayer?.enqueueAudio(it) }
-                                    Log.i("JarvisService", "Playing a new autonomous milestone; buffered repeated narration is discarded")
+                                if (speakUpdate) {
+                                    // Android TTS is the single voice path; speak the milestone text directly.
+                                    speakJarvisResponse(assistantTurnText)
+                                    Log.i("JarvisService", "Speaking a new autonomous milestone via Android TTS; buffered neural audio is discarded")
                                 } else {
                                     Log.i("JarvisService", "Suppressing repeated or routine speech from automatic task continuation")
                                 }
@@ -1234,6 +1235,15 @@ class JarvisConversationService : Service() {
                             totalVoicedFramesInCurrentUtterance = 0
                             if (_conversationState.value == ConversationState.THINKING && (audioPlayer == null || !audioPlayer!!.isPlaying())) {
                                 setConversationState(ConversationState.IDLE)
+                            }
+                            // Voice policy: when Gemini did not play neural audio this turn, speak the
+                            // output-transcription text through Android TTS (the single Jarvis voice path).
+                            if (!preferences.isSilentExecutionMode &&
+                                !isAutonomousContinuationTurn &&
+                                assistantTurnText.isNotBlank() &&
+                                audioArrivedThisTurn.not() &&
+                                (audioPlayer == null || !audioPlayer!!.isPlaying())) {
+                                speakJarvisResponse(assistantTurnText)
                             }
                             lastResponseTimedOut = false
                             updateNotification()
@@ -1749,9 +1759,15 @@ class JarvisConversationService : Service() {
                                     setConversationState(ConversationState.THINKING)
                                     thinkingTimeoutJob?.cancel()
                                     thinkingTimeoutJob = serviceScope.launch {
-                                        delay(2500)
-                                        if (_conversationState.value == ConversationState.THINKING && (audioPlayer == null || !audioPlayer!!.isPlaying())) {
-                                            Log.i("JarvisService", "Live reply silent after 2.5s; answering over REST")
+                                        // Response timeout: do NOT race Gemini Live with a 2.5s REST fallback.
+                                        // Live transcription and the model reply can arrive several seconds late on
+                                        // slow networks. Wait a generous window and only fall back when NO valid
+                                        // response has started (no assistant text and no audio playing).
+                                        delay(RESPONSE_TIMEOUT_MS)
+                                        if (_conversationState.value == ConversationState.THINKING &&
+                                            (audioPlayer == null || !audioPlayer!!.isPlaying()) &&
+                                            synchronized(currentTurnAssistantText) { currentTurnAssistantText.isBlank() }) {
+                                            Log.i("JarvisService", "Live reply silent after ${RESPONSE_TIMEOUT_MS}ms; answering over REST")
                                             answerOverRest(currentTurnUserText.toString())
                                         }
                                     }
