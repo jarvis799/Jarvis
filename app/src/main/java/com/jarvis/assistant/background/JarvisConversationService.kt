@@ -336,6 +336,16 @@ class JarvisConversationService : Service() {
     private var inactivityJob: Job? = null
     private val currentTurnAssistantText = StringBuilder()
     private val currentTurnUserText = StringBuilder()
+    // Utterance lifecycle tracking (spec §3.4). Each user utterance gets a monotonically
+    // increasing id so stale callbacks from an earlier utterance can never fire answerOverRest
+    // for a newer one, and the REST fallback can never fire twice for the same utterance.
+    @Volatile private var currentUtteranceId: Long = 0L
+    @Volatile private var restFallbackFiredForUtterance: Long = -1L
+    private fun nextUtteranceId(): Long {
+        currentUtteranceId = (currentUtteranceId + 1L).coerceAtMost(Long.MAX_VALUE - 1)
+        restFallbackFiredForUtterance = -1L
+        return currentUtteranceId
+    }
     private var lastUserSpeechDetectedTime = 0L
     private var idleCheckinDone = false
     private var lastPlaybackEndTime = 0L
@@ -1757,6 +1767,9 @@ class JarvisConversationService : Service() {
                                         }
                                     }
                                     setConversationState(ConversationState.THINKING)
+                                    // Start a new utterance lifecycle. Any callback that arrives for an earlier
+                                    // utterance id is stale and must not drive state for this one.
+                                    val turnId = nextUtteranceId()
                                     thinkingTimeoutJob?.cancel()
                                     thinkingTimeoutJob = serviceScope.launch {
                                         // Response timeout: do NOT race Gemini Live with a 2.5s REST fallback.
@@ -1764,12 +1777,25 @@ class JarvisConversationService : Service() {
                                         // slow networks. Wait a generous window and only fall back when NO valid
                                         // response has started (no assistant text and no audio playing).
                                         delay(RESPONSE_TIMEOUT_MS)
-                                        if (_conversationState.value == ConversationState.THINKING &&
-                                            (audioPlayer == null || !audioPlayer!!.isPlaying()) &&
-                                            synchronized(currentTurnAssistantText) { currentTurnAssistantText.isBlank() }) {
-                                            Log.i("JarvisService", "Live reply silent after ${RESPONSE_TIMEOUT_MS}ms; answering over REST")
-                                            answerOverRest(currentTurnUserText.toString())
+                                        // Stale-utterance guard: if a newer utterance started, this timeout is obsolete.
+                                        if (turnId != currentUtteranceId) return@launch
+                                        if (_conversationState.value != ConversationState.THINKING) return@launch
+                                        if (audioPlayer?.isPlaying() == true) return@launch
+                                        if (synchronized(currentTurnAssistantText) { currentTurnAssistantText.isNotBlank() }) return@launch
+                                        // If the server transcribed nothing, the local VAD most likely fired on
+                                        // noise that the server stricter VAD rejected. Do NOT announce an empty
+                                        // reply ("I did not catch that") and do NOT send an empty message to REST.
+                                        // Return to IDLE silently with a diagnostic log only.
+                                        val userText = synchronized(currentTurnUserText) { currentTurnUserText.toString().trim() }
+                                        if (userText.isEmpty()) {
+                                            Log.i("JarvisService", "[NO_INPUT] Utterance ${turnId} produced no transcription after ${RESPONSE_TIMEOUT_MS}ms; treating as noise, returning to IDLE (no reply).")
+                                            setConversationState(ConversationState.IDLE)
+                                            lastResponseTimedOut = true
+                                            updateNotification()
+                                            return@launch
                                         }
+                                        Log.i("JarvisService", "Live reply silent after ${RESPONSE_TIMEOUT_MS}ms for utterance ${turnId}; answering over REST")
+                                        answerOverRest(userText, turnId)
                                     }
                                 }
                             } else {
@@ -3149,19 +3175,25 @@ class JarvisConversationService : Service() {
      * Instead of leaving the boss with nothing, the same turn is answered once over the plain
      * REST brain (saved Gemini key or custom endpoint) and spoken through TTS.
      */
-    private fun answerOverRest(spoken: String) {
+    private fun answerOverRest(spoken: String, turnId: Long = currentUtteranceId) {
         val question = spoken.trim()
         serviceScope.launch {
+            // Stale / duplicate guard: never answer for an utterance that has already been superseded
+            // or already answered (spec §3.4 - prevent duplicate requests for the same utterance).
+            if (turnId != currentUtteranceId) return@launch
+            if (restFallbackFiredForUtterance == turnId) return@launch
             if (currentTurnAssistantText.isNotBlank() || audioPlayer?.isPlaying() == true) return@launch
             if (question.isEmpty()) {
+                // Defensive: should not happen (caller filters empty text), but never send an empty
+                // message to REST and never announce an empty reply to the user.
+                Log.w("JarvisService", "[NO_INPUT] answerOverRest called with empty utterance ${turnId}; suppressing reply.")
+                restFallbackFiredForUtterance = turnId
                 setConversationState(ConversationState.IDLE)
                 lastResponseTimedOut = true
                 updateNotification()
-                val rawError = "[NO_INPUT] answerOverRest: empty utterance, mic produced no speech. state=${_conversationState.value} session=${_isSessionOn.value}"
-                Log.w("JarvisService", rawError)
-                _events.emit(rawError)
                 return@launch
             }
+            restFallbackFiredForUtterance = turnId
             val context = this@JarvisConversationService
             try {
                 if (!com.jarvis.assistant.network.AiGateway.hasProviders(context)) {
