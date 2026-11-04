@@ -159,12 +159,23 @@ jobs:
           cp "$APK" "$NAME"
           # Create the release first (no assets), then upload assets separately with retries.
           # Doing create+upload in one command races and can 404 on uploads.github.com.
+          # GitHub API can return transient 502/5xx, so retry both create and upload.
+          create_release() {
+            local tag="$1"; local title="$2"
+            for attempt in 1 2 3 4 5; do
+              if gh release view "$tag" >/dev/null 2>&1; then return 0; fi
+              if gh release create "$tag" --target "${GITHUB_SHA}" --title "$title" --notes "$NOTES"; then
+                return 0
+              fi
+              echo "Release create attempt $attempt failed; retrying in 5s..."
+              sleep 5
+            done
+            gh release view "$tag" >/dev/null 2>&1
+          }
           publish_release() {
             local tag="$1"; local title="$2"
-            if ! gh release view "$tag" >/dev/null 2>&1; then
-              gh release create "$tag" --target "${GITHUB_SHA}" --title "$title" --notes "$NOTES" || return 1
-            fi
-            for attempt in 1 2 3; do
+            create_release "$tag" "$title" || return 1
+            for attempt in 1 2 3 4 5; do
               if gh release upload "$tag" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber; then
                 return 0
               fi
