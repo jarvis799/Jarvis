@@ -153,29 +153,32 @@ jobs:
           # Read the single source of truth: versionName in app/build.gradle.kts.
           VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
           if [ -z "$VERSION" ]; then echo "Could not read versionName"; exit 1; fi
-          TAG="v$VERSION"
           NAME="Jarvis-V$VERSION.apk"
           NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
           echo "Publishing $NAME"
           cp "$APK" "$NAME"
-          # A release that already exists may be immutable, in which case replacing its
-          # asset is refused (HTTP 422 "Cannot delete asset from an immutable release").
-          # Then the build publishes under its own build tag instead of failing.
-          PUBLISHED=0
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber && PUBLISHED=1
-          else
-            gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
-              --target "${GITHUB_SHA}" \
-              --title "Jarvis V$VERSION" \
-              --notes "$NOTES" && PUBLISHED=1
-          fi
-          if [ "$PUBLISHED" -ne 1 ]; then
+          # Create the release first (no assets), then upload assets separately with retries.
+          # Doing create+upload in one command races and can 404 on uploads.github.com.
+          publish_release() {
+            local tag="$1"; local title="$2"
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --target "${GITHUB_SHA}" --title "$title" --notes "$NOTES" || return 1
+            fi
+            for attempt in 1 2 3; do
+              if gh release upload "$tag" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber; then
+                return 0
+              fi
+              echo "Asset upload attempt $attempt failed; retrying in 5s..."
+              sleep 5
+            done
+            return 1
+          }
+          TAG="v$VERSION"
+          TITLE="Jarvis V$VERSION"
+          if ! publish_release "$TAG" "$TITLE"; then
+            echo "Release $VERSION unavailable or immutable - publishing under a build tag instead"
             TAG="v$VERSION-build.$GITHUB_RUN_NUMBER"
-            echo "Release $VERSION is immutable - publishing under $TAG instead"
-            gh release create "$TAG" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
-              --target "${GITHUB_SHA}" \
-              --title "Jarvis V$VERSION (build $GITHUB_RUN_NUMBER)" \
-              --notes "$NOTES"
+            TITLE="Jarvis V$VERSION (build $GITHUB_RUN_NUMBER)"
+            publish_release "$TAG" "$TITLE"
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
