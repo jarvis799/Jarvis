@@ -683,7 +683,46 @@ class JarvisConversationService : Service() {
     }
 
     private fun handleTtsDone(utteranceId: String?) {
-        // Robotic system announcements disabled; all speech is handled via natural Gemini Live neural audio.
+        // The live assistant voice is the Android TextToSpeech engine (the same engine used for
+        // the charging announcement). When a Jarvis response finishes speaking, leave SPEAKING so
+        // the UI and microphone return to listening.
+        if (utteranceId == "jarvis_response" || utteranceId == "tts_fallback" || utteranceId == "task_done") {
+            if (_conversationState.value == ConversationState.SPEAKING) {
+                setConversationState(ConversationState.IDLE)
+            }
+        }
+    }
+
+    /**
+     * The single live voice of Jarvis. Speaks an AI response with the phone's own Android
+     * TextToSpeech engine - the exact same engine, voice, pitch, speech rate and language
+     * selection the charging/battery announcement uses (TtsDelivery + TtsVoiceSelector), so the
+     * assistant and the charger sound identical. Gemini TTS is never used for normal speech;
+     * only the AI text generation is kept. Falls back to the shared ChatSpeech engine if the
+     * service engine is not ready yet, so a response is never lost.
+     */
+    private fun speakJarvisResponse(text: String) {
+        val spoken = com.jarvis.assistant.voice.SpeechText.clean(text).take(900).trim()
+        if (spoken.isEmpty()) return
+        val engine = tts
+        if (engine == null) {
+            Log.w("JarvisService", "Service TTS not ready, using shared Android TTS for Jarvis response")
+            com.jarvis.assistant.voice.ChatSpeech.speak(applicationContext, spoken)
+            return
+        }
+        val locale = com.jarvis.assistant.voice.ChatSpeech.localeFor(spoken)
+        val result = runCatching {
+            com.jarvis.assistant.voice.TtsDelivery.applyLanguage(applicationContext, engine, locale)
+        }.getOrDefault(TextToSpeech.LANG_NOT_SUPPORTED)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            runCatching { com.jarvis.assistant.voice.TtsDelivery.applyLanguage(applicationContext, engine, Locale.US) }
+        }
+        setConversationState(ConversationState.SPEAKING)
+        if (engine.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis_response") == TextToSpeech.ERROR) {
+            Log.w("JarvisService", "Android TTS rejected the Jarvis response; trying shared engine")
+            com.jarvis.assistant.voice.ChatSpeech.speak(applicationContext, spoken)
+            setConversationState(ConversationState.IDLE)
+        }
     }
 
     private fun ensureMicrophoneForegroundService() {
@@ -1002,6 +1041,13 @@ class JarvisConversationService : Service() {
                             thinkingTimeoutJob?.cancel()
                             thinkingTimeoutJob = null
                             lastResponseTimedOut = false
+                            // JARVIS voice policy: the live assistant voice is the phone's own
+                            // Android TextToSpeech engine - the same engine, voice, pitch and
+                            // speech rate used for the charging/battery announcement. Gemini
+                            // neural TTS audio is never played; only the AI text is kept and
+                            // spoken by speakJarvisResponse() on turn complete. Dropping chunks
+                            // here keeps audioArrivedThisTurn false so the Android TTS path runs.
+                            return
                             if (suppressAudioUntilTurnComplete) {
                                 Log.w("JarvisService", "onAudioDataReceived: Audio suppressed (suppressAudioUntilTurnComplete=true)")
                                 return
@@ -1291,8 +1337,8 @@ class JarvisConversationService : Service() {
                                     lowerReply.contains("didn't understand") || lowerReply.contains("didn't get") ||
                                     lowerReply.contains("couldn't catch") || lowerReply.contains("didn't hear"))
                                 if (!isConfusedReply) {
-                                    Log.i("JarvisService", "TTS fallback: no neural audio this turn, speaking via Android TTS: '" + assistantTurnText.take(80) + "'")
-                                    tts?.speak(assistantTurnText, TextToSpeech.QUEUE_FLUSH, null, "tts_fallback")
+                                    Log.i("JarvisService", "Jarvis voice: speaking via Android TTS (same engine as charging announcement): '" + assistantTurnText.take(80) + "'")
+                                    speakJarvisResponse(assistantTurnText)
                                 } else {
                                     Log.i("JarvisService", "Repeat guard: suppressing confused reply to empty input (no TTS, no repeat)")
                                 }
