@@ -1200,6 +1200,7 @@ class JarvisConversationService : Service() {
                                 rememberAutonomousSpokenUpdate(assistantTurnText)
                             }
                             audioPlayer?.notifyTurnComplete()
+                            val audioArrivedThisTurn = audioChunksReceivedInTurn > 0
                             audioChunksReceivedInTurn = 0
                             suppressAudioUntilTurnComplete = false
                             hasSpeechInCurrentUtterance = false
@@ -1275,6 +1276,25 @@ class JarvisConversationService : Service() {
                                 if (!preferences.isSilentExecutionMode && !isLive) {
                                     Log.i("JarvisService", "Offline fallback: Speaking confirmation via TTS: '$summaryToSpeak'")
                                     tts?.speak(summaryToSpeak, TextToSpeech.QUEUE_FLUSH, null, "task_done")
+                                }
+                            }
+                            // TTS FALLBACK + repeat guard: if Gemini produced a text response but sent
+                            // no neural audio this turn, speak it via Android TTS so the user is never
+                            // left silent. Skip confusion replies to empty input ("I didn't catch that")
+                            // so the assistant does not repeat the same error over and over.
+                            if (!audioArrivedThisTurn && assistantTurnText.isNotEmpty() &&
+                                !preferences.isSilentExecutionMode && !isAutonomousTaskRunning &&
+                                audioPlayer?.isPlaying() != true) {
+                                val lowerReply = assistantTurnText.lowercase(Locale.ROOT)
+                                val isConfusedReply = userUtterance.isEmpty() && (
+                                    lowerReply.contains("didn't catch") || lowerReply.contains("say again") ||
+                                    lowerReply.contains("didn't understand") || lowerReply.contains("didn't get") ||
+                                    lowerReply.contains("couldn't catch") || lowerReply.contains("didn't hear"))
+                                if (!isConfusedReply) {
+                                    Log.i("JarvisService", "TTS fallback: no neural audio this turn, speaking via Android TTS: '" + assistantTurnText.take(80) + "'")
+                                    tts?.speak(assistantTurnText, TextToSpeech.QUEUE_FLUSH, null, "tts_fallback")
+                                } else {
+                                    Log.i("JarvisService", "Repeat guard: suppressing confused reply to empty input (no TTS, no repeat)")
                                 }
                             }
 
