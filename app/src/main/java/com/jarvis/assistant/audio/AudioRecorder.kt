@@ -50,7 +50,7 @@ class AudioRecorder(
 
         return try {
             val record = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 SAMPLE_RATE,
                 CHANNEL_CONFIG,
                 AUDIO_FORMAT,
@@ -64,16 +64,11 @@ class AudioRecorder(
             }
 
             val sessionId = record.audioSessionId
-            if (AcousticEchoCanceler.isAvailable()) {
-                try {
-                    echoCanceler = AcousticEchoCanceler.create(sessionId)?.apply {
-                        enabled = true
-                    }
-                    Log.i(TAG, "Hardware AcousticEchoCanceler enabled on session $sessionId")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to enable AcousticEchoCanceler: ${e.message}")
-                }
-            }
+            // AcousticEchoCanceler is intentionally disabled. With no active phone-call
+            // reference signal, hardware AEC cancels the user's own speech — the primary cause
+            // of Gemini receiving near-silent audio and replying "I didn't catch that".
+            // Echo is already handled by AEDP (150ms discard after playback) + speaker gate.
+            echoCanceler = null
 
             if (NoiseSuppressor.isAvailable()) {
                 try {
@@ -144,7 +139,7 @@ class AudioRecorder(
                         } catch (_: Exception) {}
                         try {
                             val newRecord = AudioRecord(
-                                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                                 SAMPLE_RATE,
                                 CHANNEL_CONFIG,
                                 AUDIO_FORMAT,
