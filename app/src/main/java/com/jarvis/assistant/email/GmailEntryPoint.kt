@@ -8,9 +8,9 @@ object GmailEntryPoint {
         val context = view.context
         val state = when {
             !GmailStore.isConnected(context) -> "Email + 16-character App Password — tap to set up"
-            !GmailStore.connectionVerified(context) -> "Saved account — tap to test the connection"
-            GmailStore.autoReplyEnabled(context) -> "Background auto reply ON — tap to manage"
-            else -> "Auto reply paused — tap to resume"
+            !GmailStore.connectionVerified(context) -> "Saved: ${GmailStore.email(context)} — tap to test"
+            GmailStore.autoReplyEnabled(context) -> "${GmailStore.email(context)} — ON\nLast scan: ${GmailStore.scanStatus(context)}"
+            else -> "${GmailStore.email(context)} — paused, tap to resume"
         }
         view.text = "GMAIL AUTO REPLY\n$state"
         view.setOnClickListener {
