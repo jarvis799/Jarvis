@@ -149,7 +149,29 @@ class AudioRecorder(
                                 newRecord.startRecording()
                                 currentRecord = newRecord
                                 audioRecord = newRecord
-                                Log.i(TAG, "AudioRecord successfully auto-recovered and restarted!")
+                                // Recreate audio effects on the NEW session id. The old NoiseSuppressor /
+                                // AutomaticGainControl were bound to the previous (released) session and do
+                                // not follow the new AudioRecord. Without this, a recovered recorder runs
+                                // raw, letting background noise spike VAD and produce empty utterances.
+                                // (AcousticEchoCanceler stays intentionally disabled - see start().)
+                                val newSession = newRecord.audioSessionId
+                                try { noiseSuppressor?.release() } catch (_: Exception) {}
+                                try { automaticGainControl?.release() } catch (_: Exception) {}
+                                noiseSuppressor = null
+                                automaticGainControl = null
+                                if (NoiseSuppressor.isAvailable()) {
+                                    try {
+                                        noiseSuppressor = NoiseSuppressor.create(newSession)?.apply { enabled = true }
+                                        Log.i(TAG, "Re-enabled NoiseSuppressor on recovered session ${newSession}")
+                                    } catch (e: Exception) { Log.w(TAG, "NoiseSuppressor recreate failed: ${e.message}") }
+                                }
+                                if (AutomaticGainControl.isAvailable()) {
+                                    try {
+                                        automaticGainControl = AutomaticGainControl.create(newSession)?.apply { enabled = true }
+                                        Log.i(TAG, "Re-enabled AutomaticGainControl on recovered session ${newSession}")
+                                    } catch (e: Exception) { Log.w(TAG, "AutomaticGainControl recreate failed: ${e.message}") }
+                                }
+                                Log.i(TAG, "AudioRecord successfully auto-recovered and restarted on session ${newSession}")
                             } else {
                                 newRecord.release()
                                 delay(1000)
