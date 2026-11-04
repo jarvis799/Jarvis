@@ -273,17 +273,6 @@ class GeminiLiveWebSocket(
                         })
                     }
                 })
-                // The microphone is already gated on the device (LiveInputGate). Tell the server to be
-                // equally conservative: low start sensitivity plus a longer silence window means a fan,
-                // a TV or street noise can never open a turn on its own.
-                put("realtime_input_config", JSONObject().apply {
-                    put("automatic_activity_detection", JSONObject().apply {
-                        put("start_of_speech_sensitivity", "START_SENSITIVITY_LOW")
-                        put("end_of_speech_sensitivity", "END_SENSITIVITY_LOW")
-                        put("prefix_padding_ms", 200)
-                        put("silence_duration_ms", 900)
-                    })
-                })
                 put("tools", JSONArray().put(JSONObject().apply {
                     put("functionDeclarations", JSONArray().apply {
                         // 1. open_app
