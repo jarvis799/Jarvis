@@ -1060,13 +1060,38 @@ class JarvisConversationService : Service() {
                             thinkingTimeoutJob?.cancel()
                             thinkingTimeoutJob = null
                             lastResponseTimedOut = false
-                            // Voice policy: Gemini neural audio is intentionally NOT played. Jarvis speaks
-                            // through the Android TextToSpeech engine using the OUTPUT TRANSCRIPTION text
-                            // (see speakJarvisResponse / onTurnCompleted). Dropping the PCM chunks here does
-                            // NOT affect turn completion: turnComplete is a separate server signal.
-                            // Diagnostic E: a chunk arriving proves mic capture, the Live connection and
-                            // AI generation all work; any missing voice is a TTS issue, not a Gemini issue.
-                            Log.d("JarvisService", "onAudioDataReceived: neural audio dropped (Android TTS is the voice); ${pcmData.size} bytes")
+                            if (suppressAudioUntilTurnComplete) {
+                                Log.w("JarvisService", "onAudioDataReceived: Audio suppressed (suppressAudioUntilTurnComplete=true)")
+                                return
+                            }
+                            // Silent execution applies to task narration, while leaving ordinary
+                            // conversation audible. Read the preference dynamically so toggling
+                            // it during a session takes effect immediately.
+                            if (preferences.isSilentExecutionMode &&
+                                (isAutonomousTaskRunning || hasExecutedCommandInCurrentTurn || !lastCompletedTaskSummary.isNullOrBlank())
+                            ) {
+                                audioPlayer?.flush()
+                                return
+                            }
+                            if (isAutonomousContinuationTurn) {
+                                synchronized(autonomousAudioLock) {
+                                    if (autonomousAudioBufferBytes + pcmData.size <= 2_000_000) {
+                                        autonomousAudioBuffer += pcmData.copyOf()
+                                        autonomousAudioBufferBytes += pcmData.size
+                                    }
+                                }
+                                return
+                            }
+                            audioChunksReceivedInTurn++
+                            // DEV STYLE voice policy: Jarvis speaks through Gemini NATIVE neural TTS
+                            // (multilingual, natural male/female voice) streamed live from the model into
+                            // the AudioPlayer. Android TextToSpeech is NOT used for the assistant voice -
+                            // this removes the slow, stuttering, repeating Android-TTS voice.
+                            if (audioChunksReceivedInTurn % 25 == 1) {
+                                Log.d("JarvisService", "Streaming Gemini neural audio chunk #${audioChunksReceivedInTurn} (${pcmData.size} bytes) to AudioPlayer")
+                            }
+                            setConversationState(ConversationState.SPEAKING)
+                            audioPlayer?.enqueueAudio(pcmData)
                         }
 
                         override fun onAssistantTextReceived(textChunk: String) {
