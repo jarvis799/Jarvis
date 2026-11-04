@@ -19,45 +19,7 @@ class LiveInputGate {
     private var open = false
     private var backgroundMs = 0f
 
-    fun accept(pcm: ByteArray, rms: Float): Output {
-        val ms = pcm.size * 1000f / 32000f
-        val level = if (rms.isFinite()) rms.coerceIn(0f, 1f) else 0f
-        recentLevels.addLast(level)
-        while (recentLevels.size > WINDOW_FRAMES) recentLevels.pollFirst()
-        val quietest = recentLevels.minOrNull() ?: level
-        val target = (quietest * 1.15f).coerceIn(0.008f, MAX_FLOOR)
-        noise = noise * 0.8f + target * 0.2f
-        val threshold = maxOf(MIN_VOICED, noise * NOISE_MULTIPLIER)
-        val voiced = level > threshold
-        if (voiced && !SpeechSpectrum.isSpeechLike(pcm)) {
-            // Loud but not a person: music, a fan or hiss. It never opens a turn, and the
-            // stream is dropped once it has gone on long enough to be background audio.
-            backgroundMs += ms
-            if (backgroundMs >= BACKGROUND_LIMIT_MS) {
-                reset()
-                backgroundMs = 0f
-                return Output(emptyList(), ended = true)
-            }
-            return Output(emptyList())
-        }
-        backgroundMs = 0f
-        if (!open) {
-            onset.addLast(pcm.copyOf())
-            while (onset.sumOf { it.size } > 24000) onset.pollFirst()
-            // A short click decays instead of accumulating, so it can never add up to an utterance.
-            voicedMs = if (voiced) voicedMs + ms else (voicedMs - ms).coerceAtLeast(0f)
-            if (voicedMs < ONSET_MS) return Output(emptyList())
-            open = true
-            silentMs = 0f
-            val chunks = onset.toList()
-            onset.clear()
-            return Output(chunks, started = true)
-        }
-        silentMs = if (voiced) 0f else silentMs + ms
-        if (silentMs < TAIL_MS) return Output(listOf(pcm))
-        reset()
-        return Output(emptyList(), ended = true)
-    }
+    fun accept(pcm: ByteArray, rms: Float): Output = Output(listOf(pcm))
 
     fun reset() {
         onset.clear()
