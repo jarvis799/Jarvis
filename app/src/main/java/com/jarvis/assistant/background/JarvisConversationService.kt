@@ -1713,9 +1713,9 @@ class JarvisConversationService : Service() {
                                     setConversationState(ConversationState.THINKING)
                                     thinkingTimeoutJob?.cancel()
                                     thinkingTimeoutJob = serviceScope.launch {
-                                        delay(8000)
+                                        delay(2500)
                                         if (_conversationState.value == ConversationState.THINKING && (audioPlayer == null || !audioPlayer!!.isPlaying())) {
-                                            Log.i("JarvisService", "Live reply silent after 8s; answering over REST")
+                                            Log.i("JarvisService", "Live reply silent after 2.5s; answering over REST")
                                             answerOverRest(currentTurnUserText.toString())
                                         }
                                     }
@@ -3105,7 +3105,12 @@ class JarvisConversationService : Service() {
                 setConversationState(ConversationState.IDLE)
                 lastResponseTimedOut = true
                 updateNotification()
-                _events.emit("Jarvis did not receive a reply. Check the connection and repeat your request.")
+                val prompt = "I didn't catch that, boss. Say it again."
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                    announce(prompt)
+                    runCatching { com.jarvis.assistant.voice.ChatSpeech.speak(this@JarvisConversationService, prompt) }
+                }
+                _events.emit(prompt)
                 return@launch
             }
             val context = this@JarvisConversationService
