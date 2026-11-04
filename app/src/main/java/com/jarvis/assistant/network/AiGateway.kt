@@ -1,6 +1,7 @@
 package com.jarvis.assistant.network
 
 import android.content.Context
+import android.util.Base64
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -165,5 +166,87 @@ object AiGateway {
         val answer = text.toString().trim()
         if (answer.isBlank()) throw IOException("Gemini returned an empty answer.")
         return answer
+    }
+
+    /**
+     * Turns a recorded utterance into text.
+     *
+     * The live socket normally returns its own transcript, but when it stays mute the app is
+     * left with the microphone recording and no words. This sends that recording to Gemini's
+     * audio input, so a spoken turn still becomes a question the brain can answer.
+     */
+    suspend fun transcribe(context: Context, pcm16: ByteArray, sampleRate: Int = 16000): String {
+        if (pcm16.size < sampleRate) return ""
+        val geminiOnly = AiProviderStore.load(context).filter { it.kind == AiProvider.KIND_GEMINI && it.key.isNotBlank() }
+        val providers = fresh(context).filter { it.kind == AiProvider.KIND_GEMINI && it.key.isNotBlank() }.ifEmpty { geminiOnly }
+        if (providers.isEmpty()) return ""
+        val audio = wavBase64(pcm16, sampleRate)
+        for (provider in providers) {
+            try {
+                return transcribeWith(provider.key, audio)
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (error: Exception) {
+                Log.w(TAG, "transcribe failed on " + provider.label + ": " + error.message)
+            }
+        }
+        return ""
+    }
+
+    /** 16-bit mono PCM wrapped in a WAV header; the last 15 seconds are enough for one turn. */
+    private fun wavBase64(pcm16: ByteArray, sampleRate: Int): String {
+        val maxBytes = sampleRate * 2 * 15
+        val pcm = if (pcm16.size > maxBytes) pcm16.copyOfRange(pcm16.size - maxBytes, pcm16.size) else pcm16
+        val out = java.io.ByteArrayOutputStream(pcm.size + 44)
+        fun le(value: Int, bytes: Int) { for (index in 0 until bytes) out.write((value shr (8 * index)) and 0xFF) }
+        out.write("RIFF".toByteArray())
+        le(36 + pcm.size, 4)
+        out.write("WAVE".toByteArray())
+        out.write("fmt ".toByteArray())
+        le(16, 4)
+        le(1, 2)
+        le(1, 2)
+        le(sampleRate, 4)
+        le(sampleRate * 2, 4)
+        le(2, 2)
+        le(16, 2)
+        out.write("data".toByteArray())
+        le(pcm.size, 4)
+        out.write(pcm)
+        return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+    }
+
+    private suspend fun transcribeWith(key: String, audioBase64: String): String {
+        val parts = JSONArray()
+            .put(JSONObject().put("text", "Write down exactly what is said in this recording. Reply with the spoken words only."))
+            .put(
+                JSONObject().put(
+                    "inline_data",
+                    JSONObject().put("mime_type", "audio/wav").put("data", audioBase64)
+                )
+            )
+        val payload = JSONObject()
+            .put("contents", JSONArray().put(JSONObject().put("role", "user").put("parts", parts)))
+            .put("generationConfig", JSONObject().put("maxOutputTokens", 256).put("temperature", 0.0))
+            .toString()
+            .toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url(GEMINI_BASE + FALLBACK_MODEL + ":generateContent?key=" + key)
+            .header("Content-Type", "application/json")
+            .post(payload)
+            .build()
+        val result = withContext(Dispatchers.IO) {
+            http.newCall(request).execute().use { response ->
+                Pair(response.code, response.body?.string().orEmpty())
+            }
+        }
+        if (result.first !in 200..299) throw IOException("Gemini HTTP " + result.first + " " + result.second.take(160))
+        val answerParts = JSONObject(result.second).optJSONArray("candidates")
+            ?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts") ?: return ""
+        val text = StringBuilder()
+        for (index in 0 until answerParts.length()) {
+            text.append(answerParts.optJSONObject(index)?.optString("text").orEmpty())
+        }
+        return text.toString().trim()
     }
 }
