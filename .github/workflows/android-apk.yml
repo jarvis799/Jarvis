@@ -157,39 +157,34 @@ jobs:
           NOTES="Direct install: download the .apk asset below - there is no zip to unpack. Built with :app:assembleRelease and signed with the permanent release key. SHA-256 attached as apk-sha256.txt."
           echo "Publishing $NAME"
           cp "$APK" "$NAME"
-          # Create the release first (no assets), then upload assets separately with retries.
-          # Doing create+upload in one command races and can 404 on uploads.github.com.
-          # GitHub API can return transient 502/5xx, so retry both create and upload.
-          create_release() {
+          # This repo publishes immutable releases: once a release exists, its assets
+          # cannot be added or replaced (HTTP 422 "immutable release"). So assets must
+          # be attached AT create time (before the release is locked), and we never
+          # clobber an existing tag. Retries handle transient 404/502 from GitHub.
+          publish_new() {
             local tag="$1"; local title="$2"
             for attempt in 1 2 3 4 5; do
-              if gh release view "$tag" >/dev/null 2>&1; then return 0; fi
-              if gh release create "$tag" --target "${GITHUB_SHA}" --title "$title" --notes "$NOTES"; then
+              if gh release create "$tag" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json \
+                  --target "${GITHUB_SHA}" --title "$title" --notes "$NOTES"; then
                 return 0
               fi
-              echo "Release create attempt $attempt failed; retrying in 5s..."
-              sleep 5
-            done
-            gh release view "$tag" >/dev/null 2>&1
-          }
-          publish_release() {
-            local tag="$1"; local title="$2"
-            create_release "$tag" "$title" || return 1
-            for attempt in 1 2 3 4 5; do
-              if gh release upload "$tag" "$NAME" apk-sha256.txt apk-cert.txt feature-manifest.json --clobber; then
-                return 0
-              fi
-              echo "Asset upload attempt $attempt failed; retrying in 5s..."
-              sleep 5
+              echo "Create-with-assets attempt $attempt for $tag failed; cleaning up and retrying in 10s..."
+              gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+              sleep 10
             done
             return 1
           }
           TAG="v$VERSION"
           TITLE="Jarvis V$VERSION"
-          if ! publish_release "$TAG" "$TITLE"; then
-            echo "Release $VERSION unavailable or immutable - publishing under a build tag instead"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists (immutable) - publishing under a build tag"
             TAG="v$VERSION-build.$GITHUB_RUN_NUMBER"
             TITLE="Jarvis V$VERSION (build $GITHUB_RUN_NUMBER)"
-            publish_release "$TAG" "$TITLE"
+          fi
+          if ! publish_new "$TAG" "$TITLE"; then
+            echo "Publish under $TAG failed - retrying with a unique build tag"
+            TAG="v$VERSION-build.$GITHUB_RUN_NUMBER-$$"
+            TITLE="Jarvis V$VERSION (build $GITHUB_RUN_NUMBER)"
+            publish_new "$TAG" "$TITLE"
           fi
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
