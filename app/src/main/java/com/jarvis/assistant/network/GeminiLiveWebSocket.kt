@@ -56,6 +56,9 @@ class GeminiLiveWebSocket(
 
     private var webSocket: WebSocket? = null
     private val isConnected = AtomicBoolean(false)
+    // Last final input transcription forwarded this turn; prevents the server re-sending the
+    // same final transcription from creating duplicate user-text fragments.
+    private var lastFinalInputTranscription = ""
     private val isSetupComplete = AtomicBoolean(false)
     private val isManuallyStopped = AtomicBoolean(false)
     private var coroutineScope: CoroutineScope? = null
@@ -273,6 +276,14 @@ class GeminiLiveWebSocket(
                         })
                     }
                 })
+                // Enable server-side transcription of the user's speech (input_audio_transcription)
+                // and Jarvis's spoken reply (output_audio_transcription). These are top-level fields of
+                // BidiGenerateContentSetup (siblings of generation_config), per the Live API schema.
+                // Output transcription is the text source for the Android TTS voice; Gemini neural audio
+                // is intentionally not played. Empty config = enable with automatic language detection
+                // (best for Banglish, which has no BCP-47 code).
+                put("input_audio_transcription", JSONObject())
+                put("output_audio_transcription", JSONObject())
                 // The microphone is already gated on the device (LiveInputGate). Tell the server to be
                 // equally conservative: low start sensitivity plus a longer silence window means a fan,
                 // a TV or street noise can never open a turn on its own.
@@ -982,8 +993,14 @@ class GeminiLiveWebSocket(
                         }
                     }
                     if (userText.isNotBlank() && !com.jarvis.assistant.battery.ChargerAudioPlayer.ignoreRecognition) {
-                        if (spokenLanguageTurn.length < 1000) spokenLanguageTurn.append(userText).append(' ')
-                        listener.onUserTextReceived(userText)
+                        // Dedupe: the server may re-emit the final transcription. Only forward when it
+                        // actually changed, so duplicate fragments are never appended repeatedly and a
+                        // late final transcript never overwrites or duplicates earlier final text.
+                        if (userText != lastFinalInputTranscription) {
+                            lastFinalInputTranscription = userText
+                            if (spokenLanguageTurn.length < 1000) spokenLanguageTurn.append(userText).append(' ')
+                            listener.onUserTextReceived(userText)
+                        }
                     }
                 }
 
