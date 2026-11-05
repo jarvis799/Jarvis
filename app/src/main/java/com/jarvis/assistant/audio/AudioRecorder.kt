@@ -81,16 +81,11 @@ class AudioRecorder(
                 }
             }
 
-            if (AutomaticGainControl.isAvailable()) {
-                try {
-                    automaticGainControl = AutomaticGainControl.create(sessionId)?.apply {
-                        enabled = true
-                    }
-                    Log.i(TAG, "Hardware AutomaticGainControl enabled on session $sessionId")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to enable AutomaticGainControl: ${e.message}")
-                }
-            }
+            // DEV STYLE v3.0.1: AutomaticGainControl is intentionally DISABLED.
+            // AGC normalises mic gain dynamically, which flattens the level cues the recognition
+            // model relies on and causes misrecognition. The VOICE_RECOGNITION AudioSource
+            // already applies the correct gain path, so AGC only hurts accuracy here.
+            automaticGainControl = null
 
             record.startRecording()
             audioRecord = record
@@ -165,12 +160,7 @@ class AudioRecorder(
                                         Log.i(TAG, "Re-enabled NoiseSuppressor on recovered session ${newSession}")
                                     } catch (e: Exception) { Log.w(TAG, "NoiseSuppressor recreate failed: ${e.message}") }
                                 }
-                                if (AutomaticGainControl.isAvailable()) {
-                                    try {
-                                        automaticGainControl = AutomaticGainControl.create(newSession)?.apply { enabled = true }
-                                        Log.i(TAG, "Re-enabled AutomaticGainControl on recovered session ${newSession}")
-                                    } catch (e: Exception) { Log.w(TAG, "AutomaticGainControl recreate failed: ${e.message}") }
-                                }
+                                // AGC stays disabled for recognition accuracy (see start()).
                                 Log.i(TAG, "AudioRecord successfully auto-recovered and restarted on session ${newSession}")
                             } else {
                                 newRecord.release()
