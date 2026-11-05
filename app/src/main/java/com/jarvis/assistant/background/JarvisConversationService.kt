@@ -1329,6 +1329,25 @@ class JarvisConversationService : Service() {
                                 checkAndExecuteCommand(userUtterance)
                             }
 
+                            // Persist this conversational turn to short-term memory + chat history so
+                            // follow-up questions (pronouns, "he", context) resolve correctly and the
+                            // chat screen records voice conversations. Native command execution saves
+                            // its own turn, so skip when a command already ran this turn.
+                            if (addressedToJarvis && !hasExecutedCommandInCurrentTurn && !isAutonomousContinuationTurn &&
+                                userUtterance.isNotEmpty() && assistantTurnText.isNotEmpty()) {
+                                val attached = app.chatRepository.attachReply(assistantTurnText)
+                                if (!attached) {
+                                    app.chatRepository.addTurn(
+                                        userText = userUtterance,
+                                        jarvisText = assistantTurnText
+                                    )
+                                }
+                                app.memoryManager.addShortTermTurn(
+                                    userText = userUtterance,
+                                    jarvisText = assistantTurnText
+                                )
+                            }
+
                             // Reset verification flag for the next conversational turn
                             if (preferences.isOwnerVoiceEnabled && preferences.hasOwnerVoiceProfile()) {
                                 // Keep verification active if within the owner session lease window.
