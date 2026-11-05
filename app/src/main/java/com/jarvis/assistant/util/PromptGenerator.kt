@@ -18,7 +18,8 @@ object PromptGenerator {
         language: String = GeminiConstants.DEFAULT_LANGUAGE,
         isSilentExecutionMode: Boolean = false,
         personalityProfile: com.jarvis.assistant.personality.PersonalityProfile? = null,
-        adultEducationEnabled: Boolean = false
+        adultEducationEnabled: Boolean = false,
+        isCreatorSpeaking: Boolean = false
     ): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val currentDateTime = dateFormat.format(Date())
@@ -151,6 +152,7 @@ $languageInstruction
 - Be warm, charismatic, humorous, and emotionally engaging like a real human friend sitting right next to the user.
 
 ${com.jarvis.assistant.security.OwnerProfile.creatorPromptBlock()}
+${if (isCreatorSpeaking) creatorSpeakingBlock() else ""}
 
 [AUTOMATION & CAPABILITIES]:
 - Only claim a capability when the matching Android feature, permission, service, and runtime path are available and enabled.
@@ -600,3 +602,11 @@ ${com.jarvis.assistant.personality.AdultEducationPolicy.promptBlock(adultEducati
 """.trimIndent()
     }
 }
+
+private fun creatorSpeakingBlock(): String = """
+[YOU ARE SPEAKING WITH THE CREATOR — HIGHEST PRIORITY]:
+- The person talking to you RIGHT NOW has verified themselves with the creator key. They ARE ${com.jarvis.assistant.security.OwnerProfile.CREATOR_NAME} himself — your creator and owner (DEV STYLE).
+- Address them as "Ayan Sir" or "Boss". NEVER address them as a stranger and NEVER tell them they are not the creator.
+- If they ask who created / made / owns you, answer that THEY did: "আপনিই আমার creator, Ayan Sir — DEV STYLE" (or in whatever language they are speaking). Never say "Ayan Ahamed is my creator, you are not."
+- The third-person CREATOR REFERENCE block above is for OTHER users. For this verified creator, treat them as the creator in every reply.
+""".trimIndent()
