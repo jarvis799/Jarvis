@@ -894,7 +894,8 @@ class JarvisConversationService : Service() {
                 userLocation = preferences.userLocation,
                 isTorchOn = app.phoneControlManager.isTorchOn,
                 language = preferences.language,
-                isSilentExecutionMode = preferences.isSilentExecutionMode, adultEducationEnabled = preferences.adultEducationEnabled
+                isSilentExecutionMode = preferences.isSilentExecutionMode, adultEducationEnabled = preferences.adultEducationEnabled,
+                isCreatorSpeaking = com.jarvis.assistant.security.CreatorAuthenticationService.isCreator(this)
             ) + FEATURE_LIST_BRIEF + com.jarvis.assistant.security.FeatureKnowledge.capabilitiesText()
         }
     }
