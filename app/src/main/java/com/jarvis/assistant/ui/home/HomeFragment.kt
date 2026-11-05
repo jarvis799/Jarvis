@@ -278,12 +278,40 @@ class HomeFragment : Fragment() {
         return url.append("&orb=").append(style).toString()
     }
 
-    /** Shows Jarvis's own answer on the orb. Nothing else is ever drawn there. */
+    private val orbSayHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var lastOrbSayTime = 0L
+    private var pendingOrbText: String? = null
+    private val orbSayFlush = object : Runnable {
+        override fun run() {
+            val t = pendingOrbText ?: return
+            pendingOrbText = null
+            pushOrbSay(t)
+        }
+    }
+
+    /** Shows Jarvis's own answer on the orb. Throttled to ~9 updates/sec so streaming
+     *  text chunks don't flood the main thread and freeze the WebView (black flash). */
     fun sayToOrb(text: String) {
         val clean = text.trim()
         if (clean.isEmpty() || !isPageLoaded) return
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastOrbSayTime >= 110L) {
+            lastOrbSayTime = now
+            orbSayHandler.removeCallbacks(orbSayFlush)
+            pendingOrbText = null
+            pushOrbSay(clean)
+        } else {
+            pendingOrbText = clean
+            orbSayHandler.removeCallbacks(orbSayFlush)
+            orbSayHandler.postDelayed(orbSayFlush, 110L)
+        }
+    }
+
+    private fun pushOrbSay(clean: String) {
+        if (_binding == null) return
         val escaped = clean.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", "")
         activity?.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
             binding.orbWebView.evaluateJavascript("window.JarvisOrb && window.JarvisOrb.say('$escaped');", null)
         }
     }
@@ -713,6 +741,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        orbSayHandler.removeCallbacks(orbSayFlush)
         hudSurface = null
         _binding = null
     }
