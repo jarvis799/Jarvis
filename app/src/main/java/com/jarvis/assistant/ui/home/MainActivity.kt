@@ -262,11 +262,31 @@ class MainActivity : AppCompatActivity() {
         com.jarvis.assistant.background.JarvisConversationService.maybeSendBossGreeting()
         showWelcomeBackGreeting()
         com.jarvis.assistant.automation.accessibility.AccessibilityWatchdog.ensureUsable(this)
+        ensureWakeStandby()
         val prefs = com.jarvis.assistant.JarvisApp.instance.preferences
         if (appliedThemeKey != prefs.appTheme || appliedCustomHex != prefs.customThemeColor) {
             appliedThemeKey = prefs.appTheme
             appliedCustomHex = prefs.customThemeColor
             recreate()
+        }
+    }
+
+    /**
+     * The "Wake up Jarvis" listener runs only in the conversation service's standby mode.
+     * Standby used to be started solely at boot, and boot-time mic start frequently fails, so
+     * after an install or after the system killed the service the wake word did nothing even
+     * with the app open. Bring standby up whenever the app returns to the foreground and no
+     * active conversation is running. Powered-off (owner tapped Stop) is respected; an active
+     * conversation is left alone.
+     */
+    private fun ensureWakeStandby() {
+        if (JarvisConversationService.isSessionOn.value) return
+        if (JarvisConversationService.isStandby.value) return
+        if (JarvisConversationService.isPoweredOff(this)) return
+        runCatching {
+            val intent = Intent(this, JarvisConversationService::class.java)
+                .setAction(JarvisConversationService.ACTION_ENTER_STANDBY)
+            ContextCompat.startForegroundService(this, intent)
         }
     }
 
