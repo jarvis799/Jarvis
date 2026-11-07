@@ -21,6 +21,7 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     private var utteranceId = ""
     private var interrupted = false
     private var closed = false
+    private var retries = 0
     private val appContext = context.applicationContext
     var isPaused = false
         private set
@@ -29,9 +30,23 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
         engine = TextToSpeech(context.applicationContext) { status -> if (!closed) ready.complete(status == TextToSpeech.SUCCESS) }
         engine?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) = Unit
-            override fun onDone(id: String?) { main.post { if (id == utteranceId && !isPaused) completion?.complete(Unit) } }
+            override fun onDone(id: String?) { main.post { if (id == utteranceId && !isPaused) { retries = 0; completion?.complete(Unit) } } }
             @Deprecated("Deprecated in Java")
-            override fun onError(id: String?) { main.post { if (id == utteranceId && !isPaused) failSpeech() } }
+            override fun onError(id: String?) {
+                main.post {
+                    if (id == utteranceId && !isPaused) {
+                        // A single engine hiccup used to end the whole reply and lose the rest of it.
+                        // Retry the same chunk from the last confirmed position before giving up.
+                        if (retries < MAX_RETRIES) {
+                            retries += 1
+                            val wait = 300L * retries
+                            main.postDelayed({ playRemaining() }, wait)
+                        } else {
+                            failSpeech()
+                        }
+                    }
+                }
+            }
             override fun onError(id: String?, errorCode: Int) = onError(id)
             override fun onRangeStart(id: String?, start: Int, end: Int, frame: Int) {
                 main.post { if (id == utteranceId && !isPaused) offset = (utteranceBase + start).coerceAtMost(chunkEnd) }
@@ -70,4 +85,8 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     fun resume() { if (!isPaused || closed) return; isPaused = false; playRemaining() }
     fun interrupt() { interrupted = true; isPaused = false; utteranceId = ""; engine?.stop(); completion?.complete(Unit) }
     fun close() { closed = true; interrupt(); ready.complete(false); engine?.shutdown(); engine = null }
+
+    private companion object {
+        const val MAX_RETRIES = 2
+    }
 }
