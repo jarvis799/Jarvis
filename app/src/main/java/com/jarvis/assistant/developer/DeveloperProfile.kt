@@ -65,9 +65,14 @@ object DeveloperProfile {
             .edit().clear().apply()
     }
 
-    /** Identity lines appended to every system prompt (voice, HTTPS chat and offline routing). */
+    /**
+     * Identity lines appended to every system prompt (voice, HTTPS chat and offline routing).
+     *
+     * Never throws: a plain unit test or any caller running before [JarvisApp] has finished
+     * starting gets the shipped defaults instead of an UninitializedPropertyAccessException.
+     */
     fun identityBlock(): String {
-        val p = load()
+        val p = runCatching { load() }.getOrDefault(defaults)
         return buildString {
             appendLine("- You are " + p.product + ", an AI personal assistant developed by " + p.name + " (handle " + p.handle + ").")
             appendLine("- Asked who you are or who your developer is, answer only from these lines: developer " + p.name + ", portfolio " + p.portfolio + ", GitHub " + p.github + ".")
