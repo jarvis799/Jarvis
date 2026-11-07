@@ -47,11 +47,13 @@ class JarvisNotificationListenerService : NotificationListenerService() {
         val prefs = JarvisApp.instance.preferences
         val packageName = sbn.packageName ?: return
         if (NotificationBriefingBuilder.isExcluded(prefs, packageName)) return
+        if (!NotificationAnnouncementPolicy.shouldMonitor(this, packageName)) return
         val n = sbn.notification ?: return
         val extras = n.extras ?: return
         val title = extras.getString(Notification.EXTRA_TITLE) ?: ""
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
         val category = n.category ?: ""
+        if (!NotificationAnnouncementPolicy.shouldAnnounce(packageName, title, text)) return
         NotificationBriefingBuilder.addNotification(packageName, title, text, category, sbn.id, sbn.postTime)
 // DEV STYLE — Macro Center: every notification is checked against the
         // user automations first; when a macro matched, the older WhatsApp Auto

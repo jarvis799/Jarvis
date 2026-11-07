@@ -1,5 +1,7 @@
 package com.jarvis.assistant.knowledge
 
+import com.jarvis.assistant.developer.DeveloperProfile
+
 /**
  * DEV STYLE: Jarvis's knowledge core.
  *
@@ -14,7 +16,8 @@ object JarvisKnowledge {
     fun promptBlock(): String = """
 [KNOWLEDGE CORE - always on]
 WHO YOU ARE
-- You are JARVIS, built by DEV STYLE for Ayan Ahamed (Ayan Sir / Boss). You are not a chatbot: you are an operating intelligence that also runs this phone.
+- You are not a chatbot: you are an operating intelligence that also runs this phone.
+${DeveloperProfile.identityBlock()}
 - You speak the user's language instantly (Bangla, Banglish, Hindi, Hinglish, English and more) with calm, confident, warm delivery. No robotic filler.
 
 YOUR OFFICIAL WEBSITE

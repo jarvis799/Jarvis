@@ -192,7 +192,19 @@ class StreamingSpeechOutput(
             val done = CompletableDeferred<Unit>()
             pendingDone = done
 
-            if (engine?.speak(text.substring(offset, safeEnd), TextToSpeech.QUEUE_FLUSH, null, pendingId) == TextToSpeech.ERROR) {
+            // An engine rejection (busy, focus lost, voice still loading) used to drop this piece
+            // and every word of it. Retry the same piece a couple of times before giving up.
+            var speakAttempts = 0
+            var speakStarted = false
+            while (speakAttempts < MAX_SPEAK_ATTEMPTS && !speakStarted) {
+                if (engine?.speak(text.substring(offset, safeEnd), TextToSpeech.QUEUE_FLUSH, null, pendingId) == TextToSpeech.ERROR) {
+                    speakAttempts += 1
+                    delay(250L * speakAttempts)
+                } else {
+                    speakStarted = true
+                }
+            }
+            if (!speakStarted) {
                 onError("Android could not speak; read the reply in chat.")
                 pendingDone = null
                 break
@@ -204,5 +216,9 @@ class StreamingSpeechOutput(
             offset = if (paused) resumeOffset.coerceIn(offset, safeEnd) else safeEnd
         }
         speakingNow = false
+    }
+
+    private companion object {
+        const val MAX_SPEAK_ATTEMPTS = 3
     }
 }
