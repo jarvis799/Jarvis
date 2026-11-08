@@ -44,8 +44,12 @@ class StreamingSpeechOutput(
     )
 
     private val queue = Channel<Phrase>(4)
-    private val ready = CompletableDeferred<Boolean>()
+    private var ready = CompletableDeferred<Boolean>()
     private var engine: TextToSpeech? = null
+    private var initAttempts = 0
+    private var pieceRetries = 0
+    @Volatile private var rangeKnown = false
+    @Volatile private var failedNow = false
 
     @Volatile private var currentToken: Long = 0L
     @Volatile private var paused = false
@@ -61,34 +65,49 @@ class StreamingSpeechOutput(
     val isActive: Boolean get() = speakingNow
 
     init {
-        engine = TextToSpeech(context.applicationContext) { status ->
+        startEngine()
+        scope.launch { worker() }
+    }
+
+    /**
+     * (Re)creates the engine. A start that fails used to mute the whole session, because the
+     * readiness flag was completed once and never retried. Now the engine can be restarted.
+     */
+    private fun startEngine() {
+        if (closed) return
+        val tts = TextToSpeech(context.applicationContext) { status ->
             if (!closed) ready.complete(status == TextToSpeech.SUCCESS)
         }
-        engine?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
+        tts.setOnUtteranceProgressListener(listener)
+        engine = tts
+    }
 
-            override fun onDone(utteranceId: String?) {
-                if (utteranceId != pendingId) return
-                pendingDone?.complete(Unit)
-            }
+    private val listener = object : UtteranceProgressListener() {
+        override fun onStart(utteranceId: String?) = Unit
 
-            @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) {
-                if (utteranceId != pendingId) return
-                pendingDone?.complete(Unit)
-            }
+        override fun onDone(utteranceId: String?) {
+            if (utteranceId != pendingId) return
+            pendingDone?.complete(Unit)
+        }
 
-            override fun onError(utteranceId: String?, errorCode: Int) {
-                if (utteranceId != pendingId) return
-                pendingDone?.complete(Unit)
-            }
+        @Deprecated("Deprecated in Java")
+        override fun onError(utteranceId: String?) {
+            if (utteranceId != pendingId) return
+            failedNow = true
+            pendingDone?.complete(Unit)
+        }
 
-            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-                if (utteranceId != pendingId) return
-                resumeOffset = pieceStart + end
-            }
-        })
-        scope.launch { worker() }
+        override fun onError(utteranceId: String?, errorCode: Int) {
+            if (utteranceId != pendingId) return
+            failedNow = true
+            pendingDone?.complete(Unit)
+        }
+
+        override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+            if (utteranceId != pendingId) return
+            resumeOffset = pieceStart + end
+            rangeKnown = true
+        }
     }
 
     /** Starts a new turn; phrases from older turns become unplayable. */
@@ -164,7 +183,7 @@ class StreamingSpeechOutput(
     }
 
     private suspend fun speakPhrase(phrase: Phrase) {
-        if (withTimeoutOrNull(8000) { ready.await() } != true) {
+        if (!ensureReady()) {
             onError("Android TTS is unavailable; read the reply in chat.")
             return
         }
@@ -188,6 +207,8 @@ class StreamingSpeechOutput(
 
             pieceStart = offset
             resumeOffset = offset
+            rangeKnown = false
+            failedNow = false
             pendingId = UUID.randomUUID().toString()
             val done = CompletableDeferred<Unit>()
             pendingDone = done
@@ -213,12 +234,45 @@ class StreamingSpeechOutput(
             done.await()
             pendingDone = null
 
-            offset = if (paused) resumeOffset.coerceIn(offset, safeEnd) else safeEnd
+            if (failedNow && !paused) {
+                // The engine dropped this piece. Speak it again from the last confirmed word
+                // instead of skipping it, which left a hole in the middle of a reply.
+                pieceRetries += 1
+                if (pieceRetries > MAX_PIECE_RETRIES) {
+                    onError("Android could not speak the rest of this reply; read it in chat.")
+                    break
+                }
+                delay(200L * pieceRetries)
+                if (rangeKnown) offset = resumeOffset.coerceIn(offset, safeEnd)
+                continue
+            }
+
+            pieceRetries = 0
+            // Resume only what has not been heard yet: with the engine's word position we
+            // continue mid-piece, without it the piece starts over rather than losing words.
+            offset = if (paused && rangeKnown) resumeOffset.coerceIn(offset, safeEnd) else safeEnd
         }
         speakingNow = false
     }
 
+    /** Waits for the engine, re-creating it when the first start failed. */
+    private suspend fun ensureReady(): Boolean {
+        if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
+        while (initAttempts < MAX_INIT_ATTEMPTS) {
+            initAttempts += 1
+            try { engine?.shutdown() } catch (_: Exception) {}
+            engine = null
+            ready = CompletableDeferred()
+            startEngine()
+            if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
+        }
+        return false
+    }
+
     private companion object {
         const val MAX_SPEAK_ATTEMPTS = 3
+        const val MAX_PIECE_RETRIES = 2
+        const val MAX_INIT_ATTEMPTS = 2
+        const val READY_TIMEOUT_MS = 8000L
     }
 }
