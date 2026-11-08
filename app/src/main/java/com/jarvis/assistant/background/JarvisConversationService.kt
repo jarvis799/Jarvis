@@ -174,8 +174,18 @@ class JarvisConversationService : Service() {
 
         fun setMicMuted(muted: Boolean) {
             _micMutedState.value = muted
-            activeInstance?.audioRecorder?.setMuted(muted)
-            activeInstance?.let { service -> service.serviceScope.launch(Dispatchers.Main.immediate) { service.httpSession?.setMuted(muted) } }
+            activeInstance?.let { service ->
+                service.serviceScope.launch(Dispatchers.Main.immediate) {
+                    if (muted && _isSessionOn.value && !isPoweredOff(service)) {
+                        // Mic off means wake-only standby, not a deaf live session.
+                        // Stop/Power Off still shuts down ALL microphone capture.
+                        service.enterStandby(announce = false)
+                    } else {
+                        service.audioRecorder?.setMuted(muted)
+                        service.httpSession?.setMuted(muted)
+                    }
+                }
+            }
         }
 
         fun interruptPlayback() {
@@ -973,6 +983,12 @@ class JarvisConversationService : Service() {
 
         _liveError.value = null
 
+        if (wakeTriggered) {
+            // The wake command explicitly reopens the conversation microphone.
+            // A saved mute otherwise left BOTH HTTP and Gemini recording deaf.
+            preferences.isMicMuted = false
+            setMicMuted(false)
+        }
         _isSessionOn.value = true
         _isStandby.value = false
         lastResponseTimedOut = false
@@ -4148,7 +4164,9 @@ class JarvisConversationService : Service() {
         // recognition starts, otherwise it opens deaf or reports the mic as busy.
         serviceScope.launch(Dispatchers.Main) {
             delay(MIC_HANDOVER_MS)
-            beginActiveConversation(wakeTriggered = true)
+            if (!isPoweredOff(this@JarvisConversationService) && !_isSessionOn.value) {
+                beginActiveConversation(wakeTriggered = true)
+            }
         }
     }
 

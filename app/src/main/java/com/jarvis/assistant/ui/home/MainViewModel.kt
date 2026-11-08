@@ -137,9 +137,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             turnOffSession()
         } else {
             val context = getApplication<Application>()
-            if (!PermissionHelper.hasAllRequiredPermissions(context)) {
+            if (!PermissionHelper.canStartVoiceSession(context)) {
                 viewModelScope.launch {
-                    _eventFlow.emit("Please allow all permissions in Settings to activate Jarvis.")
+                    _eventFlow.emit("Please allow Microphone in Settings to activate Jarvis.")
                 }
                 return
             }
@@ -151,6 +151,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 return
             }
+            preferences.isMicMuted = false
+            _isMicMuted.value = false
+            JarvisConversationService.setMicMuted(false)
             sendServiceAction(JarvisConversationService.ACTION_START_CONVERSATION)
         }
     }
@@ -161,7 +164,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         preferences.isMicMuted = newMuted
         JarvisConversationService.setMicMuted(newMuted)
         viewModelScope.launch {
-            _eventFlow.emit(if (newMuted) "Microphone Muted (Off)" else "Microphone Active (On)")
+            _eventFlow.emit(if (newMuted) "Wake standby — say Wake up Jarvis to listen again" else "Microphone Active (On)")
         }
     }
 

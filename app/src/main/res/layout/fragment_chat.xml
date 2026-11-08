@@ -164,9 +164,18 @@
             android:background="@drawable/bg_accent_flow"
             android:alpha="0.9" />
 
+        <!-- Reserve Send its own column: chips must never push it off screen. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="bottom">
         <EditText
             android:id="@+id/etMessageInput"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:layout_marginEnd="8dp"
             android:layout_height="wrap_content"
             android:hint="Message Jarvis"
             android:textColorHint="?attr/themeTextMuted"
@@ -184,12 +193,34 @@
             android:imeActionLabel="Send"
             android:paddingBottom="12dp" />
 
+            <Button
+                android:id="@+id/btnSendMessage"
+                android:layout_width="72dp"
+                android:layout_height="48dp"
+                android:minWidth="0dp"
+                android:minHeight="48dp"
+                android:background="@drawable/bg_glow_pill_primary"
+                android:text="Send"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:contentDescription="Send message" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <HorizontalScrollView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
             <!-- Chip 1: Jarvis Persona -->
             <LinearLayout
                 android:id="@+id/chipPersona"
@@ -276,10 +307,8 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+            </LinearLayout>
+            </HorizontalScrollView>
 
             <!-- Plus attachment button -->
             <ImageButton
@@ -292,15 +321,7 @@
                 android:layout_marginEnd="8dp"
                 android:contentDescription="Attach" />
 
-            <!-- Send Button -->
-            <ImageButton
-                android:id="@+id/btnSendMessage"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_glow_pill_primary"
-                android:src="@drawable/ic_send_up"
-                app:tint="#FFFFFF"
-                android:contentDescription="Send" />
+
         </LinearLayout>
     </LinearLayout>
 
