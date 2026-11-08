@@ -31,32 +31,42 @@ object VoskModelManager {
     var speakerModel: SpeakerModel? = null
         private set
 
+    @Volatile
+    var loadError: String? = null
+        private set
+
     private val isInitializing = java.util.concurrent.atomic.AtomicBoolean(false)
 
     fun init(context: Context, scope: CoroutineScope) {
         if (model != null && speakerModel != null) return
         if (!isInitializing.compareAndSet(false, true)) return
 
+        loadError = null
         scope.launch(Dispatchers.IO) {
             try {
-                // 1. Unpack & load speech recognition model
-                val targetDir = File(context.filesDir, "vosk-model")
-                val markerFile = File(targetDir, "am/final.mdl")
-
-                if (!markerFile.exists() || markerFile.length() == 0L) {
-                    Log.i(TAG, "Unpacking Vosk model to internal storage: ${targetDir.absolutePath}")
-                    targetDir.deleteRecursively()
-                    targetDir.mkdirs()
-                    copyAssetFolder(context.assets, "model-en-us", targetDir)
-                    Log.i(TAG, "Vosk model unpacked successfully.")
-                } else {
-                    Log.i(TAG, "Vosk model already unpacked at: ${targetDir.absolutePath}")
+                // A single copied acoustic file does not prove the whole model was extracted.
+                if (model == null) {
+                    val targetDir = File(context.filesDir, "vosk-model")
+                    val bundleId = context.assets.open("model-en-us/uuid").bufferedReader().use { it.readText().trim() }
+                    try {
+                        if (!VoskModelCache.isComplete(targetDir, bundleId)) {
+                            targetDir.deleteRecursively()
+                            check(targetDir.mkdirs()) { "Cannot create wake model storage" }
+                            copyAssetFolder(context.assets, "model-en-us", targetDir)
+                        }
+                        val loadedModel = Model(targetDir.absolutePath)
+                        try { VoskModelCache.markComplete(targetDir, bundleId) }
+                        catch (e: Exception) { loadedModel.close(); throw e }
+                        model = loadedModel
+                        _isModelReady.value = true
+                        loadError = null
+                        Log.i(TAG, "Vosk speech model fully loaded")
+                    } catch (e: Exception) {
+                        // A broken old cache must never survive every automatic retry.
+                        targetDir.deleteRecursively()
+                        throw e
+                    }
                 }
-
-                val loadedModel = Model(targetDir.absolutePath)
-                model = loadedModel
-                _isModelReady.value = true
-                Log.i(TAG, "Vosk Model ready in memory!")
 
                 // 2. Unpack & load speaker recognition model (x-vector extractor)
                 try {
@@ -84,6 +94,7 @@ object VoskModelManager {
                 isInitializing.set(false)
             } catch (e: Throwable) {
                 isInitializing.set(false)
+                loadError = e.message ?: e.javaClass.simpleName
                 Log.e(TAG, "FATAL: Failed to load Vosk model: ${e.message}", e)
             }
         }
@@ -100,7 +111,7 @@ object VoskModelManager {
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Could not copy asset $fromAssetPath: ${e.message}")
+                throw java.io.IOException("Cannot unpack wake asset $fromAssetPath: ${e.message}", e)
             }
         } else {
             toDir.mkdirs()

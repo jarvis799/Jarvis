@@ -488,12 +488,13 @@ class HomeFragment : Fragment() {
                         viewModel.isSessionOn,
                         viewModel.isMicMuted,
                         viewModel.conversationState,
-                        com.jarvis.assistant.background.JarvisConversationService.isStandby
-                    ) { isOn, isMuted, state, isStandby ->
-                        HomeStatusState(isOn, isMuted, state, isStandby)
+                        com.jarvis.assistant.background.JarvisConversationService.isStandby,
+                        viewModel.connectionStatus
+                    ) { isOn, isMuted, state, isStandby, connection ->
+                        HomeStatusState(isOn, isMuted, state, isStandby, connection)
                     }.collect { status ->
-                        binding.orbWebView.evaluateJavascript("window.setPowerState && window.setPowerState(${status.isOn}); window.setMicMuted && window.setMicMuted(${status.isMuted});", null)
-                        if (!status.isOn) {
+                        binding.orbWebView.evaluateJavascript("window.setPowerState && window.setPowerState(${status.isOn || status.isStandby}); window.setMicMuted && window.setMicMuted(${status.isMuted});", null)
+                        if (!status.isOn && !status.isStandby) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = "JARVIS OFF • TAP TO START"
                             binding.tvListeningStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_subtle))
@@ -502,7 +503,7 @@ class HomeFragment : Fragment() {
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
                                 Color.parseColor("#727272")
                             )
-                        } else if (status.isMuted) {
+                        } else if (status.isMuted && !status.isStandby) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = "MIC MUTED (OFF) • TAP TO TALK"
                             binding.tvListeningStatus.setTextColor(Color.parseColor("#777777"))
@@ -513,9 +514,16 @@ class HomeFragment : Fragment() {
                             )
                         } else if (status.isStandby) {
                             setOrbState("idle")
-                            binding.tvListeningStatus.text = "STANDBY • SAY 'HEY JARVIS'"
+                            binding.tvListeningStatus.text = when (status.connection) {
+                                "STANDBY" -> "STANDBY • SAY 'HEY JARVIS'"
+                                "WAKE_LOADING" -> "LOADING WAKE MODEL..."
+                                "WAKE_RETRYING" -> "WAKE MICROPHONE • RETRYING"
+                                else -> "CHECKING WAKE MICROPHONE..."
+                            }
                             binding.tvListeningStatus.setTextColor(Color.parseColor("#7A7A7A"))
-                            binding.tvHoldHint.text = "Listening for wake word • Hold mic to power off"
+                            binding.tvHoldHint.text = if (status.connection == "STANDBY")
+                                "Microphone signal confirmed • Say Hey Jarvis"
+                            else "Waiting for microphone signal • Hold mic to power off"
                             binding.tvHoldHint.visibility = View.VISIBLE
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
                                 Color.parseColor("#7A7A7A")
@@ -606,6 +614,14 @@ class HomeFragment : Fragment() {
                                     binding.tvLiveErrorTitle.setTextColor(Color.parseColor("#A7A7A7"))
                                     binding.btnFixLiveError.setOnClickListener {
                                         startActivity(Intent(requireContext(), com.jarvis.assistant.ui.permission.PermissionActivity::class.java))
+                                    }
+                                }
+                                "WAKE_START_FAILED" -> {
+                                    binding.btnFixLiveError.setOnClickListener {
+                                        androidx.core.content.ContextCompat.startForegroundService(
+                                            requireContext(), Intent(requireContext(), com.jarvis.assistant.background.JarvisConversationService::class.java)
+                                                .setAction(com.jarvis.assistant.background.JarvisConversationService.ACTION_ENTER_STANDBY)
+                                        )
                                     }
                                 }
                                 "FREE_LIMIT_REACHED" -> {
@@ -751,5 +767,6 @@ private data class HomeStatusState(
     val isOn: Boolean,
     val isMuted: Boolean,
     val state: ConversationState,
-    val isStandby: Boolean
+    val isStandby: Boolean,
+    val connection: String
 )
