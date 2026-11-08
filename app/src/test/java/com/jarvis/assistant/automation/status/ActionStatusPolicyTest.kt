@@ -50,7 +50,7 @@ class ActionStatusPolicyTest {
     fun aUrlBecomesASpokenName() {
         assertEquals("Gemini", ActionStatusPolicy.labelFor("https://gemini.google.com/app"))
         assertEquals("gemini.google.com", ActionStatusPolicy.hostOf("https://www.gemini.google.com/app?x=1"))
-        assertEquals("Website", ActionStatusPolicy.labelFor("https://www.youtube.com"))
+        assertEquals("Youtube", ActionStatusPolicy.labelFor("https://www.youtube.com"))
         assertEquals("website", ActionStatusPolicy.labelFor(""))
     }
 }
