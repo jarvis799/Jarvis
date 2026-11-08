@@ -25,6 +25,13 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Exercise the packaged wake model with real PCM
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y espeak-ng ffmpeg
+          python3 -m pip install vosk==0.3.45
+          python3 tools/wake_acoustic_probe.py
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
