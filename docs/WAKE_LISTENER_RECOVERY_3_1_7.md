@@ -20,3 +20,11 @@ Six deterministic JVM regression cases cover worker confirmation, heartbeat time
 
 ## On-phone acceptance
 Open the updated app with microphone permission granted. If deliberately powered off, press Start first. Enter standby and wait for STANDBY (not WAKE_STARTING/WAKE_RETRYING). Say Hey Jarvis, then repeat after returning to standby. Temporarily deny/re-enable microphone permission and confirm recovery after returning to the foreground. A startup failure must show its reason instead of silently claiming to listen. Stop must still prevent all automatic restart paths.
+
+## Completed CI results
+- GitHub Actions run 42483587711 completed successfully: https://github.com/jarvis799/Jarvis/actions/runs/42483587711
+- CompileDebugKotlin, ProcessDebugResources and TestDebugUnitTest all passed, including the six new WakeListenerHealth regression cases.
+- AssembleRelease, APK packaging, offline engine packaging check and APK signature verification all passed.
+- Signed release published: https://github.com/jarvis799/Jarvis/releases/tag/v3.1.7
+- APK SHA-256: 0770f6faa8dae78b69afe233baacf552aea47d3118af06d61c75f52d88c70e9d
+- Physical-device wake activation remains unverified. Compilation and unit checks are not evidence of recovery on the owner's phone.
