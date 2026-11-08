@@ -128,6 +128,8 @@ class JarvisConversationService : Service() {
 
         private val _isStandby = MutableStateFlow(false)
         val isStandby: StateFlow<Boolean> = _isStandby.asStateFlow()
+        private val _wakeDetail = MutableStateFlow("")
+        val wakeDetail: StateFlow<String> = _wakeDetail.asStateFlow()
         fun refreshVoiceUnlockGrammar() { activeInstance?.let { s -> s.serviceScope.launch(Dispatchers.Main.immediate) { if (_isStandby.value) { s.exitStandbyListening(); _isStandby.value = true; s.startWakeListening() } } } }
         private val _liveError = MutableStateFlow<JarvisLiveError?>(null)
         val liveError: StateFlow<JarvisLiveError?> = _liveError.asStateFlow()
@@ -604,6 +606,8 @@ class JarvisConversationService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: android.net.wifi.WifiManager.WifiLock? = null
     private var standbyActivatedTime = 0L
+    private var wakeInputDescription = "Android microphone"
+    private var lastWakeTranscriptAt = 0L
     @Volatile
     private var isPendingWakeGreeting = false
 
@@ -3693,6 +3697,8 @@ class JarvisConversationService : Service() {
         hasSignalledUtteranceEnd = false
         _isStandby.value = true
         _connectionStatus.value = "WAKE_STARTING"
+        _wakeDetail.value = "Opening the wake microphone..."
+        lastWakeTranscriptAt = 0L
         standbyActivatedTime = System.currentTimeMillis()
         startWakeHealthMonitor()
         updateNotification()
@@ -3711,6 +3717,7 @@ class JarvisConversationService : Service() {
         wakeModelJob?.cancel(); wakeModelJob = null
         wakeHealthJob?.cancel(); wakeHealthJob = null
         stopWakeCapture()
+        _wakeDetail.value = ""
         _connectionStatus.value = "READY"
     }
 
@@ -3767,6 +3774,7 @@ class JarvisConversationService : Service() {
             val service = WakeAudioCapture(
                 applicationContext, rec, createWakeListener(generation),
                 preferMic = wakeRetryAttempt % 2 == 1,
+                onInput = { input -> if (acceptWakeCallback(generation)) wakeInputDescription = input },
                 onAudio = { level -> acceptWakeAudio(generation, level) }
             )
             voskSpeechService = service
@@ -3806,6 +3814,7 @@ class JarvisConversationService : Service() {
         stopWakeCapture()
         if (!_isStandby.value || isPoweredOff(this)) return
         _connectionStatus.value = "WAKE_RETRYING"
+        _wakeDetail.value = message
         _liveError.value = JarvisLiveError(
             title = "WAKE WORD NOT LISTENING",
             message = message,
@@ -3822,6 +3831,10 @@ class JarvisConversationService : Service() {
     private fun acceptWakeAudio(generation: Long, level: Float) {
         if (!_isStandby.value || !wakeHealth.onAudioCallback(generation, SystemClock.elapsedRealtime())) return
         _audioLevel.value = level
+        if (SystemClock.elapsedRealtime() - lastWakeTranscriptAt > 6_000L) {
+            val meter = (level * 800f).toInt().coerceIn(0, 100)
+            _wakeDetail.value = "$wakeInputDescription • Input $meter/100 • Say Hey Jarvis"
+        }
         if (level > 0f && _connectionStatus.value != "WAKE_LISTENING") {
             _connectionStatus.value = "WAKE_LISTENING"
             wakeRetryAttempt = 0
@@ -3942,7 +3955,10 @@ class JarvisConversationService : Service() {
 
     private fun checkVoskHypothesis(hypothesisJson: String?, partial: Boolean = false) {
         if (hypothesisJson.isNullOrBlank() || !_isStandby.value) return
-        if (isPhoneCallActive()) return
+        if (isPhoneCallActive()) {
+            _wakeDetail.value = "Wake activation paused during a phone call"
+            return
+        }
 
         // 1. Standby cooldown: ignore microphone input for 800ms after entering standby
         // to prevent ambient chimes or trailing speech from falsely re-triggering wake.
@@ -3955,7 +3971,11 @@ class JarvisConversationService : Service() {
             val json = JSONObject(hypothesisJson)
             val text = json.optString("text", "").ifBlank { json.optString("partial", "") }
                 .trim().lowercase(Locale.ROOT)
-            if (text.isEmpty() || text == "[unk]" || com.jarvis.assistant.lock.VoiceUnlockBackground.handle(this, text)) return
+            if (text.isEmpty()) return
+            lastWakeTranscriptAt = SystemClock.elapsedRealtime()
+            _wakeDetail.value = if (text == "[unk]") "Speech not recognised • Say Hey Jarvis near the microphone"
+                else "Heard: " + text.take(90)
+            if (text == "[unk]" || com.jarvis.assistant.lock.VoiceUnlockBackground.handle(this, text)) return
 
             // Word-level array must be present: never wake blindly without confidence verification.
             val resultArr = json.optJSONArray("result")
@@ -3992,6 +4012,7 @@ class JarvisConversationService : Service() {
             val cleanPhrase = wordList.joinToString(" ")
             val wakePhrases = validWakePhrases()
             if (!com.jarvis.assistant.voice.WakePhraseMatcher.containsWakeWord(wordList, wakePhrases)) {
+                _wakeDetail.value = "Heard: ${cleanPhrase.take(60)} • No wake word recognised"
                 Log.d("JarvisService", "WAKE REJECTED: '$cleanPhrase' has no wake word.")
                 return
             }
@@ -4002,6 +4023,7 @@ class JarvisConversationService : Service() {
             val duration = lastEnd - firstStart
             // Noise guard: reject very short utterance bursts (TV, claps, distant noise)
             if (duration < 0.06) {
+                _wakeDetail.value = "Wake word too short • Say Hey Jarvis clearly"
                 Log.w("JarvisService", "WAKE REJECTED: utterance too short (" + duration + "s, needs 0.06s) - likely noise. Ignored.")
                 return
             }
@@ -4016,6 +4038,7 @@ class JarvisConversationService : Service() {
             val triggerWords = com.jarvis.assistant.voice.WakePhraseMatcher.triggerWords(wakePhrases)
             val triggerConf = com.jarvis.assistant.voice.WakePhraseMatcher.confidence(triggerWords, wordConfMap)
             if (triggerConf < 0.25 * wakeFactor) {
+                _wakeDetail.value = "Wake word unclear • Say Hey Jarvis again"
                 Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < " + (0.25 * wakeFactor) + "). Ignored.")
                 return
             }
@@ -4023,12 +4046,14 @@ class JarvisConversationService : Service() {
             if (wordList.size == 1 && wordList[0] in triggerWords) {
                 // Standalone single-word trigger ("jarvis" or the owner's name)
                 if (avgConf < 0.32 * wakeFactor) {
+                    _wakeDetail.value = "Wake word unclear • Say Hey Jarvis again"
                     Log.w("JarvisService", "WAKE REJECTED: Standalone trigger failed checks (conf=$avgConf, needs " + (0.32 * wakeFactor) + "). Ignored.")
                     return
                 }
             } else {
                 // Multi-word phrases like "hey jarvis", "wake up ahona"
                 if (avgConf < 0.28 * wakeFactor) {
+                    _wakeDetail.value = "Wake phrase unclear • Say Hey Jarvis again"
                     Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf, needs " + (0.28 * wakeFactor) + "). Ignored.")
                     return
                 }
@@ -4041,6 +4066,7 @@ class JarvisConversationService : Service() {
                     val currentVector = FloatArray(spkArray.length()) { i -> spkArray.getDouble(i).toFloat() }
                     val match = com.jarvis.assistant.audio.OwnerVoiceManager.verifySpeakerVector(currentVector, preferences)
                     if (!match.isMatch) {
+                        _wakeDetail.value = "Wake word heard • Owner voice did not match the saved profile"
                         Log.w("JarvisService", "WAKE REJECTED: Heard '$cleanPhrase', but speaker distance (${match.distance}) > threshold (${match.threshold}). Non-owner ignored!")
                         return
                     } else {
@@ -4049,6 +4075,7 @@ class JarvisConversationService : Service() {
                         Log.i("JarvisService", "WAKE VERIFIED: Owner voice confirmed for '$cleanPhrase'! (Distance: ${match.distance}, Similarity: ${match.similarityPercent}%)")
                     }
                 } else {
+                    _wakeDetail.value = "Wake word heard • Owner verification needs a longer phrase"
                     Log.w("JarvisService", "WAKE REJECTED: No speaker vector found in hypothesis for '$cleanPhrase' while owner voice is enabled. Non-owner ignored!")
                     return
                 }
@@ -4057,6 +4084,7 @@ class JarvisConversationService : Service() {
             Log.i("JarvisService", "Vosk confirmed wake word: '$cleanPhrase' (conf=$avgConf, duration=${duration}s)")
             onWakeWordDetected()
         } catch (e: Exception) {
+            _wakeDetail.value = "Wake result error: " + (e.message ?: e.javaClass.simpleName).take(90)
             Log.e("JarvisService", "Error in checkVoskHypothesis: ${e.message}")
         }
     }

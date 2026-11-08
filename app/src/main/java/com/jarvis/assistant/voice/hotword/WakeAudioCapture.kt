@@ -19,6 +19,7 @@ class WakeAudioCapture(
     private val recognizer: Recognizer,
     private val listener: RecognitionListener,
     private val preferMic: Boolean = false,
+    private val onInput: (String) -> Unit = {},
     private val onAudio: (Float) -> Unit
 ) {
     private val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -59,6 +60,7 @@ class WakeAudioCapture(
     private fun readAudio(input: AudioRecord) {
         val monitor = WakePcmMonitor()
         val samples = ShortArray(3200)
+        var inputReported = false
         try {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
             while (!closed.get()) {
@@ -66,6 +68,12 @@ class WakeAudioCapture(
                 if (closed.get()) break
                 check(count > 0) { "Android microphone read failed (code=$count)" }
                 val level = monitor.amplitude(samples, count)
+                if (!inputReported) {
+                    inputReported = true
+                    val device = input.routedDevice?.productName?.toString()?.take(40) ?: "Android microphone"
+                    val source = if (input.audioSource == MediaRecorder.AudioSource.MIC) "MIC" else "VOICE"
+                    deliver { onInput("$device / $source") }
+                }
                 deliver { onAudio(level) }
                 val complete = recognizer.acceptWaveForm(samples, count)
                 val hypothesis = if (complete) recognizer.result else recognizer.partialResult

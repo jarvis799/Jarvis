@@ -489,9 +489,9 @@ class HomeFragment : Fragment() {
                         viewModel.isMicMuted,
                         viewModel.conversationState,
                         com.jarvis.assistant.background.JarvisConversationService.isStandby,
-                        viewModel.connectionStatus
+                        combine(viewModel.connectionStatus, com.jarvis.assistant.background.JarvisConversationService.wakeDetail) { connection, detail -> connection to detail }
                     ) { isOn, isMuted, state, isStandby, connection ->
-                        HomeStatusState(isOn, isMuted, state, isStandby, connection)
+                        HomeStatusState(isOn, isMuted, state, isStandby, connection.first, connection.second)
                     }.collect { status ->
                         binding.orbWebView.evaluateJavascript("window.setPowerState && window.setPowerState(${status.isOn || status.isStandby}); window.setMicMuted && window.setMicMuted(${status.isMuted});", null)
                         if (!status.isOn && !status.isStandby) {
@@ -515,15 +515,16 @@ class HomeFragment : Fragment() {
                         } else if (status.isStandby) {
                             setOrbState("idle")
                             binding.tvListeningStatus.text = when (status.connection) {
-                                "STANDBY" -> "STANDBY • SAY 'HEY JARVIS'"
+                                "WAKE_LISTENING" -> "STANDBY • SAY 'HEY JARVIS'"
                                 "WAKE_LOADING" -> "LOADING WAKE MODEL..."
                                 "WAKE_RETRYING" -> "WAKE MICROPHONE • RETRYING"
                                 else -> "CHECKING WAKE MICROPHONE..."
                             }
                             binding.tvListeningStatus.setTextColor(Color.parseColor("#7A7A7A"))
-                            binding.tvHoldHint.text = if (status.connection == "STANDBY")
-                                "Microphone signal confirmed • Say Hey Jarvis"
-                            else "Waiting for microphone signal • Hold mic to power off"
+                            binding.tvHoldHint.text = status.wakeDetail.ifBlank {
+                                if (status.connection == "WAKE_LISTENING") "Microphone signal confirmed • Say Hey Jarvis"
+                                else "Waiting for microphone signal • Hold mic to power off"
+                            }
                             binding.tvHoldHint.visibility = View.VISIBLE
                             binding.dotStatusGlow.backgroundTintList = ColorStateList.valueOf(
                                 Color.parseColor("#7A7A7A")
@@ -768,5 +769,6 @@ private data class HomeStatusState(
     val isMuted: Boolean,
     val state: ConversationState,
     val isStandby: Boolean,
-    val connection: String
+    val connection: String,
+    val wakeDetail: String
 )

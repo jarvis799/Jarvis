@@ -24,6 +24,11 @@ object WakePhraseMatcher {
         "jobis", "jabis", "javed", "jarvi", "jarvish", "jarvissss"
     )
 
+    /** Only aliases present in the packaged lexicon belong in the decoder grammar. */
+    fun recognitionPhrases(wakePhrases: Set<String>): Set<String> =
+        wakePhrases + wakePhrases.filter { Regex("\\bjarvis\\b").containsMatchIn(it) }
+            .map { it.replace(Regex("\\bjarvis\\b"), "jervis") }
+
     /** The actual trigger words: "jarvis", a custom wake word, or the owner's name. */
     fun triggerWords(wakePhrases: Set<String>): Set<String> {
         val base = wakePhrases.flatMap { it.split(" ") }.toSet() - FILLERS
