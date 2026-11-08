@@ -35,7 +35,7 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     /** (Re)creates the engine; a failed start is retried instead of muting the session. */
     private fun startEngine() {
         if (closed) return
-        val tts = TextToSpeech(context.applicationContext) { status -> if (!closed) ready.complete(status == TextToSpeech.SUCCESS) }
+        val tts = TextToSpeech(appContext) { status -> if (!closed) ready.complete(status == TextToSpeech.SUCCESS) }
         tts.setOnUtteranceProgressListener(listener)
         engine = tts
     }
