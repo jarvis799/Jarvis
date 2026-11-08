@@ -22,3 +22,11 @@ The owner reports 3.1.7 still does not wake. Physical-device cause is not yet pr
 
 ## Device acceptance (not yet performed)
 Open the update and allow Microphone. In standby, wait for Microphone signal confirmed, then say Hey Jarvis. If startup fails or Android returns zero audio, the existing error panel must give the reason. Repeat wake/standby and ensure deliberate Stop still prevents automatic capture. Neither compilation nor synthetic/JVM tests prove recovery on the owner's phone.
+
+## Completed CI results
+- GitHub Actions run 42484428640 completed successfully: https://github.com/jarvis799/Jarvis/actions/runs/42484428640
+- CompileDebugKotlin, ProcessDebugResources and TestDebugUnitTest passed, including the nine new PCM/cache regression cases and the six existing listener-generation cases.
+- AssembleRelease, APK packaging, offline engine check and APK signature verification passed.
+- Signed release published: https://github.com/jarvis799/Jarvis/releases/tag/v3.1.8
+- APK SHA-256: 6722660310f26aa7896ffb60d6e72e51df72e622b8607c1c50426cb37c21fecf
+- Physical-device wake activation remains unverified. CI and JVM tests are not evidence of recovery on the owner's phone.
