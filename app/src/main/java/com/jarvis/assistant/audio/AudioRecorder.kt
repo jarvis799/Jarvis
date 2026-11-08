@@ -48,22 +48,36 @@ class AudioRecorder(
 
         val bufferSize = maxOf(minBufferSize * 4, 32000)
 
-        return try {
-            val record = AudioRecord(
+        // The wake-word engine hands the microphone over right before this runs, and some
+        // Android builds keep the input claimed for a few dozen milliseconds afterwards.
+        // Without this short retry the session opened deaf and Android answered with
+        // "microphone not available / another app is using the microphone".
+        var record: AudioRecord? = null
+        for (attempt in 1..4) {
+            if (attempt > 1) Thread.sleep(120L)
+            val candidate = AudioRecord(
                 MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 SAMPLE_RATE,
                 CHANNEL_CONFIG,
                 AUDIO_FORMAT,
                 bufferSize
             )
-
-            if (record.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioRecord initialization failed")
-                record.release()
-                return false
+            if (candidate.state == AudioRecord.STATE_INITIALIZED) {
+                record = candidate
+                break
             }
+            Log.w(TAG, "Microphone not available yet (attempt " + attempt + "/4)")
+            candidate.release()
+        }
+        val opened = record
+        if (opened == null) {
+            Log.e(TAG, "Microphone could not be opened: another app is holding it")
+            return false
+        }
 
-            val sessionId = record.audioSessionId
+        return try {
+
+            val sessionId = opened.audioSessionId
             // AcousticEchoCanceler is intentionally disabled. With no active phone-call
             // reference signal, hardware AEC cancels the user's own speech — the primary cause
             // of Gemini receiving near-silent audio and replying "I didn't catch that".
@@ -87,8 +101,8 @@ class AudioRecorder(
             // already applies the correct gain path, so AGC only hurts accuracy here.
             automaticGainControl = null
 
-            record.startRecording()
-            audioRecord = record
+            opened.startRecording()
+            audioRecord = opened
             isRecording.set(true)
 
             recordingJob = scope.launch(Dispatchers.IO) {
@@ -96,7 +110,7 @@ class AudioRecorder(
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
                 } catch (_: Exception) {}
                 val buffer = ByteArray(CHUNK_SIZE_BYTES)
-                var currentRecord: AudioRecord? = record
+                var currentRecord: AudioRecord? = opened
                 while (isActive && isRecording.get()) {
                     var consecutiveErrors = 0
                     while (isActive && isRecording.get() && currentRecord != null) {
