@@ -12,7 +12,9 @@ import java.util.UUID
 
 class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) {
     private val main = Handler(Looper.getMainLooper())
-    private val ready = CompletableDeferred<Boolean>()
+    private var ready = CompletableDeferred<Boolean>()
+    private var initAttempts = 0
+    private var speakAttempts = 0
     private var completion: CompletableDeferred<Unit>? = null
     private var text = ""
     private var offset = 0
@@ -27,8 +29,18 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
         private set
     private var engine: TextToSpeech? = null
     init {
-        engine = TextToSpeech(context.applicationContext) { status -> if (!closed) ready.complete(status == TextToSpeech.SUCCESS) }
-        engine?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+        startEngine()
+    }
+
+    /** (Re)creates the engine; a failed start is retried instead of muting the session. */
+    private fun startEngine() {
+        if (closed) return
+        val tts = TextToSpeech(context.applicationContext) { status -> if (!closed) ready.complete(status == TextToSpeech.SUCCESS) }
+        tts.setOnUtteranceProgressListener(listener)
+        engine = tts
+    }
+
+    private val listener = object : UtteranceProgressListener() {
             override fun onStart(id: String?) = Unit
             override fun onDone(id: String?) { main.post { if (id == utteranceId && !isPaused) { retries = 0; completion?.complete(Unit) } } }
             @Deprecated("Deprecated in Java")
@@ -51,12 +63,11 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
             override fun onRangeStart(id: String?, start: Int, end: Int, frame: Int) {
                 main.post { if (id == utteranceId && !isPaused) offset = (utteranceBase + start).coerceAtMost(chunkEnd) }
             }
-        })
     }
     suspend fun say(value: String, locale: Locale) {
         val spoken = com.jarvis.assistant.voice.SpeechText.clean(value)
         if (closed || spoken.isBlank()) return
-        if (withTimeoutOrNull(8000) { ready.await() } != true) { onError("Android TTS is unavailable; read the reply in chat."); return }
+        if (!ensureReady()) { onError("Android TTS is unavailable; read the reply in chat."); return }
         val result = engine?.let { com.jarvis.assistant.voice.TtsDelivery.applyLanguage(appContext, it, locale) }
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) { onError("Install a TTS voice for " + locale.displayLanguage); return }
         text = spoken
@@ -76,9 +87,17 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     }
     private fun playRemaining() {
         if (offset >= chunkEnd) { completion?.complete(Unit); return }
+        val piece = text.substring(offset, chunkEnd)
         utteranceId = UUID.randomUUID().toString()
         utteranceBase = offset
-        if (engine?.speak(text.substring(offset, chunkEnd), TextToSpeech.QUEUE_FLUSH, null, utteranceId) == TextToSpeech.ERROR) failSpeech()
+        // A missing engine or a rejected piece used to leave the reply waiting forever, or end
+        // it on the first hiccup. Recreate a dead engine and speak the same words again.
+        val spoke = engine?.speak(piece, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        if (spoke == TextToSpeech.SUCCESS) { speakAttempts = 0; return }
+        speakAttempts += 1
+        if (speakAttempts > MAX_SPEAK_ATTEMPTS || closed || interrupted) { failSpeech(); return }
+        if (engine == null) { ready = CompletableDeferred(); startEngine() }
+        main.postDelayed({ if (!closed && !interrupted && !isPaused) playRemaining() }, 300L * speakAttempts)
     }
     private fun failSpeech() { interrupted = true; completion?.complete(Unit); onError("Android could not speak; read the reply in chat.") }
     fun pause() { if (completion == null || closed) return; isPaused = true; utteranceId = ""; engine?.stop() }
@@ -86,7 +105,24 @@ class HttpSpeechOutput(context: Context, private val onError: (String) -> Unit) 
     fun interrupt() { interrupted = true; isPaused = false; utteranceId = ""; engine?.stop(); completion?.complete(Unit) }
     fun close() { closed = true; interrupt(); ready.complete(false); engine?.shutdown(); engine = null }
 
+    /** Waits for the engine, re-creating it once when the first start failed. */
+    private suspend fun ensureReady(): Boolean {
+        if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
+        while (initAttempts < MAX_INIT_ATTEMPTS) {
+            initAttempts += 1
+            try { engine?.shutdown() } catch (_: Exception) {}
+            engine = null
+            ready = CompletableDeferred()
+            startEngine()
+            if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
+        }
+        return false
+    }
+
     private companion object {
         const val MAX_RETRIES = 2
+        const val MAX_SPEAK_ATTEMPTS = 2
+        const val MAX_INIT_ATTEMPTS = 1
+        const val READY_TIMEOUT_MS = 8000L
     }
 }
