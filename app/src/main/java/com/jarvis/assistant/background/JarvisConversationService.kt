@@ -732,13 +732,21 @@ class JarvisConversationService : Service() {
         // Voice policy: Jarvis speaks through the SAME Android TextToSpeech engine used by the
         // charging announcement (configured by TtsVoiceSelector in initTts). Gemini neural audio
         // is NOT played; the output transcription is the single text source for this TTS path.
-        try { tts?.stop() } catch (_: Exception) {}
+        // One shared lane: a new reply replaces the old one, it never speaks over it.
+        com.jarvis.assistant.voice.VoiceSession.interrupt("new-reply")
         setConversationState(ConversationState.SPEAKING)
         val utteranceId = "jarvis_response"
         val params = android.os.Bundle().apply {
             putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
         }
-        val queued = tts?.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, utteranceId) == android.speech.tts.TextToSpeech.SUCCESS
+        com.jarvis.assistant.voice.VoiceSession.speak(
+            context = this,
+            text = spoken,
+            locale = com.jarvis.assistant.voice.ChatSpeech.localeFor(spoken),
+            owner = com.jarvis.assistant.voice.VoiceSession.OWNER_ASSISTANT,
+            onFinished = { handleTtsDone(utteranceId) }
+        )
+        val queued = true
         Log.i("JarvisService", "speakJarvisResponse via Android TTS: queued=$queued len=${spoken.length} head=${spoken.take(120)}")
         if (!queued) {
             Log.e("JarvisService", "[VOICE_ERROR] Android TTS speak() failed; finalizing turn without voice")
@@ -1371,7 +1379,7 @@ class JarvisConversationService : Service() {
                                 val isLive = liveWebSocket?.isSessionReady() == true
                                 if (!preferences.isSilentExecutionMode && !isLive) {
                                     Log.i("JarvisService", "Offline fallback: Speaking confirmation via TTS: '$summaryToSpeak'")
-                                    tts?.speak(summaryToSpeak, TextToSpeech.QUEUE_FLUSH, null, "task_done")
+                                    com.jarvis.assistant.voice.VoiceSession.speak(this, summaryToSpeak, com.jarvis.assistant.voice.ChatSpeech.localeFor(summaryToSpeak), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
                                 }
                             }
                             // RAW VOICE DIAGNOSTIC: if Gemini produced text but no neural audio this
@@ -1993,12 +2001,17 @@ class JarvisConversationService : Service() {
                             // ANTI-RELOAD GUARD: If Chrome is ALREADY in foreground and website was opened within 20s, do not reload!
                             if (isAlreadyInBrowser && lastOpenedWebUrl == directWebUrl && (now - lastOpenedWebTime < 20_000L)) {
                                 Log.i("JarvisService", "open_app: already on $directWebUrl in Chrome. Suppressing redundant re-open.")
-                                val orchestrator = com.jarvis.assistant.vision.VisualTaskOrchestrator.getInstance()
-                                val (_, summary) = waitForWebDestination(orchestrator, directWebUrl)
-                                result.put("success", true)
-                                result.put("verified", true)
-                                result.put("message", "Already on $directWebUrl in Chrome. The page is currently open on screen. DO NOT call open_app or open_website again! Locate UI elements on screen (e.g. '+ New project' or prompt box) and proceed.")
-                                if (summary.isNotBlank()) result.put("current_screen_elements", summary)
+                                val already = com.jarvis.assistant.automation.status.ActionStatusTracker.awaitLaunch(
+                                    context = this@JarvisConversationService,
+                                    label = com.jarvis.assistant.automation.status.ActionStatusPolicy.labelFor(directWebUrl),
+                                    host = com.jarvis.assistant.automation.status.ActionStatusPolicy.hostOf(directWebUrl),
+                                    expectedPackages = listOf("chrome", "browser", "firefox", "edge"),
+                                    launched = true
+                                )
+                                result.put("success", already.state == com.jarvis.assistant.automation.status.ActionState.COMPLETED)
+                                result.put("verified", already.verified)
+                                result.put("status", already.state.name)
+                                result.put("message", com.jarvis.assistant.automation.status.ActionStatusPolicy.toolMessage(already.label, already.host, already.state) + " The page is already open; do not call open_app or open_website again.")
                             } else {
                                 lastOpenedWebUrl = directWebUrl
                                 lastOpenedWebTime = now
@@ -2006,18 +2019,17 @@ class JarvisConversationService : Service() {
                                     app.phoneControlManager.openUrlsInChromeTabs(listOf(directWebUrl))
                                 }
                                 result.put("success", webLaunched)
-                                result.put("message", if (webLaunched) "Opened $directWebUrl in Chrome." else "Failed to open $directWebUrl.")
-                                val orchestrator = com.jarvis.assistant.vision.VisualTaskOrchestrator.getInstance()
-                                val (destinationReady, summary) = waitForWebDestination(orchestrator, directWebUrl)
-                                if (summary.isNotBlank()) {
-                                    result.put("current_screen_elements", summary)
-                                } else {
-                                    result.put("current_screen_elements", "Navigated to $directWebUrl. Use the latest available screen context; inspect_screen returns accessibility text unless Screen Share has a confirmed frame.")
-                                }
-                                if (!destinationReady) {
-                                    result.put("message", "Navigation was requested, but Chrome has not yet confirmed the destination page. Wait and inspect the current screen before tapping or typing.")
-                                }
-                                result.put("verified", destinationReady)
+                                val webReport = com.jarvis.assistant.automation.status.ActionStatusTracker.awaitLaunch(
+                                    context = this@JarvisConversationService,
+                                    label = com.jarvis.assistant.automation.status.ActionStatusPolicy.labelFor(directWebUrl),
+                                    host = com.jarvis.assistant.automation.status.ActionStatusPolicy.hostOf(directWebUrl),
+                                    expectedPackages = listOf("chrome", "browser", "firefox", "edge"),
+                                    launched = webLaunched
+                                )
+                                result.put("success", webReport.state == com.jarvis.assistant.automation.status.ActionState.COMPLETED)
+                                result.put("verified", webReport.verified)
+                                result.put("status", webReport.state.name)
+                                result.put("message", com.jarvis.assistant.automation.status.ActionStatusPolicy.toolMessage(webReport.label, webReport.host, webReport.state))
                             }
                         } else {
                             // 2. Native app launch via AppLauncher
@@ -2039,12 +2051,17 @@ class JarvisConversationService : Service() {
                                 } else {
                                     result.put("current_screen_elements", "Opened $appName. Use the latest available screen context; inspect_screen returns accessibility text unless Screen Share has a confirmed frame.")
                                 }
-                                val foregroundPackage = com.jarvis.assistant.automation.accessibility.JarvisAccessibilityService.instance
-                                    ?.getActiveRootNode()?.packageName?.toString().orEmpty()
-                                val expectedPackage = expectedPackageForTask(autonomousTaskGoal)
-                                val appVerified = startupWait.ready &&
-                                    (expectedPackage?.let { foregroundPackage.contains(it, ignoreCase = true) } ?: foregroundPackage.isNotBlank())
-                                result.put("verified", appVerified)
+                                val expectedTarget = expectedPackageForTask(autonomousTaskGoal)
+                                val appReport = com.jarvis.assistant.automation.status.ActionStatusTracker.awaitLaunch(
+                                    context = this@JarvisConversationService,
+                                    label = appName,
+                                    host = "",
+                                    expectedPackages = listOfNotNull(expectedTarget),
+                                    launched = launched
+                                )
+                                result.put("verified", appReport.verified)
+                                result.put("status", appReport.state.name)
+                                result.put("message", com.jarvis.assistant.automation.status.ActionStatusPolicy.toolMessage(appReport.label, appReport.host, appReport.state))
                                 val spotifyPlaybackRequest = expectedPackageForTask(autonomousTaskGoal) == "spotify" &&
                                     listOf("play", "bajao", "chalao", "gaana chala", "gana chala")
                                         .any { autonomousTaskGoal.contains(it, ignoreCase = true) }
@@ -2100,11 +2117,17 @@ class JarvisConversationService : Service() {
                         // do NOT re-fire Intent to reload Chrome! Give Chrome time to render and inspect the screen!
                         if (isAlreadyInBrowser && primaryUrl.isNotBlank() && lastOpenedWebUrl == primaryUrl && (now - lastOpenedWebTime < 20_000L)) {
                             Log.i("JarvisService", "open_website: already on $primaryUrl in Chrome. Suppressing redundant reload.")
-                            val orchestrator = com.jarvis.assistant.vision.VisualTaskOrchestrator.getInstance()
-                            val (_, summary) = waitForWebDestination(orchestrator, primaryUrl)
-                            result.put("success", true)
-                            result.put("message", "Already on $primaryUrl in Chrome. The web page is currently loading/open on screen. DO NOT call open_website again! Look at current_screen_elements or video feed to type prompt or click buttons.")
-                            if (summary.isNotBlank()) result.put("current_screen_elements", summary)
+                            val already = com.jarvis.assistant.automation.status.ActionStatusTracker.awaitLaunch(
+                                context = this@JarvisConversationService,
+                                label = com.jarvis.assistant.automation.status.ActionStatusPolicy.labelFor(primaryUrl),
+                                host = com.jarvis.assistant.automation.status.ActionStatusPolicy.hostOf(primaryUrl),
+                                expectedPackages = listOf("chrome", "browser", "firefox", "edge"),
+                                launched = true
+                            )
+                            result.put("success", already.state == com.jarvis.assistant.automation.status.ActionState.COMPLETED)
+                            result.put("verified", already.verified)
+                            result.put("status", already.state.name)
+                            result.put("message", com.jarvis.assistant.automation.status.ActionStatusPolicy.toolMessage(already.label, already.host, already.state) + " The page is already open; do not call open_website again.")
                         } else {
                             if (primaryUrl.isNotBlank()) {
                                 lastOpenedWebUrl = primaryUrl
@@ -2113,20 +2136,17 @@ class JarvisConversationService : Service() {
                             val ok = executeSerializedTaskMutation("open-urls") {
                                 app.phoneControlManager.openUrlsInChromeTabs(targetUrls)
                             }
-                            result.put("success", ok)
-                            if (ok) {
-                                result.put("message", if (targetUrls.size > 1) "Opened ${targetUrls.size} websites in separate Chrome tabs: ${targetUrls.joinToString(", ")}." else "Opened ${targetUrls.firstOrNull() ?: "website"} in Chrome.")
-                                val orchestrator = com.jarvis.assistant.vision.VisualTaskOrchestrator.getInstance()
-                                val (destinationReady, summary) = waitForWebDestination(orchestrator, primaryUrl)
-                                if (summary.isNotBlank()) {
-                                    result.put("current_screen_elements", summary)
-                                }
-                                if (!destinationReady) {
-                                    result.put("message", "Navigation was requested, but Chrome has not confirmed the destination page yet. Wait and inspect before acting.")
-                                }
-                            } else {
-                                result.put("message", "Could not open the requested websites.")
-                            }
+                            val webReport = com.jarvis.assistant.automation.status.ActionStatusTracker.awaitLaunch(
+                                context = this@JarvisConversationService,
+                                label = com.jarvis.assistant.automation.status.ActionStatusPolicy.labelFor(primaryUrl),
+                                host = com.jarvis.assistant.automation.status.ActionStatusPolicy.hostOf(primaryUrl),
+                                expectedPackages = listOf("chrome", "browser", "firefox", "edge"),
+                                launched = ok
+                            )
+                            result.put("success", webReport.state == com.jarvis.assistant.automation.status.ActionState.COMPLETED)
+                            result.put("verified", webReport.verified)
+                            result.put("status", webReport.state.name)
+                            result.put("message", com.jarvis.assistant.automation.status.ActionStatusPolicy.toolMessage(webReport.label, webReport.host, webReport.state))
                         }
                     }
 
@@ -2617,7 +2637,7 @@ class JarvisConversationService : Service() {
                                 if (!alreadySpoke && liveWebSocket?.isSessionReady() != true) {
                                     // Offline fallback: speak via TTS only when Gemini Live is offline
                                     lastCompletedTaskSummary = null
-                                    tts?.speak(summary, TextToSpeech.QUEUE_FLUSH, null, "task_done")
+                                    com.jarvis.assistant.voice.VoiceSession.speak(this, summary, com.jarvis.assistant.voice.ChatSpeech.localeFor(summary), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
                                 }
                             }
                         }
@@ -3638,7 +3658,7 @@ class JarvisConversationService : Service() {
                 } else if (idleFor >= IDLE_CHECKIN_MS && !idleCheckinDone) {
                     // DEV STYLE: no command for a long while — Jarvis checks in with the user
                     idleCheckinDone = true
-                    tts?.speak("Hey... everything alright? You have been quiet for a while. If you need anything, just say it.", TextToSpeech.QUEUE_FLUSH, null, "idle_checkin")
+                    com.jarvis.assistant.voice.VoiceSession.speak(this, "Hey... everything alright? You have been quiet for a while. If you need anything, just say it.", com.jarvis.assistant.voice.ChatSpeech.localeFor("Hey"), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("idle_checkin") }
                 }
             }
         }

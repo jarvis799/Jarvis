@@ -25,7 +25,9 @@ object AgentTurn {
         if (screenQuestion.containsMatchIn(text)) {
             return ScreenAwareness.describeLayout(targetFrom(text))
         }
-        return answer(text)
+        // Agent 1 plans, Agent 2 reviews, Agent 3 answers - one voice, one final reply.
+        val crew = com.jarvis.assistant.agent.crew.MultiAgentCoordinator
+        return if (crew.available(context)) crew.run(context, text, answer) else answer(text)
     }
 
     /** "where is the search box" -> "search box"; an empty target describes the whole screen. */
