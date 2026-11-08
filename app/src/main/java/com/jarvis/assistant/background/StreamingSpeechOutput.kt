@@ -1,278 +1,75 @@
 package com.jarvis.assistant.background
 
 import android.content.Context
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
-import com.jarvis.assistant.voice.SpeechText
-import com.jarvis.assistant.voice.TtsDelivery
 import java.util.Locale
-import java.util.UUID
 
 /**
- * Phrase-level streaming speech output for the HTTPS voice path.
+ * Phrase-level playback streaming for the HTTPS voice path.
  *
- * Honest limitation: Android's [TextToSpeech] synthesises whole strings, so this is not
- * audio-level streaming. What it does provide is *playback* streaming — the first sentence
- * starts speaking while the LLM is still generating the rest, which is where most of the
- * perceived latency lives.
+ * The phrase splitting still lives upstream with [com.jarvis.assistant.voice.SpeechChunker]; this
+ * class now feeds every phrase into [com.jarvis.assistant.voice.VoiceSession] instead of owning its
+ * own engine. That is what stops two replies being audible at once: there is exactly one queue and
+ * one engine in the whole app, and it plays strictly in the order phrases arrive.
  *
- * Ordering and safety:
- *  - phrases are spoken strictly in the order they were enqueued;
- *  - every phrase carries the turn token it belongs to; a phrase whose token is no longer
- *    current is dropped instead of spoken (an interrupted answer never resumes);
- *  - the queue is bounded, so a fast LLM cannot buffer unbounded audio work;
- *  - [finish] resolves only after the last phrase has actually been spoken, which gives
- *    the session a real "speech ended" edge to return to listening.
+ * Turn tokens are still enforced, so a phrase from an interrupted turn is dropped rather than
+ * spoken later.
  */
 class StreamingSpeechOutput(
-    private val context: Context,
-    private val scope: CoroutineScope,
+    context: Context,
+    @Suppress("UNUSED_PARAMETER") scope: CoroutineScope,
     private val onError: (String) -> Unit
 ) {
 
-    private data class Phrase(
-        val text: String,
-        val locale: Locale?,
-        val token: Long,
-        val done: CompletableDeferred<Unit>? = null
-    )
+    private val appContext = context.applicationContext
 
-    private val queue = Channel<Phrase>(4)
-    private var ready = CompletableDeferred<Boolean>()
-    private var engine: TextToSpeech? = null
-    private var initAttempts = 0
-    private var pieceRetries = 0
-    @Volatile private var rangeKnown = false
-    @Volatile private var failedNow = false
+    @Volatile
+    private var turnToken: Long = 0L
 
-    @Volatile private var currentToken: Long = 0L
-    @Volatile private var paused = false
-    @Volatile private var closed = false
-    @Volatile private var speakingNow = false
+    val isPaused: Boolean get() = com.jarvis.assistant.voice.VoiceSession.isPaused
 
-    private var pendingDone: CompletableDeferred<Unit>? = null
-    private var pendingId: String = ""
-    private var resumeOffset = 0
-    private var pieceStart = 0
+    val isActive: Boolean get() = com.jarvis.assistant.voice.VoiceSession.isSpeaking
 
-    val isPaused: Boolean get() = paused
-    val isActive: Boolean get() = speakingNow
-
-    init {
-        startEngine()
-        scope.launch { worker() }
-    }
-
-    /**
-     * (Re)creates the engine. A start that fails used to mute the whole session, because the
-     * readiness flag was completed once and never retried. Now the engine can be restarted.
-     */
-    private fun startEngine() {
-        if (closed) return
-        val tts = TextToSpeech(context.applicationContext) { status ->
-            if (!closed) ready.complete(status == TextToSpeech.SUCCESS)
-        }
-        tts.setOnUtteranceProgressListener(listener)
-        engine = tts
-    }
-
-    private val listener = object : UtteranceProgressListener() {
-        override fun onStart(utteranceId: String?) = Unit
-
-        override fun onDone(utteranceId: String?) {
-            if (utteranceId != pendingId) return
-            pendingDone?.complete(Unit)
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onError(utteranceId: String?) {
-            if (utteranceId != pendingId) return
-            failedNow = true
-            pendingDone?.complete(Unit)
-        }
-
-        override fun onError(utteranceId: String?, errorCode: Int) {
-            if (utteranceId != pendingId) return
-            failedNow = true
-            pendingDone?.complete(Unit)
-        }
-
-        override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-            if (utteranceId != pendingId) return
-            resumeOffset = pieceStart + end
-            rangeKnown = true
-        }
-    }
-
-    /** Starts a new turn; phrases from older turns become unplayable. */
+    /** Starts a new turn; phrases carrying an older token become unplayable. */
     fun begin(token: Long) {
-        currentToken = token
-        paused = false
-        resumeOffset = 0
+        turnToken = token
     }
 
-    /** Queues one speakable phrase. Suspends while the bounded queue is full. */
+    /** Queues one phrase for the shared lane. Order is preserved by that lane. */
     suspend fun enqueue(text: String, locale: Locale?, token: Long) {
-        if (closed || text.isBlank() || token != currentToken) return
-        // Spoken, not read: markdown, code and links would otherwise be pronounced.
-        val spoken = SpeechText.clean(text)
-        if (spoken.isBlank()) return
-        queue.send(Phrase(spoken, locale, token))
+        if (token != turnToken) return
+        com.jarvis.assistant.voice.VoiceSession.speak(
+            context = appContext,
+            text = text,
+            locale = locale,
+            owner = com.jarvis.assistant.voice.VoiceSession.OWNER_ASSISTANT
+        )
     }
 
-    /** Waits until everything queued for [token] has been spoken. */
+    /** Returns when everything queued for [token] has actually been spoken. */
     suspend fun finish(token: Long) {
-        if (closed || token != currentToken) return
-        val done = CompletableDeferred<Unit>()
-        queue.send(Phrase("", null, token, done))
-        done.await()
+        if (token != turnToken) return
+        com.jarvis.assistant.voice.VoiceSession.awaitIdle()
     }
 
     fun interrupt() {
-        currentToken = -1L
-        paused = false
-        drain()
-        pendingDone?.complete(Unit)
-        pendingDone = null
-        try { engine?.stop() } catch (_: Exception) {}
+        turnToken = 0L
+        com.jarvis.assistant.voice.VoiceSession.interrupt("stream-turn")
     }
 
     fun pause() {
-        if (closed) return
-        paused = true
-        pendingDone?.complete(Unit)
-        try { engine?.stop() } catch (_: Exception) {}
+        com.jarvis.assistant.voice.VoiceSession.pause()
     }
 
     fun resume() {
-        paused = false
+        com.jarvis.assistant.voice.VoiceSession.resume()
     }
 
     fun close() {
-        closed = true
         interrupt()
-        queue.close()
-        ready.complete(false)
-        try { engine?.shutdown() } catch (_: Exception) {}
-        engine = null
     }
 
-    private fun drain() {
-        while (true) {
-            val remaining = queue.tryReceive().getOrNull() ?: break
-            remaining.done?.complete(Unit)
-        }
-    }
-
-    private suspend fun worker() {
-        while (!closed) {
-            val phrase = queue.receiveCatching().getOrNull() ?: return
-            if (phrase.done != null) {
-                phrase.done.complete(Unit)
-                continue
-            }
-            if (phrase.token != currentToken) continue
-            speakPhrase(phrase)
-        }
-    }
-
-    private suspend fun speakPhrase(phrase: Phrase) {
-        if (!ensureReady()) {
-            onError("Android TTS is unavailable; read the reply in chat.")
-            return
-        }
-        // Language, then the boss's chosen voice and prosody - the same delivery as the preview.
-        val result = engine?.let { TtsDelivery.applyLanguage(context, it, phrase.locale) }
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            onError("Install a TTS voice for " + (phrase.locale?.displayLanguage ?: "this language"))
-            return
-        }
-
-        speakingNow = true
-        var offset = 0
-        val text = phrase.text
-        while (offset < text.length) {
-            if (closed || phrase.token != currentToken) break
-            if (paused) { delay(60); continue }
-
-            val end = (offset + TextToSpeech.getMaxSpeechInputLength() - 1).coerceAtMost(text.length)
-            var safeEnd = end
-            if (safeEnd < text.length && Character.isHighSurrogate(text[safeEnd - 1])) safeEnd--
-
-            pieceStart = offset
-            resumeOffset = offset
-            rangeKnown = false
-            failedNow = false
-            pendingId = UUID.randomUUID().toString()
-            val done = CompletableDeferred<Unit>()
-            pendingDone = done
-
-            // An engine rejection (busy, focus lost, voice still loading) used to drop this piece
-            // and every word of it. Retry the same piece a couple of times before giving up.
-            var speakAttempts = 0
-            var speakStarted = false
-            while (speakAttempts < MAX_SPEAK_ATTEMPTS && !speakStarted) {
-                if (engine?.speak(text.substring(offset, safeEnd), TextToSpeech.QUEUE_FLUSH, null, pendingId) == TextToSpeech.ERROR) {
-                    speakAttempts += 1
-                    delay(250L * speakAttempts)
-                } else {
-                    speakStarted = true
-                }
-            }
-            if (!speakStarted) {
-                onError("Android could not speak; read the reply in chat.")
-                pendingDone = null
-                break
-            }
-
-            done.await()
-            pendingDone = null
-
-            if (failedNow && !paused) {
-                // The engine dropped this piece. Speak it again from the last confirmed word
-                // instead of skipping it, which left a hole in the middle of a reply.
-                pieceRetries += 1
-                if (pieceRetries > MAX_PIECE_RETRIES) {
-                    onError("Android could not speak the rest of this reply; read it in chat.")
-                    break
-                }
-                delay(200L * pieceRetries)
-                if (rangeKnown) offset = resumeOffset.coerceIn(offset, safeEnd)
-                continue
-            }
-
-            pieceRetries = 0
-            // Resume only what has not been heard yet: with the engine's word position we
-            // continue mid-piece, without it the piece starts over rather than losing words.
-            offset = if (paused && rangeKnown) resumeOffset.coerceIn(offset, safeEnd) else safeEnd
-        }
-        speakingNow = false
-    }
-
-    /** Waits for the engine, re-creating it when the first start failed. */
-    private suspend fun ensureReady(): Boolean {
-        if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
-        while (initAttempts < MAX_INIT_ATTEMPTS) {
-            initAttempts += 1
-            try { engine?.shutdown() } catch (_: Exception) {}
-            engine = null
-            ready = CompletableDeferred()
-            startEngine()
-            if (withTimeoutOrNull(READY_TIMEOUT_MS) { ready.await() } == true) return true
-        }
-        return false
-    }
-
-    private companion object {
-        const val MAX_SPEAK_ATTEMPTS = 3
-        const val MAX_PIECE_RETRIES = 2
-        const val MAX_INIT_ATTEMPTS = 2
-        const val READY_TIMEOUT_MS = 8000L
+    private fun report(message: String) {
+        onError(message)
     }
 }
