@@ -1379,7 +1379,8 @@ class JarvisConversationService : Service() {
                                 val isLive = liveWebSocket?.isSessionReady() == true
                                 if (!preferences.isSilentExecutionMode && !isLive) {
                                     Log.i("JarvisService", "Offline fallback: Speaking confirmation via TTS: '$summaryToSpeak'")
-                                    com.jarvis.assistant.voice.VoiceSession.speak(this, summaryToSpeak, com.jarvis.assistant.voice.ChatSpeech.localeFor(summaryToSpeak), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
+                                    val taskSummarySpeech = summaryToSpeak.orEmpty()
+                                    com.jarvis.assistant.voice.VoiceSession.speak(applicationContext, taskSummarySpeech, com.jarvis.assistant.voice.ChatSpeech.localeFor(taskSummarySpeech), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
                                 }
                             }
                             // RAW VOICE DIAGNOSTIC: if Gemini produced text but no neural audio this
@@ -2637,7 +2638,7 @@ class JarvisConversationService : Service() {
                                 if (!alreadySpoke && liveWebSocket?.isSessionReady() != true) {
                                     // Offline fallback: speak via TTS only when Gemini Live is offline
                                     lastCompletedTaskSummary = null
-                                    com.jarvis.assistant.voice.VoiceSession.speak(this, summary, com.jarvis.assistant.voice.ChatSpeech.localeFor(summary), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
+                                    com.jarvis.assistant.voice.VoiceSession.speak(applicationContext, summary, com.jarvis.assistant.voice.ChatSpeech.localeFor(summary), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("task_done") }
                                 }
                             }
                         }
@@ -3658,7 +3659,7 @@ class JarvisConversationService : Service() {
                 } else if (idleFor >= IDLE_CHECKIN_MS && !idleCheckinDone) {
                     // DEV STYLE: no command for a long while — Jarvis checks in with the user
                     idleCheckinDone = true
-                    com.jarvis.assistant.voice.VoiceSession.speak(this, "Hey... everything alright? You have been quiet for a while. If you need anything, just say it.", com.jarvis.assistant.voice.ChatSpeech.localeFor("Hey"), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("idle_checkin") }
+                    com.jarvis.assistant.voice.VoiceSession.speak(applicationContext, "Hey... everything alright? You have been quiet for a while. If you need anything, just say it.", com.jarvis.assistant.voice.ChatSpeech.localeFor("Hey"), com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM) { handleTtsDone("idle_checkin") }
                 }
             }
         }
