@@ -647,6 +647,7 @@ class JarvisConversationService : Service() {
             }
         }
         initTts()
+        com.jarvis.assistant.voice.VoiceSession.warm(this)
         headsetAudioRouter = com.jarvis.assistant.audio.HeadsetAudioRouter(applicationContext)
         serviceScope.launch(Dispatchers.Main.immediate) {
             while (isActive) {
@@ -922,6 +923,7 @@ class JarvisConversationService : Service() {
         if (_isSessionOn.value) return
         // DEV STYLE: free tier — without a license key the AI session is limited to 30 minutes per day
         if (!com.jarvis.assistant.backend.FreeUsageManager.canStartSession(this)) {
+            speakLocalNotice("Today's free minutes are over. Activate a license key, or continue tomorrow.")
             setLiveError(JarvisLiveError(
                 title = "FREE LIMIT REACHED",
                 message = "Today's 30 free minutes are over. You get 30 minutes again tomorrow — or activate a license key to remove the limit.",
@@ -955,6 +957,7 @@ class JarvisConversationService : Service() {
                 actionText = "GRANT PERMISSIONS"
             )
             serviceScope.launch { _events.emit("Please allow all required permissions in Settings to use Jarvis.") }
+            speakLocalNotice("Please allow the microphone and notification permissions so I can listen.")
             fullStop()
             return
         }
@@ -1391,7 +1394,6 @@ class JarvisConversationService : Service() {
                                 !preferences.isSilentExecutionMode && !isAutonomousTaskRunning &&
                                 audioPlayer?.isPlaying() != true) {
                                 Log.w("JarvisService", "[RAW] turn produced text but NO Gemini neural audio. textLen=${assistantTurnText.length} userUtteranceLen=${userUtterance.length} head=${assistantTurnText.take(120)}")
-                                speakJarvisResponse(assistantTurnText)
                             }
 
                             val engineStatus = com.jarvis.assistant.automation.agent.AgentTaskEngine.current()?.status
@@ -3773,8 +3775,10 @@ class JarvisConversationService : Service() {
 
     private val voskListener = object : VoskRecognitionListener {
         override fun onPartialResult(hypothesis: String?) {
-            // Partial transcripts are unstable and were waking the active session on
-            // incidental audio. Wake only after final word-level/confidence checks.
+            // The recogniser grammar only contains the wake phrases, so a partial that holds the
+            // trigger word is a real wake. Waiting for the final result alone meant "hey jarvis"
+            // often produced nothing at all - the microphone never opened.
+            checkVoskHypothesis(hypothesis, partial = true)
         }
 
         override fun onResult(hypothesis: String?) {
@@ -3870,7 +3874,13 @@ class JarvisConversationService : Service() {
         return phrases
     }
 
-    private fun checkVoskHypothesis(hypothesisJson: String?) {
+    /** Lower-cases a transcript, drops the unknown token and maps mis-heard spellings to "jarvis". */
+    private fun normaliseWakeWords(text: String): List<String> =
+        text.split(Regex("[^\\p{L}]+"))
+            .map { WAKE_ALIASES[it] ?: it }
+            .filter { it.isNotBlank() && it != "[unk]" }
+
+    private fun checkVoskHypothesis(hypothesisJson: String?, partial: Boolean = false) {
         if (hypothesisJson.isNullOrBlank() || !_isStandby.value) return
         if (isPhoneCallActive()) return
 
@@ -3883,13 +3893,22 @@ class JarvisConversationService : Service() {
 
         try {
             val json = JSONObject(hypothesisJson)
-            val text = json.optString("text", "").trim().lowercase(Locale.ROOT)
+            val text = json.optString("text", "").ifBlank { json.optString("partial", "") }
+                .trim().lowercase(Locale.ROOT)
             if (text.isEmpty() || text == "[unk]" || com.jarvis.assistant.lock.VoiceUnlockBackground.handle(this, text)) return
 
             // Word-level array must be present: never wake blindly without confidence verification.
             val resultArr = json.optJSONArray("result")
             if (resultArr == null || resultArr.length() == 0) {
-                Log.d("JarvisService", "WAKE REJECTED: No word-level result array for '$text'. Ignored.")
+                // Partials carry no word-level data: accept them when the trigger word is present.
+                val partialWords = normaliseWakeWords(text)
+                if (partial && partialWords.isNotEmpty() &&
+                    com.jarvis.assistant.voice.WakePhraseMatcher.containsWakeWord(partialWords, validWakePhrases())) {
+                    Log.i("JarvisService", "Wake accepted from partial transcript: '$text'")
+                    onWakeWordDetected()
+                } else {
+                    Log.d("JarvisService", "WAKE REJECTED: No word-level result array for '$text'. Ignored.")
+                }
                 return
             }
 
@@ -3922,8 +3941,8 @@ class JarvisConversationService : Service() {
             val lastEnd = resultArr.getJSONObject(resultArr.length() - 1).optDouble("end", 0.0)
             val duration = lastEnd - firstStart
             // Noise guard: reject very short utterance bursts (TV, claps, distant noise)
-            if (duration < 0.10) {
-                Log.w("JarvisService", "WAKE REJECTED: utterance too short (" + duration + "s, needs 0.10s) - likely noise. Ignored.")
+            if (duration < 0.06) {
+                Log.w("JarvisService", "WAKE REJECTED: utterance too short (" + duration + "s, needs 0.06s) - likely noise. Ignored.")
                 return
             }
 
@@ -3936,21 +3955,21 @@ class JarvisConversationService : Service() {
             // owner's chosen name) must be recognized with solid confidence.
             val triggerWords = com.jarvis.assistant.voice.WakePhraseMatcher.triggerWords(wakePhrases)
             val triggerConf = com.jarvis.assistant.voice.WakePhraseMatcher.confidence(triggerWords, wordConfMap)
-            if (triggerConf < 0.38 * wakeFactor) {
-                Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < " + (0.38 * wakeFactor) + "). Ignored.")
+            if (triggerConf < 0.25 * wakeFactor) {
+                Log.w("JarvisService", "WAKE REJECTED: trigger word confidence too low ($triggerConf < " + (0.25 * wakeFactor) + "). Ignored.")
                 return
             }
 
             if (wordList.size == 1 && wordList[0] in triggerWords) {
                 // Standalone single-word trigger ("jarvis" or the owner's name)
-                if (avgConf < 0.45 * wakeFactor) {
-                    Log.w("JarvisService", "WAKE REJECTED: Standalone trigger failed checks (conf=$avgConf, needs " + (0.45 * wakeFactor) + "). Ignored.")
+                if (avgConf < 0.32 * wakeFactor) {
+                    Log.w("JarvisService", "WAKE REJECTED: Standalone trigger failed checks (conf=$avgConf, needs " + (0.32 * wakeFactor) + "). Ignored.")
                     return
                 }
             } else {
                 // Multi-word phrases like "hey jarvis", "wake up ahona"
-                if (avgConf < 0.38 * wakeFactor) {
-                    Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf, needs " + (0.38 * wakeFactor) + "). Ignored.")
+                if (avgConf < 0.28 * wakeFactor) {
+                    Log.w("JarvisService", "WAKE REJECTED: Wake phrase failed checks (conf=$avgConf, needs " + (0.28 * wakeFactor) + "). Ignored.")
                     return
                 }
             }
@@ -4029,6 +4048,9 @@ class JarvisConversationService : Service() {
         com.jarvis.assistant.audio.JarvisSoundEffects.playWakeSound()
         com.jarvis.assistant.voice.hotword.HotwordStats.recordActivation(this)
         exitStandbyListening()
+        // The boss must always HEAR that Jarvis woke - even while the AI session is still connecting
+        // or if it fails to start. This line runs on the shared Android TTS lane: no network, no key.
+        speakWakeAcknowledgement()
         currentTurnAssistantText.clear()
         currentTurnUserText.clear()
         hasSpeechInCurrentUtterance = false
@@ -4040,6 +4062,33 @@ class JarvisConversationService : Service() {
             delay(MIC_HANDOVER_MS)
             beginActiveConversation(wakeTriggered = true)
         }
+    }
+
+    /** Short, guaranteed-audible proof that the wake word landed, before the AI session is up. */
+    private fun speakWakeAcknowledgement() {
+        val prefs = (application as? JarvisApp)?.preferences
+        if (prefs?.isSilentExecutionMode == true) return
+        com.jarvis.assistant.voice.VoiceSession.warm(this)
+        com.jarvis.assistant.voice.VoiceSession.speak(
+            context = this,
+            text = "Yes boss, I am here.",
+            locale = java.util.Locale.US,
+            owner = com.jarvis.assistant.voice.VoiceSession.OWNER_ASSISTANT
+        )
+        Log.i("JarvisService", "Wake acknowledged on the local TTS lane")
+    }
+
+    /** Speaks a short local line so Jarvis is never silent about why it cannot listen. */
+    private fun speakLocalNotice(text: String) {
+        val prefs = (application as? JarvisApp)?.preferences
+        if (prefs?.isSilentExecutionMode == true) return
+        com.jarvis.assistant.voice.VoiceSession.warm(this)
+        com.jarvis.assistant.voice.VoiceSession.speak(
+            context = this,
+            text = text,
+            locale = java.util.Locale.US,
+            owner = com.jarvis.assistant.voice.VoiceSession.OWNER_SYSTEM
+        )
     }
 
     private fun vibrateBriefly() {
