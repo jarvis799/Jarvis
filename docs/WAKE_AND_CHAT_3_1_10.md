@@ -20,3 +20,12 @@
 
 ## Use
 Open the updated app and allow Microphone. Tap Start once if previously fully powered off. A normal mic-off tap now means wake standby; say Wake up Jarvis, wait for acknowledgement, then speak the command. A full Stop/Power Off or Android Force Stop deliberately disables wake listening until Start is pressed again.
+
+## Completed release evidence
+- Build run: https://github.com/jarvis799/Jarvis/actions/runs/42491825945 — completed successfully.
+- Built commit: 6e62c6b7ed7f58e571d0290e0f7d5f34e31f8c97.
+- Real-PCM wake probe, Kotlin/resources, full native unit suite including the new composer regression, signed release assembly, packaged offline engine checks and APK signature verification: passed.
+- Resource-enabled unit tests use android.app.Application to avoid accidentally starting the production network/model/microphone services inside unit tests. No test was disabled or skipped to work around the first-run startup race.
+- Published APK: https://github.com/jarvis799/Jarvis/releases/download/v3.1.10/Jarvis-V3.1.10.apk
+- APK SHA-256: 58aedf945f57fb23674288c1959d4fd880add1ddfe2ff79c9fceff3f50150bc9.
+- Physical-device wake and command capture remain unverified; the existing explicit Power Off behavior is intentionally retained.
