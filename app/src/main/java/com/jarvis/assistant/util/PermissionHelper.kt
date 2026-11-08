@@ -20,6 +20,9 @@ object PermissionHelper {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    /** Notification visibility and battery exemption are recommendations, not mic permission. */
+    fun canStartVoiceSession(context: Context): Boolean = hasRecordAudioPermission(context)
+
     fun hasNotificationPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(

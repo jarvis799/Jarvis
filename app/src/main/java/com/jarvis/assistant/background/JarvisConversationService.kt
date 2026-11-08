@@ -958,16 +958,16 @@ class JarvisConversationService : Service() {
         val app = application as JarvisApp
         val preferences = app.preferences
         val apiKey = preferences.apiKey.trim()
-        if (!PermissionHelper.hasAllRequiredPermissions(this)) {
+        if (!PermissionHelper.canStartVoiceSession(this)) {
             _liveError.value = JarvisLiveError(
                 title = "PERMISSIONS REQUIRED",
-                message = "Jarvis requires Microphone and Notification permissions to run. Please grant them in Authorizations.",
+                message = "Allow Microphone in Android app permissions so Jarvis can listen.",
                 errorCode = "PERMISSIONS_MISSING",
                 actionText = "GRANT PERMISSIONS"
             )
-            serviceScope.launch { _events.emit("Please allow all required permissions in Settings to use Jarvis.") }
-            speakLocalNotice("Please allow the microphone and notification permissions so I can listen.")
-            fullStop()
+            serviceScope.launch { _events.emit("Please allow Microphone in Android app permissions.") }
+            speakLocalNotice("Please allow microphone access so I can listen.")
+            stopSessionService()
             return
         }
 
@@ -4204,6 +4204,11 @@ class JarvisConversationService : Service() {
     private fun fullStop() {
         // Remember the stop so nothing auto-starts the listener again.
         setPoweredOff(this, true)
+        stopSessionService()
+    }
+
+    /** An OS permission failure is not an instruction from the owner to stay powered off. */
+    private fun stopSessionService() {
         stopActiveConversation()
         exitStandbyListening()
         _isStandby.value = false

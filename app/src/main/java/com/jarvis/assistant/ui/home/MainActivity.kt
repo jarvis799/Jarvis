@@ -504,23 +504,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionsAndStart() {
-        if (!PermissionHelper.hasRecordAudioPermission(this)) {
+        if (!PermissionHelper.canStartVoiceSession(this)) {
             requestAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             return
         }
 
-        if (!PermissionHelper.hasNotificationPermission(this)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                return
-            }
-        }
-
-        if (!PermissionHelper.hasBatteryOptimizationPermission(this)) {
-            showBatteryPermissionDialog()
-            return
-        }
-
+        // Battery exemption and notification visibility improve background reliability, but
+        // denying either must not prevent the microphone from starting.
         viewModel.toggleSession()
     }
 
