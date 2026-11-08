@@ -9,6 +9,7 @@ untouched and its build passed.
 | --- | --- | --- |
 | `534d2f4` | `app/src/main/java/com/jarvis/assistant/background/StreamingSpeechOutput.kt` | live voice replies |
 | `b9abc7e` | `app/src/main/java/com/jarvis/assistant/background/HttpSpeechOutput.kt` | typed/HTTP replies |
+| `ddb1044` | `app/src/main/java/com/jarvis/assistant/background/HttpSpeechOutput.kt` | compile fix: `startEngine()` uses the stored `appContext` |
 
 No other source file was modified. `voice/TtsDelivery.kt` (language, chosen voice, prosody) was
 deliberately left alone, so the Jarvis voice and the selected voice style are unchanged.
