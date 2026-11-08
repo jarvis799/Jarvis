@@ -48,6 +48,16 @@ object AiGateway {
     suspend fun stream(context: Context, prompt: String, model: String = "", onDelta: (String) -> Unit): String =
         run(context, prompt, model, onDelta)
 
+    /**
+     * Asks one specific provider by id. The multi-agent roles use this so a reviewer can run on a
+     * different brain than the planner instead of grading its own homework.
+     */
+    suspend fun askWith(context: Context, providerId: String, prompt: String, model: String = ""): String {
+        val provider = AiProviderStore.loadAll(context).firstOrNull { it.id == providerId }
+            ?: throw IllegalStateException("Unknown AI provider: " + providerId)
+        return attempt(provider, prompt, model, null)
+    }
+
     private suspend fun run(
         context: Context,
         prompt: String,
