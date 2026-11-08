@@ -281,8 +281,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun ensureWakeStandby() {
         if (JarvisConversationService.isSessionOn.value) return
-        if (JarvisConversationService.isStandby.value) return
         if (JarvisConversationService.isPoweredOff(this)) return
+        if (!PermissionHelper.hasRecordAudioPermission(this)) return
         runCatching {
             val intent = Intent(this, JarvisConversationService::class.java)
                 .setAction(JarvisConversationService.ACTION_ENTER_STANDBY)

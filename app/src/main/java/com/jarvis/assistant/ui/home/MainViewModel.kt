@@ -103,7 +103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             combine(
                 JarvisConversationService.isStandby,
                 JarvisConversationService.connectionStatus
-            ) { standby, liveStatus -> if (standby) "STANDBY" else liveStatus }
+            ) { standby, liveStatus -> if (standby && liveStatus == "WAKE_LISTENING") "STANDBY" else liveStatus }
                 .collect { _connectionStatus.value = it }
         }
     }

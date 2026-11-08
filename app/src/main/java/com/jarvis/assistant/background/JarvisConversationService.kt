@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -591,6 +592,10 @@ class JarvisConversationService : Service() {
 
     // --- Standby / wake-word components (Pure Vosk) ---
     private var voskSpeechService: SpeechService? = null
+    private var wakeRecognizer: Recognizer? = null
+    private val wakeHealth = com.jarvis.assistant.voice.hotword.WakeListenerHealth()
+    private var wakeHealthJob: Job? = null
+    private var wakeRetryAttempt = 0
     // Only one wake-word listener may ever hold the microphone.
     @Volatile private var wakeStarting = false
     private var wakeRestartJob: Job? = null
@@ -3687,7 +3692,9 @@ class JarvisConversationService : Service() {
         hasSpeechInCurrentUtterance = false
         hasSignalledUtteranceEnd = false
         _isStandby.value = true
+        _connectionStatus.value = "WAKE_STARTING"
         standbyActivatedTime = System.currentTimeMillis()
+        startWakeHealthMonitor()
         updateNotification()
 
         serviceScope.launch(Dispatchers.Main) {
@@ -3702,17 +3709,9 @@ class JarvisConversationService : Service() {
         _isStandby.value = false
         wakeRestartJob?.cancel(); wakeRestartJob = null
         wakeModelJob?.cancel(); wakeModelJob = null
-        val service = voskSpeechService
-        voskSpeechService = null
-        // Stop first, then shut down: shutdown() alone can leave the AudioRecord alive for a
-        // moment, and the conversation's microphone could not open until it was gone.
-        try { service?.stop() } catch (_: Exception) {}
-        try {
-            service?.shutdown()
-        } catch (e: Exception) {
-            Log.e("JarvisService", "Error stopping Vosk SpeechService: ${e.message}")
-        }
-        com.jarvis.assistant.voice.hotword.HotwordStats.endStandby(this)
+        wakeHealthJob?.cancel(); wakeHealthJob = null
+        stopWakeCapture()
+        _connectionStatus.value = "READY"
     }
 
     private fun startWakeListening() {
@@ -3731,73 +3730,127 @@ class JarvisConversationService : Service() {
     }
 
     private fun startWakeListeningOnce() {
-        com.jarvis.assistant.voice.hotword.HotwordStats.beginStandby(this)
-
+        if (!PermissionHelper.hasRecordAudioPermission(this)) {
+            reportWakeFailure("Microphone permission is off. Allow Microphone in Android app permissions.", 30_000L)
+            return
+        }
         val model = VoskModelManager.model
         if (model == null) {
-            Log.i("JarvisService", "Vosk model still loading; triggering init and will start once ready")
+            _connectionStatus.value = "WAKE_LOADING"
+            updateNotification()
             VoskModelManager.init(applicationContext, serviceScope)
-            wakeModelJob?.cancel()
-            wakeModelJob = serviceScope.launch {
-                VoskModelManager.isModelReady.collect { ready ->
-                    if (ready && _isStandby.value && voskSpeechService == null) {
-                        startWakeListening()
-                    }
+            if (wakeModelJob?.isActive == true) return
+            wakeModelJob = serviceScope.launch(Dispatchers.Main) {
+                try {
+                    withTimeout(30_000L) { VoskModelManager.isModelReady.first { it } }
+                    wakeModelJob = null
+                    if (_isStandby.value) startWakeListening()
+                } catch (e: TimeoutCancellationException) {
+                    wakeModelJob = null
+                    reportWakeFailure("The offline wake model did not load. Jarvis will retry automatically.", 30_000L)
+                } catch (e: CancellationException) {
+                    throw e
                 }
             }
             return
         }
-
         try {
+            _connectionStatus.value = "WAKE_STARTING"
+            updateNotification()
             standbyActivatedTime = System.currentTimeMillis()
-            // Phrase grammar: built from the valid wake phrases (default + premium custom word) and [unk]
             val grammar = com.jarvis.assistant.lock.VoiceUnlockBackground.grammar(this, validWakePhrases())
             val rec = Recognizer(model, 16000.0f, grammar)
+            wakeRecognizer = rec
             rec.setWords(true)
-            val spkModel = VoskModelManager.speakerModel
-            if (spkModel != null) {
-                rec.setSpeakerModel(spkModel)
-                Log.i("JarvisService", "Attached SpeakerModel to Vosk wake recognizer for owner voice gating")
-            }
+            VoskModelManager.speakerModel?.let { rec.setSpeakerModel(it) }
             val service = SpeechService(rec, 16000.0f)
-            service.startListening(voskListener)
             voskSpeechService = service
-            Log.i("JarvisService", "Vosk wake-word listening active (strict multi-syllable phrase grammar)")
+            val generation = wakeHealth.begin(SystemClock.elapsedRealtime())
+            check(service.startListening(createWakeListener(generation))) { "Wake microphone did not start" }
+            // A started thread is not proof of audio. The first callback confirms readiness.
         } catch (e: Exception) {
-            Log.e("JarvisService", "Failed to start Vosk SpeechService: ${e.message}", e)
-            try {
-                voskSpeechService?.stop()
-            } catch (_: Exception) {}
-            voskSpeechService = null
-            serviceScope.launch { _events.emit("Mic error: ${e.message}") }
+            reportWakeFailure("Wake microphone could not start: " + (e.message ?: e.javaClass.simpleName).take(180))
         }
     }
 
-    private val voskListener = object : VoskRecognitionListener {
+    private fun stopWakeCapture() {
+        // Invalidate before cancel: queued final/error callbacks must not touch the new listener.
+        wakeHealth.stop()
+        val service = voskSpeechService
+        val recognizer = wakeRecognizer
+        voskSpeechService = null
+        wakeRecognizer = null
+        runCatching { service?.cancel() }
+        runCatching { service?.shutdown() }
+        runCatching { recognizer?.close() }
+        com.jarvis.assistant.voice.hotword.HotwordStats.endStandby(this)
+    }
+
+    private fun startWakeHealthMonitor() {
+        wakeHealthJob?.cancel()
+        wakeHealthJob = serviceScope.launch(Dispatchers.Main) {
+            while (isActive && _isStandby.value) {
+                delay(4_000L)
+                if (wakeHealth.isStalled(SystemClock.elapsedRealtime())) {
+                    reportWakeFailure("The wake microphone stopped returning audio. Jarvis is restarting it.")
+                }
+            }
+        }
+    }
+
+    private fun reportWakeFailure(message: String, retryAfterMs: Long? = null) {
+        stopWakeCapture()
+        if (!_isStandby.value || isPoweredOff(this)) return
+        _connectionStatus.value = "WAKE_RETRYING"
+        _liveError.value = JarvisLiveError(
+            title = "WAKE WORD NOT LISTENING",
+            message = message,
+            errorCode = "WAKE_START_FAILED",
+            actionText = "RETRY"
+        )
+        Log.e("JarvisService", message)
+        updateNotification()
+        val delayMs = retryAfterMs ?: com.jarvis.assistant.voice.hotword.WakeListenerHealth.retryDelay(wakeRetryAttempt)
+        wakeRetryAttempt = (wakeRetryAttempt + 1).coerceAtMost(5)
+        scheduleWakeRestart(delayMs)
+    }
+
+    private fun acceptWakeCallback(generation: Long): Boolean {
+        if (!_isStandby.value || !wakeHealth.onAudioCallback(generation, SystemClock.elapsedRealtime())) return false
+        if (_connectionStatus.value != "WAKE_LISTENING") {
+            _connectionStatus.value = "WAKE_LISTENING"
+            wakeRetryAttempt = 0
+            if (_liveError.value?.errorCode?.startsWith("WAKE_") == true) _liveError.value = null
+            com.jarvis.assistant.voice.hotword.HotwordStats.beginStandby(this)
+            updateNotification()
+            Log.i("JarvisService", "Wake microphone confirmed: receiving audio callbacks")
+        }
+        return true
+    }
+
+    private fun createWakeListener(generation: Long) = object : VoskRecognitionListener {
         override fun onPartialResult(hypothesis: String?) {
-            // The recogniser grammar only contains the wake phrases, so a partial that holds the
-            // trigger word is a real wake. Waiting for the final result alone meant "hey jarvis"
-            // often produced nothing at all - the microphone never opened.
-            checkVoskHypothesis(hypothesis, partial = true)
+            if (acceptWakeCallback(generation)) checkVoskHypothesis(hypothesis, partial = true)
         }
-
         override fun onResult(hypothesis: String?) {
-            checkVoskHypothesis(hypothesis)
+            if (acceptWakeCallback(generation)) checkVoskHypothesis(hypothesis)
         }
-
         override fun onFinalResult(hypothesis: String?) {
-            checkVoskHypothesis(hypothesis)
+            if (acceptWakeCallback(generation)) checkVoskHypothesis(hypothesis)
         }
-
         override fun onError(exception: Exception?) {
-            Log.e("JarvisService", "Vosk error: ${exception?.message}")
-            try { voskSpeechService?.shutdown() } catch (_: Exception) {}
-            voskSpeechService = null
-            if (_isStandby.value) scheduleWakeRestart(1500L)
+            if (wakeHealth.isCurrent(generation)) {
+                reportWakeFailure("Wake microphone error: " + (exception?.message ?: "Audio input unavailable").take(180))
+            }
         }
-
         override fun onTimeout() {
-            scheduleWakeRestart(400L)
+            if (!wakeHealth.isCurrent(generation)) return
+            stopWakeCapture()
+            if (_isStandby.value) {
+                _connectionStatus.value = "WAKE_RETRYING"
+                updateNotification()
+                scheduleWakeRestart(400L)
+            }
         }
     }
 
@@ -3806,7 +3859,7 @@ class JarvisConversationService : Service() {
         wakeRestartJob?.cancel()
         wakeRestartJob = serviceScope.launch(Dispatchers.Main) {
             delay(delayMs)
-            if (_isStandby.value) startWakeListening()
+            if (_isStandby.value && !isPoweredOff(this@JarvisConversationService)) startWakeListening()
         }
     }
 
@@ -4246,6 +4299,9 @@ class JarvisConversationService : Service() {
 
     private fun buildNotification(): android.app.Notification {
         val (title, text) = when {
+            _isStandby.value && _connectionStatus.value != "WAKE_LISTENING" ->
+                "Wake word not listening yet" to (_liveError.value?.takeIf { it.errorCode.startsWith("WAKE_") }?.message
+                    ?: "Preparing the wake microphone. Status: " + _connectionStatus.value)
             _isStandby.value -> "Jarvis is in the background" to "Say \"Hey Jarvis\" to wake me up"
             _isSessionOn.value && !_connectionStatus.value.equals("LIVE", ignoreCase = true) ->
                 "Jarvis is reconnecting" to "Connection: ${_connectionStatus.value}. Requests may not be heard yet."
