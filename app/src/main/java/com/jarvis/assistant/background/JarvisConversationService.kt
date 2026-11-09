@@ -376,6 +376,10 @@ class JarvisConversationService : Service() {
     private var isPendingBackgroundTransition = false
     @Volatile
     private var suppressAudioUntilTurnComplete = false
+    // One voice per reply: the utterance whose answer Gemini neural audio already voiced,
+    // so the Android TTS fallback can never speak the same reply a second time.
+    @Volatile
+    private var geminiVoicedUtteranceId = -1L
     @Volatile
     private var isExecutingTool = false
     private val currentUtteranceAudioStream = java.io.ByteArrayOutputStream()
@@ -1125,6 +1129,12 @@ class JarvisConversationService : Service() {
                                 }
                                 return
                             }
+                            if (restFallbackFiredForUtterance == currentUtteranceId) {
+                                // This turn was already answered and voiced by the fallback model.
+                                // Playing the late Gemini answer too is exactly the double voice.
+                                Log.i("JarvisService", "Dropping late Gemini audio for utterance ${currentUtteranceId}")
+                                return
+                            }
                             audioChunksReceivedInTurn++
                             // DEV STYLE voice policy: Jarvis speaks through Gemini NATIVE neural TTS
                             // (multilingual, natural male/female voice) streamed live from the model into
@@ -1133,7 +1143,13 @@ class JarvisConversationService : Service() {
                             if (audioChunksReceivedInTurn % 25 == 1) {
                                 Log.d("JarvisService", "Streaming Gemini neural audio chunk #${audioChunksReceivedInTurn} (${pcmData.size} bytes) to AudioPlayer")
                             }
+                            // One voice only: stop any Android-TTS line still audible (wake ack,
+                            // system notice, fallback reply) so Gemini neural voice stands alone.
+                            if (com.jarvis.assistant.voice.VoiceSession.isSpeaking) {
+                                com.jarvis.assistant.voice.VoiceSession.interrupt("gemini-voice")
+                            }
                             setConversationState(ConversationState.SPEAKING)
+                            geminiVoicedUtteranceId = currentUtteranceId
                             audioPlayer?.enqueueAudio(pcmData)
                         }
 
@@ -1319,6 +1335,7 @@ class JarvisConversationService : Service() {
                             if (!preferences.isSilentExecutionMode &&
                                 !isAutonomousContinuationTurn &&
                                 assistantTurnText.isNotBlank() &&
+                                geminiVoicedUtteranceId != currentUtteranceId &&
                                 audioArrivedThisTurn.not() &&
                                 (audioPlayer == null || !audioPlayer!!.isPlaying())) {
                                 speakJarvisResponse(assistantTurnText)
@@ -1878,6 +1895,22 @@ class JarvisConversationService : Service() {
                                             Log.i("JarvisService", "[NO_INPUT] Utterance ${turnId} produced no transcription after ${RESPONSE_TIMEOUT_MS}ms; treating as noise, returning to IDLE (no reply).")
                                             setConversationState(ConversationState.IDLE)
                                             lastResponseTimedOut = true
+                                            updateNotification()
+                                            return@launch
+                                        }
+                                        if (liveWebSocket?.isSessionReady() == true) {
+                                            // The Live socket owns this answer. A REST reply here would
+                                            // add a second voice from the default model, so wait once
+                                            // more and then go quiet instead of double-answering.
+                                            Log.i("JarvisService", "Live socket ready for utterance ${turnId}; waiting another window instead of answering over REST")
+                                            delay(RESPONSE_TIMEOUT_MS)
+                                            if (turnId != currentUtteranceId) return@launch
+                                            if (_conversationState.value != ConversationState.THINKING) return@launch
+                                            if (audioPlayer?.isPlaying() == true) return@launch
+                                            if (synchronized(currentTurnAssistantText) { currentTurnAssistantText.isNotBlank() }) return@launch
+                                            Log.i("JarvisService", "Live reply still silent for utterance ${turnId}; returning to IDLE without a second voice")
+                                            lastResponseTimedOut = true
+                                            setConversationState(ConversationState.IDLE)
                                             updateNotification()
                                             return@launch
                                         }
@@ -3289,6 +3322,7 @@ class JarvisConversationService : Service() {
             if (turnId != currentUtteranceId) return@launch
             if (restFallbackFiredForUtterance == turnId) return@launch
             if (currentTurnAssistantText.isNotBlank() || audioPlayer?.isPlaying() == true) return@launch
+            if (liveWebSocket?.isSessionReady() == true) return@launch
             if (question.isEmpty()) {
                 // Defensive: should not happen (caller filters empty text), but never send an empty
                 // message to REST and never announce an empty reply to the user.
