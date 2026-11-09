@@ -290,6 +290,8 @@ class JarvisConversationService : Service() {
                         com.jarvis.assistant.voice.ChatSpeech.speak(JarvisApp.instance, r)
                     } else {
                         val s = activeInstance
+                        // A typed turn is a new answer: neural audio for it may play again.
+                        s?.ttsVoicedUtteranceId = -1L
                         val http = s?.httpSession
                         val ws = s?.liveWebSocket
                         if (http != null) http.sendText(text)
@@ -359,6 +361,7 @@ class JarvisConversationService : Service() {
     private fun nextUtteranceId(): Long {
         currentUtteranceId = (currentUtteranceId + 1L).coerceAtMost(Long.MAX_VALUE - 1)
         restFallbackFiredForUtterance = -1L
+        ttsVoicedUtteranceId = -1L
         return currentUtteranceId
     }
     private var lastUserSpeechDetectedTime = 0L
@@ -380,6 +383,10 @@ class JarvisConversationService : Service() {
     // so the Android TTS fallback can never speak the same reply a second time.
     @Volatile
     private var geminiVoicedUtteranceId = -1L
+    // The utterance whose reply the phone's own voice already read out, so neural audio that
+    // arrives afterwards cannot repeat the same answer.
+    @Volatile
+    private var ttsVoicedUtteranceId = -1L
     @Volatile
     private var isExecutingTool = false
     private val currentUtteranceAudioStream = java.io.ByteArrayOutputStream()
@@ -758,6 +765,7 @@ class JarvisConversationService : Service() {
         // is NOT played; the output transcription is the single text source for this TTS path.
         // One shared lane: a new reply replaces the old one, it never speaks over it.
         com.jarvis.assistant.voice.VoiceSession.interrupt("new-reply")
+        ttsVoicedUtteranceId = currentUtteranceId
         setConversationState(ConversationState.SPEAKING)
         val utteranceId = "jarvis_response"
         val params = android.os.Bundle().apply {
@@ -1046,6 +1054,8 @@ class JarvisConversationService : Service() {
             Log.e("JarvisService", "Speaker unavailable: ${error.message}")
             null
         }
+        // One voice only: while the neural voice is audible the TTS lane refuses new lines.
+        com.jarvis.assistant.voice.VoiceSession.remoteVoiceActive = { audioPlayer?.isPlaying() == true }
 
         serviceScope.launch(Dispatchers.IO) {
             val systemPrompt = generateCurrentSystemPrompt()
@@ -1133,6 +1143,12 @@ class JarvisConversationService : Service() {
                                 // This turn was already answered and voiced by the fallback model.
                                 // Playing the late Gemini answer too is exactly the double voice.
                                 Log.i("JarvisService", "Dropping late Gemini audio for utterance ${currentUtteranceId}")
+                                return
+                            }
+                            if (ttsVoicedUtteranceId == currentUtteranceId) {
+                                // The phone's voice already read this turn's reply out loud; playing
+                                // the neural audio that arrived later would say it a second time.
+                                Log.i("JarvisService", "Dropping Gemini audio for utterance ${currentUtteranceId}: already voiced by TTS")
                                 return
                             }
                             audioChunksReceivedInTurn++
@@ -3702,6 +3718,7 @@ class JarvisConversationService : Service() {
 
         liveWebSocket?.disconnect()
         liveWebSocket = null
+        com.jarvis.assistant.voice.VoiceSession.remoteVoiceActive = { false }
 
         setConversationState(ConversationState.IDLE)
         _connectionStatus.value = "READY"
