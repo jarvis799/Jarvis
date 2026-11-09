@@ -63,6 +63,16 @@ object VoiceSession {
     var isPaused: Boolean = false
         private set
 
+    /**
+     * Set by the conversation service while Gemini's neural voice is audible.
+     *
+     * Android TTS is the fallback voice, so a status line, a wake acknowledgement or a
+     * transcription must never start on top of the neural voice that is already speaking.
+     * While this reports true the lane refuses new lines instead of talking over it.
+     */
+    @Volatile
+    var remoteVoiceActive: () -> Boolean = { false }
+
     val generation: Long get() = queue.generation
 
     /** Starts the engine early so the first reply is not delayed by engine start-up. */
@@ -86,6 +96,11 @@ object VoiceSession {
         val spoken = SpeechText.clean(text).trim()
         if (spoken.isEmpty()) {
             onFinished?.invoke(true)
+            return queue.generation
+        }
+        if (remoteVoiceActive()) {
+            Log.i(TAG, "Dropped a TTS line because the neural voice is speaking: " + spoken.take(60))
+            onFinished?.invoke(false)
             return queue.generation
         }
         val accepted = queue.offer(
