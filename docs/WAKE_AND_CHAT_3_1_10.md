@@ -29,3 +29,9 @@ Open the updated app and allow Microphone. Tap Start once if previously fully po
 - Published APK: https://github.com/jarvis799/Jarvis/releases/download/v3.1.10/Jarvis-V3.1.10.apk
 - APK SHA-256: 58aedf945f57fb23674288c1959d4fd880add1ddfe2ff79c9fceff3f50150bc9.
 - Physical-device wake and command capture remain unverified; the existing explicit Power Off behavior is intentionally retained.
+
+## 3.1.11 — one voice only
+- Root cause of the double voice: with the Live socket ready, the 12s response timer still answered over REST, so the default model spoke while Gemini's own neural answer streamed in.
+- The REST fallback can no longer fire while the Live session is ready; it waits one more window and then returns to IDLE, so only Gemini answers.
+- Gemini audio for a turn the fallback already voiced is dropped, and the utterance Gemini spoke is remembered so the Android TTS fallback cannot repeat the same reply.
+- Any Android-TTS line still audible is stopped the moment Gemini audio starts.
